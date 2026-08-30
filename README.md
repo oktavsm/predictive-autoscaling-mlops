@@ -333,6 +333,7 @@ Open decisions should be resolved based on collected data and experiments rather
 - `docs/ARCHITECTURE.md` — infrastructure and system architecture
 - `docs/ROADMAP.md` — implementation roadmap and milestones
 - `docs/DECISIONS.md` — architectural and technical decision log
+- `infrastructure/README.md` — step-by-step infrastructure setup guide
 
 ## Academic Context
 
