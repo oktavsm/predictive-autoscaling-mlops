@@ -1589,27 +1589,103 @@ kube_deployment_status_replicas_ready{
 
 # 21. Buat Dashboard Demo Grafana
 
-Minimal buat 5 panel:
+Ada 2 cara membuat dashboard ini: **Cara 1 (Import JSON — paling cepat & rapi)** atau **Cara 2 (Manual UI)**.
 
-```text
-1. API Request Rate
-2. API p95 Latency
-3. Laravel PHP CPU
-4. Laravel PHP Memory
-5. Backend Replica Count
-```
+---
 
-Ini sudah cukup kuat untuk menjelaskan proposal:
+### Cara 1: Import JSON (Rekomendasi — 10 Detik Jadi)
 
-```text
-workload
-   ↓
-resource behavior
-   ↓
-scaling
-   ↓
-time-series data
-```
+File dashboard siap pakai sudah tersedia di repository: `configs/grafana-demo-dashboard.json`.
+
+1. Di Grafana (`https://grafana.titipin.me`), klik menu **Dashboards** di sidebar kiri.
+2. Klik tombol **New** (kanan atas) ➔ Pilih **Import**.
+3. Di kotak **Import via dashboard JSON model**, copy & paste seluruh isi file [`configs/grafana-demo-dashboard.json`](../configs/grafana-demo-dashboard.json).
+4. Klik tombol biru **Load**.
+5. Jika diminta memilih data source Prometheus, pilih **Prometheus**.
+6. Klik **Import**.
+
+Kelima panel langsung otomatis terpasang dengan rapi, lengkap dengan nama, warna grafik, dan satuan unitnya!
+
+---
+
+### Cara 2: Buat Manual lewat UI Grafana
+
+Jika ingin membuat sendiri panel per panel:
+
+1. Klik menu **Dashboards** ➔ **New** ➔ **New Dashboard**.
+2. Klik **+ Add visualization**.
+3. Pilih data source: **Prometheus**.
+4. Buat 5 panel berikut satu per satu:
+
+#### Panel 1: API Request Rate
+- **Title:** `1. API Request Rate`
+- **PromQL (Query A):**
+  ```promql
+  sum(rate(caddy_http_requests_total{host=~"api.titipin.me.*"}[1m]))
+  ```
+- **Legend:** `Request Rate`
+- **Panel options (kanan) ➔ Standard options ➔ Unit:** `requests/sec (rps)`
+- Klik **Apply** (kanan atas).
+
+#### Panel 2: API p95 Latency
+- Klik **+ Add panel** (kanan atas).
+- **Title:** `2. API p95 Latency`
+- **PromQL (Query A):**
+  ```promql
+  histogram_quantile(0.95, sum by (le) (rate(caddy_http_request_duration_seconds_bucket{host=~"api.titipin.me.*"}[1m])))
+  ```
+- **Legend:** `p95 Latency`
+- **Standard options ➔ Unit:** `Time ➔ seconds (s)`
+- Klik **Apply**.
+
+#### Panel 3: Laravel PHP CPU Usage
+- Klik **+ Add panel**.
+- **Title:** `3. Laravel PHP CPU Usage`
+- **PromQL (Query A):**
+  ```promql
+  sum(rate(container_cpu_usage_seconds_total{namespace="titipin", pod=~"laravel-backend-.*", container="php"}[1m]))
+  ```
+- **Legend:** `PHP CPU (cores)`
+- **Standard options ➔ Unit:** `Misc ➔ cores`
+- Klik **Apply**.
+
+#### Panel 4: Laravel PHP Memory Usage
+- Klik **+ Add panel**.
+- **Title:** `4. Laravel PHP Memory Usage`
+- **PromQL (Query A):**
+  ```promql
+  sum(container_memory_working_set_bytes{namespace="titipin", pod=~"laravel-backend-.*", container="php"})
+  ```
+- **Legend:** `PHP Memory`
+- **Standard options ➔ Unit:** `Data ➔ bytes (IEC)`
+- Klik **Apply**.
+
+#### Panel 5: Backend Replica Count
+- Klik **+ Add panel**.
+- **Title:** `5. Backend Replica Count`
+- **PromQL (Query A):**
+  ```promql
+  kube_deployment_status_replicas{namespace="titipin", deployment="laravel-backend"}
+  ```
+  - **Legend:** `Total Replicas`
+- Klik **+ Add query** (untuk Query B):
+  ```promql
+  kube_deployment_status_replicas_ready{namespace="titipin", deployment="laravel-backend"}
+  ```
+  - **Legend:** `Ready Replicas`
+- **Graph styles (kanan):**
+  - Line interpolation: `Step after`
+- **Standard options ➔ Unit:** `Misc ➔ short`
+- Klik **Apply**.
+
+---
+
+### Simpan Dashboard
+
+1. Klik icon disket / **Save dashboard** di pojok kanan atas.
+2. Beri nama: `Predictive Autoscaling MLOps - Demo Dashboard`.
+3. Klik **Save**.
+4. Di pojok kanan atas, ubah auto-refresh menjadi **5s** atau **10s** agar grafik terupdate otomatis secara real-time.
 
 ---
 
