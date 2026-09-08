@@ -1510,20 +1510,7 @@ Prometheus Server is Ready.
 sum(
   rate(
     caddy_http_requests_total{
-      handler="reverse_proxy"
-    }[1m]
-  )
-)
-```
-
-Jika label `host` tersedia dari `per_host`, filter:
-
-```promql
-sum(
-  rate(
-    caddy_http_requests_total{
-      handler="reverse_proxy",
-      host="api.titipin.me"
+      host=~"api.titipin.me.*"
     }[1m]
   )
 )
@@ -1539,7 +1526,7 @@ histogram_quantile(
   sum by (le) (
     rate(
       caddy_http_request_duration_seconds_bucket{
-        handler="reverse_proxy"
+        host=~"api.titipin.me.*"
       }[1m]
     )
   )
@@ -1922,7 +1909,7 @@ queries = {
         sum(
           rate(
             caddy_http_requests_total{
-              handler="reverse_proxy"
+              host=~"api.titipin.me.*"
             }[1m]
           )
         )
@@ -1963,7 +1950,7 @@ queries = {
           sum by (le) (
             rate(
               caddy_http_request_duration_seconds_bucket{
-                handler="reverse_proxy"
+                host=~"api.titipin.me.*"
               }[1m]
             )
           )
