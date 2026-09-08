@@ -1,0 +1,158 @@
+services:
+  web:
+    image: ghcr.io/titip-in/titip-in-web-web:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-titipin}_web
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    volumes:
+      - app_storage:/var/www/html/public/storage:ro
+    depends_on:
+      - php
+
+  php:
+    image: ghcr.io/titip-in/titip-in-web-app:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-titipin}_php
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Jakarta
+    volumes:
+      - app_storage:/var/www/html/storage/app/public
+      - /var/www/titip-downloads/android:/var/www/titip-downloads/android:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    image: ghcr.io/titip-in/titip-in-web-app:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-titipin}_worker
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600 --verbose
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Jakarta
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  scheduler:
+    image: ghcr.io/titip-in/titip-in-web-app:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-titipin}_scheduler
+    restart: unless-stopped
+    command: >
+      sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Jakarta
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: ${COMPOSE_PROJECT_NAME:-titipin}_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-titipin}_redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+
+  minio:
+    image: minio/minio:RELEASE.2023-04-20T17-56-55Z
+    container_name: ${COMPOSE_PROJECT_NAME:-titipin}_minio
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-titipin_minio}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-titipin_secret}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  minio-setup:
+    image: minio/mc:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-titipin}_minio_setup
+    depends_on:
+      - minio
+    env_file:
+      - .env
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Tunggu MinIO nyala...';
+      sleep 15;
+      mc alias set myminio http://minio:9000 $$AWS_ACCESS_KEY_ID $$AWS_SECRET_ACCESS_KEY;
+      mc mb myminio/$$AWS_BUCKET --ignore-existing;
+      mc anonymous set download myminio/$$AWS_BUCKET;
+      echo 'Setup MinIO Selesai!';
+      exit 0;
+      "
+
+  evolution-api:
+    image: evoapicloud/evolution-api:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-titipin}_evolution_api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SERVER_TYPE=http
+      - SERVER_PORT=8080
+      - AUTHENTICATION_TYPE=apikey
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://${DB_USERNAME}:${DB_PASSWORD}@db:5432/${DB_DATABASE}?schema=evolution
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://redis:6379/1
+    ports:
+      - "8084:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - evolution_instances:/evolution/instances
+
+  evolution-manager:
+    image: evoapicloud/evolution-manager:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-titipin}_evolution_manager
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    depends_on:
+      - evolution-api
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["sed -i 's/ must-revalidate//g' /etc/nginx/conf.d/nginx.conf && nginx -g 'daemon off;'"]
+
+volumes:
+  pg_data:
+  app_storage:
+  minio_data:
+  evolution_instances:

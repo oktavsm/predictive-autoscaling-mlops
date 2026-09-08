@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-backend
+  namespace: titipin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: laravel-backend
+  template:
+    metadata:
+      labels:
+        app: laravel-backend
+    spec:
+      nodeSelector:
+        workload-role: worker
+
+      imagePullSecrets:
+        - name: ghcr-pull
+
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: laravel-backend
+
+      containers:
+        - name: php
+          image: ghcr.io/titip-in/titip-in-web-app:latest
+          envFrom:
+            - secretRef:
+                name: titipin-app-env
+          command:
+            - /bin/sh
+            - /config/start-php.sh
+          ports:
+            - containerPort: 9000
+          resources:
+            requests:
+              cpu: 150m
+              memory: 128Mi
+            limits:
+              cpu: 750m
+              memory: 512Mi
+          volumeMounts:
+            - name: backend-config
+              mountPath: /config
+            - name: app-storage
+              mountPath: /var/www/html/storage/app/public
+
+        - name: nginx
+          image: ghcr.io/titip-in/titip-in-web-web:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 25m
+              memory: 24Mi
+            limits:
+              cpu: 200m
+              memory: 96Mi
+          readinessProbe:
+            httpGet:
+              path: /up
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /up
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts:
+            - name: backend-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+            - name: app-storage
+              mountPath: /var/www/html/public/storage
+
+      volumes:
+        - name: backend-config
+          configMap:
+            name: laravel-backend-config
+            defaultMode: 0755
+        - name: app-storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: laravel-backend
+  namespace: titipin
+spec:
+  selector:
+    app: laravel-backend
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: laravel-backend-nodeport
+  namespace: titipin
+spec:
+  type: NodePort
+  selector:
+    app: laravel-backend
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080

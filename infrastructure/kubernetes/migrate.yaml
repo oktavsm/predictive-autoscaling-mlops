@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: titipin-migrate
+  namespace: titipin
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: titipin-migrate
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        workload-role: worker
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: migrate
+          image: ghcr.io/titip-in/titip-in-web-app:latest
+          envFrom:
+            - secretRef:
+                name: titipin-app-env
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until PGPASSWORD="$DB_PASSWORD" pg_isready \
+                -h "$DB_HOST" -U "$DB_USERNAME" -d "$DB_DATABASE" -q; do
+                sleep 2
+              done
+
+              php artisan migrate --force

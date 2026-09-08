@@ -1,0 +1,75 @@
+alertmanager:
+  enabled: false
+
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+prometheusOperator:
+  nodeSelector:
+    workload-role: control
+
+prometheus:
+  prometheusSpec:
+    nodeSelector:
+      workload-role: control
+
+    retention: 3d
+    retentionSize: 3GB
+
+    resources:
+      requests:
+        cpu: 150m
+        memory: 384Mi
+      limits:
+        cpu: 750m
+        memory: 1Gi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 4Gi
+
+    additionalScrapeConfigs:
+      - job_name: caddy
+        scrape_interval: 15s
+        static_configs:
+          - targets:
+              - 172.31.4.113:9180
+
+grafana:
+  nodeSelector:
+    workload-role: control
+
+  service:
+    type: NodePort
+    nodePort: 30300
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+kube-state-metrics:
+  nodeSelector:
+    workload-role: control
+
+prometheus-node-exporter:
+  tolerations:
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+      effect: NoSchedule
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
