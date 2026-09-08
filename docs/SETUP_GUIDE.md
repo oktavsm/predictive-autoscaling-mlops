@@ -1689,35 +1689,11 @@ Jika ingin membuat sendiri panel per panel:
 
 ---
 
-# 22. Install k6 di Load Generator
+# 22. Install k6 di Load Generator (Laptop)
 
-Load generator sebaiknya berada **di luar worker cluster**.
+Load generator dijalankan dari **laptop kamu** (berada di luar cluster worker K8s, memenuhi prinsip pengujian objektif).
 
-Bisa:
-
-```text
-AWS EC2
-atau
-laptop
-```
-
-Contoh Ubuntu:
-
-```bash
-sudo gpg -k
-sudo gpg --no-default-keyring \
-  --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
-  --keyserver hkp://keyserver.ubuntu.com:80 \
-  --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-
-echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
-  | sudo tee /etc/apt/sources.list.d/k6.list
-
-sudo apt update
-sudo apt install -y k6
-```
-
-Verifikasi:
+`k6` sudah terinstall di laptopmu (`~/.local/bin/k6`). Kamu bisa verifikasi dengan:
 
 ```bash
 k6 version
@@ -1727,125 +1703,31 @@ k6 version
 
 # 23. k6 Smoke Test
 
-Buat:
+Script sudah tersedia di repository: [`scripts/k6/smoke.js`](../scripts/k6/smoke.js).
+
+Jalankan dari root repository di laptop kamu:
 
 ```bash
-mkdir -p ~/k6
-nano ~/k6/smoke.js
+k6 run scripts/k6/smoke.js
 ```
 
-Isi:
-
-```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
-
-export const options = {
-  vus: 2,
-  duration: '30s',
-};
-
-const BASE_URL = __ENV.BASE_URL || 'https://api.titipin.me';
-
-const endpoints = [
-  '/api/v1/categories',
-  '/api/v1/jastip/listings',
-  '/api/v1/preloved/listings',
-  '/api/v1/jastip/requests',
-  '/api/v1/preloved/requests',
-];
-
-export default function () {
-  const endpoint =
-    endpoints[Math.floor(Math.random() * endpoints.length)];
-
-  const res = http.get(`${BASE_URL}${endpoint}`);
-
-  check(res, {
-    'HTTP < 500': (r) => r.status < 500,
-  });
-
-  sleep(0.5);
-}
-```
-
-Run:
-
-```bash
-BASE_URL=https://api.titipin.me \
-k6 run ~/k6/smoke.js
-```
-
-Saat script berjalan, buka Grafana.
-
-Harus terlihat:
-
-```text
-request rate naik
-CPU Laravel berubah
-latency terekam
-```
+Saat script berjalan (selama 30 detik):
+- Buka dashboard Grafana (`https://grafana.titipin.me`).
+- Panel **1. API Request Rate** dan **3. Laravel PHP CPU** akan langsung naik dan menampilkan grafik aktivitas!
 
 ---
 
 # 24. Calibration Workload
 
-Jangan langsung menentukan workload final project.
+Script sudah tersedia di repository: [`scripts/k6/calibration.js`](../scripts/k6/calibration.js).
 
-Buat:
+Script ini melakukan *ramping workload* bertahap (1 ➔ 5 ➔ 10 ➔ 15 ➔ 20 req/s):
 
 ```bash
-nano ~/k6/calibration.js
+k6 run scripts/k6/calibration.js
 ```
 
-Isi:
-
-```javascript
-import http from 'k6/http';
-import { check } from 'k6';
-
-const BASE_URL = __ENV.BASE_URL || 'https://api.titipin.me';
-
-const endpoints = [
-  '/api/v1/categories',
-  '/api/v1/jastip/listings',
-  '/api/v1/preloved/listings',
-  '/api/v1/jastip/requests',
-  '/api/v1/preloved/requests',
-];
-
-export const options = {
-  scenarios: {
-    calibration: {
-      executor: 'ramping-arrival-rate',
-      startRate: 1,
-      timeUnit: '1s',
-      preAllocatedVUs: 20,
-      maxVUs: 100,
-
-      stages: [
-        { target: 1, duration: '1m' },
-        { target: 5, duration: '2m' },
-        { target: 10, duration: '2m' },
-        { target: 15, duration: '2m' },
-        { target: 20, duration: '2m' },
-        { target: 1, duration: '1m' },
-      ],
-    },
-  },
-};
-
-export default function () {
-  const endpoint =
-    endpoints[Math.floor(Math.random() * endpoints.length)];
-
-  const res = http.get(`${BASE_URL}${endpoint}`);
-
-  check(res, {
-    'HTTP < 500': (r) => r.status < 500,
-  });
-}
-```
+Tujuan kalibrasi ini adalah melihat seberapa besar beban CPU dan respons latency Laravel sebelum menentukan skenario final (*steady, gradual, spike, periodic, bursty*).
 
 **Angka 1/5/10/15/20 req/s hanya bootstrap calibration.**
 
@@ -1950,158 +1832,33 @@ Threshold 60%, min 1, max 4 adalah **bootstrap value**, bukan nilai eksperimen f
 
 # 26. Export Time-Series Data Menjadi CSV
 
-Sekarang data sudah benar-benar tersedia di Prometheus.
+Script export time-series sudah tersedia di repository: [`scripts/export_demo_dataset.py`](../scripts/export_demo_dataset.py).
 
-Buka port-forward:
+Script ini mengambil data 30 menit terakhir dari Prometheus API untuk kelima metrik utama (`request_rate`, `php_cpu_cores`, `php_memory_bytes`, `replicas`, `p95_latency_seconds`) dan menyimpannya menjadi file CSV di `src/data/demo_metrics.csv`.
 
-```bash
-kubectl -n monitoring port-forward \
-  svc/monitoring-kube-prometheus-prometheus \
-  9090:9090
-```
+### Cara Menjalankan (dari Laptop):
 
-Buat Python script:
+1. **Buka koneksi port-forward ke Prometheus** (di Terminal 1):
+   ```bash
+   kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090
+   ```
 
-```bash
-nano ~/export_demo_dataset.py
-```
-
-Isi:
-
-```python
-from datetime import datetime, timedelta, timezone
-
-import pandas as pd
-import requests
-
-PROM = "http://127.0.0.1:9090"
-
-end = datetime.now(timezone.utc)
-start = end - timedelta(minutes=30)
-step = 15
-
-queries = {
-    "request_rate": """
-        sum(
-          rate(
-            caddy_http_requests_total{
-              host=~"api.titipin.me.*"
-            }[1m]
-          )
-        )
-    """,
-
-    "php_cpu_cores": """
-        sum(
-          rate(
-            container_cpu_usage_seconds_total{
-              namespace="titipin",
-              pod=~"laravel-backend-.*",
-              container="php"
-            }[1m]
-          )
-        )
-    """,
-
-    "php_memory_bytes": """
-        sum(
-          container_memory_working_set_bytes{
-            namespace="titipin",
-            pod=~"laravel-backend-.*",
-            container="php"
-          }
-        )
-    """,
-
-    "replicas": """
-        kube_deployment_status_replicas{
-          namespace="titipin",
-          deployment="laravel-backend"
-        }
-    """,
-
-    "p95_latency_seconds": """
-        histogram_quantile(
-          0.95,
-          sum by (le) (
-            rate(
-              caddy_http_request_duration_seconds_bucket{
-                host=~"api.titipin.me.*"
-              }[1m]
-            )
-          )
-        )
-    """,
-}
-
-
-def query_range(promql):
-    response = requests.get(
-        f"{PROM}/api/v1/query_range",
-        params={
-            "query": promql,
-            "start": start.timestamp(),
-            "end": end.timestamp(),
-            "step": step,
-        },
-        timeout=30,
-    )
-    response.raise_for_status()
-
-    result = response.json()["data"]["result"]
-
-    if not result:
-        return pd.Series(dtype=float)
-
-    values = result[0]["values"]
-
-    return pd.Series(
-        {
-            pd.to_datetime(ts, unit="s", utc=True): float(value)
-            for ts, value in values
-        }
-    )
-
-
-frame = pd.DataFrame()
-
-for name, query in queries.items():
-    frame[name] = query_range(query)
-
-frame.index.name = "timestamp"
-frame = frame.sort_index()
-
-frame.to_csv("demo_metrics.csv")
-
-print(frame.tail(20))
-print("\nSaved: demo_metrics.csv")
-```
-
-Install dependencies:
-
-```bash
-python3 -m venv ~/mlops-demo-venv
-source ~/mlops-demo-venv/bin/activate
-
-pip install pandas requests
-```
-
-Run:
-
-```bash
-python ~/export_demo_dataset.py
-```
+2. **Jalankan script export** (di Terminal 2):
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install pandas requests
+   python3 scripts/export_demo_dataset.py
+   ```
 
 Output:
-
 ```text
-demo_metrics.csv
+Saved successfully to: .../src/data/demo_metrics.csv
 ```
 
-Cek:
-
+Cek isi dataset awal kamu:
 ```bash
-head demo_metrics.csv
+head src/data/demo_metrics.csv
 ```
 
 Contoh struktur:
