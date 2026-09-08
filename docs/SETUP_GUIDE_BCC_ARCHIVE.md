@@ -1,4 +1,8 @@
-# Setup Guide — Predictive Autoscaling MLOps
+> ⚠️ **ARCHIVED** — Versi ini menggunakan VM lab BCC (`proxy.bccdev.id:11049`) sebagai Control Plane.
+> CP tersebut berada di balik NAT kampus sehingga port K3s (6443) tidak bisa diakses dari Worker AWS.
+> Gunakan [SETUP_GUIDE.md](./SETUP_GUIDE.md) (versi Full AWS) sebagai panduan utama.
+
+# Setup Guide — Predictive Autoscaling MLOps (BCC Control Plane — ARCHIVED)
 
 > **Goal:** dari VM kosong sampai sistem berjalan dan data bisa dikumpulkan:
 >
@@ -22,11 +26,9 @@
 
 | Node | Role | Access | CPU | RAM | Storage |
 |---|---|---|---:|---:|---:|
-| VM-01 | K3s control plane + monitoring + stateful demo services | `16.79.90.160`, user `ubuntu` | 2 core | 4 GB | 50 GB |
+| VM-01 | K3s control plane + monitoring + stateful demo services | `proxy.bccdev.id:11049`, user `dev` | 2 core | 4 GB | 20 GB |
 | VM-02 | K3s worker | `15.232.116.101`, user `ubuntu` | 2 core | 2 GB | 20 GB |
 | VM-03 | K3s worker | `15.232.71.54`, user `ubuntu` | 2 core | 2 GB | 20 GB |
-
-> Semua VM berada di AWS dalam VPC yang sama. Komunikasi antar-node menggunakan IP private (`172.31.x.x`).
 
 ## 0.2 Logical Architecture
 
@@ -126,8 +128,9 @@ Isi:
 
 ```sshconfig
 Host cp
-  HostName 16.79.90.160
-  User ubuntu
+  HostName proxy.bccdev.id
+  Port 11049
+  User dev
   IdentityFile ~/.ssh/id_ed25519
 
 Host w1
@@ -151,53 +154,74 @@ ssh w2 "echo W2_OK"
 
 ---
 
-## 1.2 Tentukan alamat control plane
+## 1.2 Tentukan alamat control plane yang dapat dicapai worker
 
-Semua VM berada di AWS VPC yang sama, jadi komunikasi K3s menggunakan **IP private**.
-
-```text
-CP private IP  : 172.31.4.113
-W1 private IP  : (cek dengan hostname -I di W1)
-W2 private IP  : (cek dengan hostname -I di W2)
-CP public IP   : 16.79.90.160
-```
-
-`<CP_K3S_ADDR>` yang dipakai di seluruh guide ini adalah **`172.31.4.113`**.
-
----
-
-## 1.3 AWS Security Group
-
-Pastikan Security Group ketiga VM sudah dikonfigurasi:
-
-**Control Plane (CP):**
-
-| Type | Port | Source | Fungsi |
-|---|---|---|---|
-| SSH | `22` | `0.0.0.0/0` atau My IP | Akses SSH |
-| HTTP | `80` | `0.0.0.0/0` | Let's Encrypt + redirect |
-| HTTPS | `443` | `0.0.0.0/0` | `api.titipin.me`, Grafana |
-| Custom TCP | `6443` | `0.0.0.0/0` atau My IP | kubectl remote |
-| All traffic | All | `172.31.0.0/16` | Komunikasi K3s internal |
-
-**Worker 1 & Worker 2:**
-
-| Type | Port | Source | Fungsi |
-|---|---|---|---|
-| SSH | `22` | `0.0.0.0/0` atau My IP | Akses SSH |
-| All traffic | All | `172.31.0.0/16` | Komunikasi K3s internal |
-
----
-
-## 1.4 Test jaringan antar-node
-
-Setelah Security Group dikonfigurasi, verifikasi dari W1:
+SSH ke CP:
 
 ```bash
-nc -zv -w 3 172.31.4.113 22
+ssh cp
+ip -br addr
+hostname -I
+curl -4 -s ifconfig.me || true
 ```
 
-Harus: `succeeded!`
+Catat kandidat alamat CP.
+
+Kita sebut sebagai:
+
+```text
+<CP_K3S_ADDR>
+```
+
+**Alamat ini harus dapat diakses dari W1 dan W2 pada TCP 6443.**
+
+Jangan otomatis memakai `proxy.bccdev.id`, karena port SSH `11049` hanya membuktikan bahwa proxy meneruskan SSH.
+
+---
+
+## 1.3 Test jaringan sebelum K3s
+
+Di CP install netcat:
+
+```bash
+sudo apt update
+sudo apt install -y netcat-openbsd
+```
+
+Setelah K3s server nanti aktif, dari kedua worker harus berhasil:
+
+```bash
+nc -vz <CP_K3S_ADDR> 6443
+```
+
+Default K3s dengan Flannel VXLAN juga membutuhkan komunikasi antar-node:
+
+```text
+TCP 6443   worker -> control plane
+UDP 8472   node <-> node
+TCP 10250  node <-> node
+```
+
+**Jangan buka UDP 8472 ke seluruh Internet.**
+
+Firewall/security group harus membatasi port cluster hanya ke IP ketiga node.
+
+---
+
+## 1.4 Pastikan public HTTP/HTTPS tersedia
+
+Untuk `api.titipin.me`, Caddy perlu menerima:
+
+```text
+TCP 80
+TCP 443
+```
+
+ke VM-01.
+
+Sebelum lanjut ke DNS, konfirmasi apakah MaxCloud/BCC memberikan public NAT/port-forward untuk 80 dan 443.
+
+Jika 80/443 tidak dapat diarahkan ke VM-01, gunakan domain/reverse-proxy yang disediakan BCC atau tunjukkan API/Grafana melalui SSH tunnel saat demo.
 
 ---
 
@@ -284,7 +308,7 @@ Di CP:
 
 ```bash
 curl -sfL https://get.k3s.io | \
-  INSTALL_K3S_EXEC="--disable traefik --node-ip 172.31.4.113 --node-external-ip 16.79.90.160 --tls-san 16.79.90.160 --tls-san 172.31.4.113" \
+  INSTALL_K3S_EXEC="--disable traefik" \
   sh -
 ```
 
@@ -320,7 +344,7 @@ Di W1:
 
 ```bash
 curl -sfL https://get.k3s.io | \
-  K3S_URL=https://172.31.4.113:6443 \
+  K3S_URL=https://<CP_K3S_ADDR>:6443 \
   K3S_TOKEN='<NODE_TOKEN>' \
   sh -
 ```
@@ -329,7 +353,7 @@ Di W2:
 
 ```bash
 curl -sfL https://get.k3s.io | \
-  K3S_URL=https://172.31.4.113:6443 \
+  K3S_URL=https://<CP_K3S_ADDR>:6443 \
   K3S_TOKEN='<NODE_TOKEN>' \
   sh -
 ```
@@ -354,7 +378,7 @@ worker-2        Ready
 
 ---
 
-## 3.5 Setup kubectl untuk user `ubuntu`
+## 3.5 Setup kubectl untuk user `dev`
 
 Di CP:
 
@@ -372,11 +396,7 @@ Test:
 kubectl get nodes
 ```
 
-Untuk **akses dari laptop**, copy `~/.kube/config` ke laptop lalu ubah `server`:
-
-```yaml
-server: https://16.79.90.160:6443
-```
+Mulai bagian ini, seluruh command `kubectl` dan `helm` dapat dijalankan dari CP.
 
 ---
 
@@ -1177,12 +1197,12 @@ sudo apt install -y caddy
 
 # 14. Cloudflare DNS
 
-Buat A record di Cloudflare dashboard untuk `titipin.me`:
+Jika VM-01 menerima public TCP 80/443, buat A record:
 
 ```text
-api       -> 16.79.90.160    (DNS only)
-grafana   -> 16.79.90.160    (DNS only)
-storage   -> 16.79.90.160    (DNS only)
+api       -> <PUBLIC_IP_VM01>
+grafana   -> <PUBLIC_IP_VM01>
+storage   -> <PUBLIC_IP_VM01>
 ```
 
 Untuk initial TLS issuance gunakan:
@@ -1190,6 +1210,8 @@ Untuk initial TLS issuance gunakan:
 ```text
 Proxy status: DNS only
 ```
+
+Jika VM-01 berada di balik NAT/proxy BCC, sesuaikan record ke public endpoint yang benar.
 
 ---
 
@@ -1469,7 +1491,7 @@ https://grafana.titipin.me
 atau tanpa domain:
 
 ```text
-http://16.79.90.160:30300
+http://<CP_OR_NODE_IP>:30300
 ```
 
 ---
@@ -2180,7 +2202,9 @@ Drift harus diverifikasi dari data hasil observasi, bukan hanya karena skenario 
 
 # 29. Storage Guardrails
 
-Control plane memiliki 50 GB storage.
+Control plane hanya memiliki 20 GB storage.
+
+Jangan gunakan retention besar tanpa batas.
 
 Guide ini menggunakan:
 
@@ -2192,9 +2216,14 @@ PostgreSQL PVC        3 GiB
 MinIO PVC             2 GiB
 ```
 
-Tersisa cukup ruang untuk Docker image, K3s data, dan OS.
+Monitor:
 
-Setelah melihat pola penggunaan, retention Prometheus bisa dinaikkan (misal 7 hari).
+```bash
+df -h
+kubectl get pvc -A
+```
+
+Setelah dataset diekspor dan di-versioning dengan DVC, raw Prometheus retention tidak perlu menyimpan seluruh histori project selamanya.
 
 ---
 
@@ -2278,13 +2307,15 @@ decision
 Di worker:
 
 ```bash
-nc -vz 172.31.4.113 6443
+nc -vz <CP_K3S_ADDR> 6443
 ```
 
 Kalau timeout:
 
-- cek AWS Security Group: pastikan ada rule `All traffic` dari `172.31.0.0/16`;
-- cek apakah K3s server sudah running di CP: `sudo systemctl status k3s`.
+- cek firewall CP;
+- cek NAT/port-forward;
+- cek alamat CP yang digunakan;
+- cek apakah worker memang dapat route ke alamat tersebut.
 
 ---
 
