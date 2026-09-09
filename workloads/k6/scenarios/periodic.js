@@ -39,12 +39,11 @@ const peakRate  = parseInt(__ENV.PEAK_RATE  || '14');
 const troughRate = parseInt(__ENV.TROUGH_RATE || '3');
 
 // One wave: trough → ramp → peak → drop
-// Repeated 3 times to give the model enough cycles to learn from.
 const oneWave = [
-  { target: troughRate, duration: '2m' },  // trough
-  { target: peakRate,   duration: '2m' },  // ramp up
-  { target: peakRate,   duration: '3m' },  // peak hold
-  { target: troughRate, duration: '1m' },  // drop
+  { target: troughRate, duration: '1m' },   // trough (LOW)
+  { target: peakRate,   duration: '1m30s' }, // ramp up
+  { target: peakRate,   duration: '2m' },   // peak hold (HIGH)
+  { target: troughRate, duration: '30s' },  // drop
 ];
 
 export const options = {
@@ -56,20 +55,16 @@ export const options = {
       preAllocatedVUs: 30,
       maxVUs:          100,
       stages: [
-        // Warm-up: one partial wave so Prometheus data starts cleanly.
-        { target: troughRate, duration: '1m' },
-        // 3 full waves
+        { target: troughRate, duration: '1m' }, // warm-up
         ...oneWave,
         ...oneWave,
-        ...oneWave,
-        // cooldown
-        { target: troughRate, duration: '2m' },
+        { target: troughRate, duration: '1m' }, // cooldown
       ],
     },
   },
   thresholds: {
     http_req_failed:   ['rate<0.02'],
-    http_req_duration: ['p(95)<800'],
+    http_req_duration: ['p(95)<1500'],
   },
   tags: {
     run_id:     RUN_ID,

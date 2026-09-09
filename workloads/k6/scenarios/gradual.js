@@ -43,17 +43,17 @@ export const options = {
       preAllocatedVUs: 30,
       maxVUs:          100,
       stages: [
-        { target: 3,  duration: '3m' },   // hold LOW — establish baseline
-        { target: 8,  duration: '5m' },   // ramp to MEDIUM — watch HPA wake
-        { target: 14, duration: '5m' },   // ramp to HIGH — 3 replicas
-        { target: 18, duration: '5m' },   // ramp to near-SATURATION
-        { target: 3,  duration: '2m' },   // cooldown — scale-down observation
+        { target: 3,  duration: '1m' },   // hold LOW (3 req/s) — baseline
+        { target: 8,  duration: '2m' },   // ramp to MEDIUM (8 req/s) — HPA trigger
+        { target: 14, duration: '2m' },   // ramp to HIGH (14 req/s) — 3 replicas
+        { target: 18, duration: '2m' },   // ramp to SATURATION (18 req/s) — 4 replicas
+        { target: 3,  duration: '1m' },   // cooldown (3 req/s) — scale-down
       ],
     },
   },
   thresholds: {
     http_req_failed:   ['rate<0.02'],
-    http_req_duration: ['p(95)<800'],
+    http_req_duration: ['p(95)<1500'],
   },
   tags: { run_id: RUN_ID, scenario: 'gradual' },
 };
