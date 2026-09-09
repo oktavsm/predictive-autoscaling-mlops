@@ -34,48 +34,47 @@ workloads/k6/
 
 ## Quick start
 
+Copy the environment template and fill in your values:
+
 ```bash
-# Run from repo root.
+cp .env.k6.example .env.k6
+# Edit .env.k6 — set BASE_URL to your actual API endpoint
+```
+
+Then source it before running any scenario:
+
+```bash
+source .env.k6
 
 # Steady at MEDIUM load, 15 minutes
-BASE_URL=https://api.titipin.me \
-RUN_ID=steady-001 \
-~/.local/bin/k6 run workloads/k6/scenarios/steady.js
+RUN_ID=steady-001 ~/.local/bin/k6 run workloads/k6/scenarios/steady.js
 
 # Gradual ramp (primary dataset collection)
-BASE_URL=https://api.titipin.me \
-RUN_ID=gradual-001 \
-~/.local/bin/k6 run workloads/k6/scenarios/gradual.js
+RUN_ID=gradual-001 ~/.local/bin/k6 run workloads/k6/scenarios/gradual.js
 
 # Spike test (key comparison scenario)
-BASE_URL=https://api.titipin.me \
-RUN_ID=spike-001 \
-~/.local/bin/k6 run workloads/k6/scenarios/spike.js
+RUN_ID=spike-001 ~/.local/bin/k6 run workloads/k6/scenarios/spike.js
 
 # Periodic waves (model training scenario)
-BASE_URL=https://api.titipin.me \
-RUN_ID=periodic-001 \
-~/.local/bin/k6 run workloads/k6/scenarios/periodic.js
+RUN_ID=periodic-001 ~/.local/bin/k6 run workloads/k6/scenarios/periodic.js
 
 # Bursty (variance / robustness dataset)
-BASE_URL=https://api.titipin.me \
-RUN_ID=bursty-001 \
-~/.local/bin/k6 run workloads/k6/scenarios/bursty.js
+RUN_ID=bursty-001 ~/.local/bin/k6 run workloads/k6/scenarios/bursty.js
 ```
 
 ---
 
 ## Environment variables
 
-| Variable      | Default                   | Description                      |
-|---------------|---------------------------|----------------------------------|
-| `BASE_URL`    | `https://api.titipin.me`  | Target application URL           |
-| `RUN_ID`      | `run-<timestamp>`         | Trace label for Prometheus/MLflow|
-| `RATE`        | scenario-specific         | Override req/s (steady/drift)    |
-| `DURATION`    | scenario-specific         | Override hold duration           |
-| `SPIKE_RATE`  | `18`                      | Peak rate for spike scenario     |
-| `PEAK_RATE`   | `14`                      | Peak rate for periodic scenario  |
-| `TROUGH_RATE` | `3`                       | Trough rate for periodic scenario|
+| Variable      | Default              | Description                                     |
+|---------------|----------------------|-------------------------------------------------|
+| `BASE_URL`    | *(required)*         | Target application URL — set in `.env.k6`       |
+| `RUN_ID`      | `run-<timestamp>`    | Trace label for Prometheus/MLflow               |
+| `RATE`        | scenario-specific    | Override req/s (steady/drift)                   |
+| `DURATION`    | scenario-specific    | Override hold duration                          |
+| `SPIKE_RATE`  | `18`                 | Peak rate for spike scenario                    |
+| `PEAK_RATE`   | `14`                 | Peak rate for periodic scenario                 |
+| `TROUGH_RATE` | `3`                  | Trough rate for periodic scenario               |
 
 ---
 

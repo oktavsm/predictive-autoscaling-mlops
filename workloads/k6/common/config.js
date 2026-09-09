@@ -6,7 +6,7 @@
  *   BASE_URL=https://api.titipin.me RUN_ID=steady-001 k6 run workloads/k6/scenarios/steady.js
  */
 
-export const BASE_URL = __ENV.BASE_URL || 'https://api.titipin.me';
+export const BASE_URL = __ENV.BASE_URL || (() => { throw new Error('BASE_URL env var is required. Set it in .env.k6 and run: source .env.k6'); })();
 export const RUN_ID   = __ENV.RUN_ID   || 'run-' + Date.now();
 
 // Workload range derived from calibration (2026-09-08):

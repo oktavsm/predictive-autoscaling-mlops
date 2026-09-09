@@ -1,5 +1,4 @@
 .env
-.env
 .venv
 venv/
 __pycache__/
@@ -9,3 +8,6 @@ mlruns/
 .dvc/config.local
 /src/data/raw/*
 !/src/data/raw/.gitkeep
+# Ignore all .env.* files (e.g. .env.k6, .env.local) but allow .example templates
+.env.*
+!.env.*.example
