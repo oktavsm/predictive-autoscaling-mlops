@@ -49,11 +49,11 @@ export const options = {
       preAllocatedVUs: 40,
       maxVUs:          120,
       stages: [
-        { target: 3,         duration: '5m'   },  // baseline
-        { target: spikeRate, duration: '30s'  },  // spike onset
-        { target: spikeRate, duration: '6m30s'},  // hold spike
-        { target: 3,         duration: '30s'  },  // drop
-        { target: 3,         duration: '3m'   },  // recovery
+        { target: 3,         duration: '1m'  },   // baseline (LOW)
+        { target: spikeRate, duration: '30s' },   // spike onset (fast ramp)
+        { target: spikeRate, duration: '3m'  },   // hold spike (near SATURATION)
+        { target: 3,         duration: '30s' },   // drop
+        { target: 3,         duration: '1m'  },   // recovery / scale-down window
       ],
     },
   },
