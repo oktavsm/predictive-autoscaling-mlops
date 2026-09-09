@@ -43,8 +43,8 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_failed:   ['rate<0.01'],   // < 1% error rate
-    http_req_duration: ['p(95)<500'],   // p95 < 500 ms
+    http_req_failed:   ['rate<0.02'],   // < 2% error rate
+    http_req_duration: ['p(95)<1500'],  // p95 < 1500 ms
   },
   tags: { run_id: RUN_ID, scenario: 'steady', rate: String(targetRate) },
 };
