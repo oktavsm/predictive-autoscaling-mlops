@@ -306,12 +306,7 @@ Di CP:
 sudo cat /var/lib/rancher/k3s/server/node-token
 ```
 
-Simpan sebagai:
-
-```text
-<NODE_TOKEN>
-K10121d8e25b8a21d925f0e98ea8a03086046dbf3156be31de7f9380af8133b2dcf::server:128857e1c3174066ff2d75b8b72da98f
-```
+Simpan sebagai `<NODE_TOKEN>` (catat di file `.env.secrets` yang ter-ignore).
 
 ---
 
@@ -322,7 +317,7 @@ Di W1:
 ```bash
 curl -sfL https://get.k3s.io | \
   K3S_URL=https://172.31.4.113:6443 \
-  K3S_TOKEN='K10121d8e25b8a21d925f0e98ea8a03086046dbf3156be31de7f9380af8133b2dcf::server:128857e1c3174066ff2d75b8b72da98f' \
+  K3S_TOKEN='<NODE_TOKEN>' \
   sh -
 ```
 
@@ -331,7 +326,7 @@ Di W2:
 ```bash
 curl -sfL https://get.k3s.io | \
   K3S_URL=https://172.31.4.113:6443 \
-  K3S_TOKEN='K10121d8e25b8a21d925f0e98ea8a03086046dbf3156be31de7f9380af8133b2dcf::server:128857e1c3174066ff2d75b8b72da98f' \
+  K3S_TOKEN='<NODE_TOKEN>' \
   sh -
 ```
 
@@ -480,10 +475,10 @@ metadata:
 type: Opaque
 stringData:
   DB_USERNAME: titipin_user
-  DB_PASSWORD: rahasiawoy
+  DB_PASSWORD: <DB_PASSWORD>
   DB_DATABASE: titipin_db
   MINIO_ROOT_USER: titipin_minio
-  MINIO_ROOT_PASSWORD: rahasiawoy
+  MINIO_ROOT_PASSWORD: <MINIO_ROOT_PASSWORD>
 ---
 apiVersion: v1
 kind: Service
@@ -737,7 +732,7 @@ kubectl -n titipin run minio-client \
 Di dalam shell:
 
 ```sh
-mc alias set local http://minio:9000 titipin_minio 'rahasiawoy'
+mc alias set local http://minio:9000 titipin_minio '<MINIO_ROOT_PASSWORD>'
 mc mb local/titipin-bucket --ignore-existing
 mc anonymous set download local/titipin-bucket
 exit
@@ -752,7 +747,7 @@ Generate APP_KEY:
 ```bash
 APP_KEY="base64:$(openssl rand -base64 32)"
 echo "$APP_KEY"
-base64:LittQvcZBnbxmh7vE4rvuPKA1KPPL/4FLcIafT3xg+E=
+# Catat output APP_KEY ke .env.secrets
 ```
 
 Buat file temporary:
@@ -766,7 +761,7 @@ Isi minimal:
 ```dotenv
 APP_NAME=Titip.in
 APP_ENV=production
-APP_KEY=base64:LittQvcZBnbxmh7vE4rvuPKA1KPPL/4FLcIafT3xg+E=
+APP_KEY=<APP_KEY>
 APP_DEBUG=false
 APP_URL=https://api.titipin.me
 FRONTEND_URL=https://titipin.me
@@ -779,7 +774,7 @@ DB_HOST=db
 DB_PORT=5432
 DB_DATABASE=titipin_db
 DB_USERNAME=titipin_user
-DB_PASSWORD=rahasiawoy
+DB_PASSWORD=<DB_PASSWORD>
 
 CACHE_STORE=redis
 QUEUE_CONNECTION=redis
@@ -791,7 +786,7 @@ REDIS_PORT=6379
 
 FILESYSTEM_DISK=s3
 AWS_ACCESS_KEY_ID=titipin_minio
-AWS_SECRET_ACCESS_KEY=rahasiawoy
+AWS_SECRET_ACCESS_KEY=<MINIO_ROOT_PASSWORD>
 AWS_DEFAULT_REGION=us-east-1
 AWS_BUCKET=titipin-bucket
 AWS_ENDPOINT=http://minio:9000
@@ -1460,8 +1455,7 @@ kubectl -n monitoring get secret monitoring-grafana \
   | base64 -d
 
 echo
-
-YJLAWqHyyU89BZwGkEEayKSETyf8rIqgZvbEoA0u
+# Simpan password ini di .env.secrets
 ```
 
 Akses:

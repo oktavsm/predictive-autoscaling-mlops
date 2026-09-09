@@ -6,10 +6,10 @@ metadata:
 type: Opaque
 stringData:
   DB_USERNAME: titipin_user
-  DB_PASSWORD: rahasiawoy
+  DB_PASSWORD: <DB_PASSWORD>
   DB_DATABASE: titipin_db
   MINIO_ROOT_USER: titipin_minio
-  MINIO_ROOT_PASSWORD: rahasiawoy
+  MINIO_ROOT_PASSWORD: <MINIO_ROOT_PASSWORD>
 ---
 apiVersion: v1
 kind: Service
