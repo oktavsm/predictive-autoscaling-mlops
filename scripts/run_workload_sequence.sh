@@ -75,7 +75,7 @@ echo ""
 echo "================================================================="
 echo "  [1/2] RUNNING SCENARIO: PERIODIC (workloads/k6/scenarios/periodic.js)"
 echo "================================================================="
-RUN_ID="periodic-run-001" $K6_BIN run workloads/k6/scenarios/periodic.js
+RUN_ID="periodic-run-001" $K6_BIN run workloads/k6/scenarios/periodic.js || true
 export_metrics 15 "src/data/raw/periodic_run_001.csv"
 
 # Cooldown between scenarios
@@ -88,7 +88,7 @@ echo ""
 echo "================================================================="
 echo "  [2/2] RUNNING SCENARIO: GRADUAL (workloads/k6/scenarios/gradual.js)"
 echo "================================================================="
-RUN_ID="gradual-run-001" $K6_BIN run workloads/k6/scenarios/gradual.js
+RUN_ID="gradual-run-001" $K6_BIN run workloads/k6/scenarios/gradual.js || true
 export_metrics 12 "src/data/raw/gradual_run_001.csv"
 
 # -----------------------------------------------------------------------------
