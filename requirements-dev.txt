@@ -1,0 +1,11 @@
+# Development dependencies — includes runtime and notebook/test tooling.
+# Tested on Python 3.12 inside the GitHub Codespaces dev container.
+# Install with: pip install -r requirements-dev.txt
+-r requirements.txt
+
+jupyterlab==4.6.3
+matplotlib==3.11.1
+seaborn==0.13.2
+scikit-learn==1.9.1
+pytest==9.1.1
+ruff==0.16.7

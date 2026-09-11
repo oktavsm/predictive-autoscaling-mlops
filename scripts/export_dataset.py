@@ -7,9 +7,10 @@ Usage:
 """
 
 import argparse
-from datetime import datetime, timedelta, timezone
 import os
 import sys
+from datetime import datetime, timedelta, timezone
+
 import pandas as pd
 import requests
 
