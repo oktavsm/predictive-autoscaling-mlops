@@ -327,13 +327,49 @@ GitHub Codespaces is not considered a production runtime environment. If require
 
 Open decisions should be resolved based on collected data and experiments rather than assumptions.
 
+## Development with GitHub Codespaces
+
+GitHub Codespaces provides the reproducible development environment for this project (EDA, testing, local API previews). Production-experiment services run on the VPS/K3s cluster; a Codespace is development-only and not used as a persistent runtime.
+
+1. Open this repository on GitHub.
+2. Select **Code → Codespaces → Create codespace on `feat/initial-eda`** (or `main`).
+3. Wait for the `postCreateCommand` dependency installation to finish.
+4. Validate the environment:
+
+   ```bash
+   python --version       # Python 3.12.x
+   python -m pip check    # No broken requirements
+   pytest -q              # 8 smoke tests passed
+   ruff check .           # All checks passed
+   ```
+
+5. Open `notebooks/01_initial_eda.ipynb`, select the Python 3.12 kernel, and run all cells against the committed sample dataset (`src/data/demo_metrics.csv`).
+
+Use **GitHub Flow** for all changes:
+
+```bash
+git switch -c feat/<short-name>
+git push -u origin feat/<short-name>
+```
+
+Open a pull request, validate the result, and merge it into `main`. The required initial EDA branch is `feat/initial-eda`.
+
+> **Security:** Do not commit `.env` files, tokens, kubeconfigs, datasets managed by DVC, or generated model artifacts.
+
+For detailed setup instructions, see:
+- [`docs/CODESPACE_SETUP.md`](docs/CODESPACE_SETUP.md) — Step-by-step Codespaces setup and validation guide
+- [`docs/ENVIRONMENT_AND_DEPLOYMENT_STRATEGY.md`](docs/ENVIRONMENT_AND_DEPLOYMENT_STRATEGY.md) — Full environment boundaries and deployment strategy
+
 ## Documentation
 
 - `docs/PROJECT_CONTEXT.md` — project context, goals, scope, and MLOps principles
 - `docs/ARCHITECTURE.md` — infrastructure and system architecture
 - `docs/ROADMAP.md` — implementation roadmap and milestones
 - `docs/DECISIONS.md` — architectural and technical decision log
-- `docs/INFRASTRUCTURE_SETUP.md` — step-by-step infrastructure setup guide
+- `docs/SETUP_GUIDE.md` — comprehensive infrastructure setup guide (K3s, backend, monitoring, k6)
+- `docs/WORKLOAD_GENERATION.md` — workload generation methodology and scenarios
+- `docs/CODESPACE_SETUP.md` — GitHub Codespaces development setup guide
+- `docs/ENVIRONMENT_AND_DEPLOYMENT_STRATEGY.md` — environment strategy and target VPS deployment
 
 ## Academic Context
 
@@ -341,16 +377,19 @@ This project is developed as part of the **Machine Learning Operations (MLOps)**
 
 ## Status
 
-**Current phase:** Project initialization and architecture planning.
+**Current phase:** Phase 2/3 — Data Collection & Exploratory Data Analysis (EDA).
+
+Completed milestones:
+- [x] K3s multi-node cluster deployed on AWS (Control Plane + 2 Workers).
+- [x] Laravel backend deployed as Kubernetes pods with reactive HPA.
+- [x] Prometheus and Grafana operational (`api.titipin.me`, `grafana.titipin.me`).
+- [x] k6 automated workload scenarios calibrated and executed (steady, spike, periodic, gradual).
+- [x] Telemetry dataset collected, merged, and deduplicated (284 observations).
+- [x] Reproducible Codespaces devcontainer configured and tested (`feat/initial-eda`).
+- [x] Initial exploratory data analysis (`notebooks/01_initial_eda.ipynb`) executed and validated.
 
 Immediate priorities:
-
-1. Validate the existing application deployment requirements.
-2. Prepare the three laboratory VMs.
-3. Build the Kubernetes cluster.
-4. Deploy the Laravel backend.
-5. Install Prometheus and Grafana.
-6. Generate initial workload.
-7. Collect real metrics.
-8. Perform exploratory data analysis.
-9. Finalize the ML target and prediction horizon.
+1. Open and merge PR for `feat/initial-eda` into `main`.
+2. Phase 2: Initialize DVC and configure remote storage (MinIO).
+3. Phase 4: Build baseline models (persistence and moving average).
+4. Phase 5: Deploy MLflow tracking server on K3s.

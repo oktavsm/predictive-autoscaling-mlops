@@ -1,0 +1,4 @@
+# Runtime dependencies — used by ingestion scripts, export scripts, and services.
+# Tested on Python 3.12 (Debian Bookworm).
+pandas==3.0.5
+requests==2.34.2
