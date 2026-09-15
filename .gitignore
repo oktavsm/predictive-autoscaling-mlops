@@ -15,3 +15,5 @@ mlruns/
 # Internal / Private operational notes and VM credentials
 docs/internal/
 
+# Academic Coursework & College Assignment Deliverables
+docs/coursework/

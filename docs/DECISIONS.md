@@ -143,9 +143,9 @@ The current physical/VM topology is:
 
 | Node | Role | Address / Access | CPU | RAM | Storage |
 |---|---|---|---:|---:|---:|
-| VM-01 | Control Plane | `proxy.bccdev.id:11049`, user `dev` | 2 cores | 4 GB | 20 GB |
-| VM-02 | Worker 1 | `15.232.116.101`, user `ubuntu` | 2 cores | 2 GB | 20 GB |
-| VM-03 | Worker 2 | `15.232.71.54`, user `ubuntu` | 2 cores | 2 GB | 20 GB |
+| VM-01 | Control Plane | `<CONTROL_PLANE_IP>`, user `ubuntu` | 2 cores | 4 GB | 50 GB |
+| VM-02 | Worker 1 | `<WORKER_1_IP>`, user `ubuntu` | 2 cores | 2 GB | 20 GB |
+| VM-03 | Worker 2 | `<WORKER_2_IP>`, user `ubuntu` | 2 cores | 2 GB | 20 GB |
 
 SSH authentication uses public-key authentication.
 

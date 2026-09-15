@@ -125,7 +125,6 @@ predictive-autoscaling-mlops/
 ├── configs/                    # System, exporter, and Grafana dashboard configs
 ├── data/                       # DVC-managed datasets (raw, interim, processed)
 ├── docs/                       # Comprehensive technical documentation & guides
-│   ├── coursework/             # Academic reports & course assignment (LK) submissions
 │   └── images/                 # Architecture diagrams and calibration graphs
 ├── infrastructure/             # Infrastructure-as-Code (Kubernetes, Docker, Monitoring)
 │   ├── demo/                   # Demo frontend compose setup (port 3000)
@@ -171,7 +170,6 @@ predictive-autoscaling-mlops/
 - **[Workload Generation Guide](docs/WORKLOAD_GENERATION.md):** k6 benchmark scenarios (steady, spike, gradual, periodic).
 - **[Codespace Setup Guide](docs/CODESPACE_SETUP.md):** Development workflow and port forwarding guide.
 - **[Architecture Decision Records](docs/DECISIONS.md):** Log of major technical decisions and trade-offs.
-- **[Academic Coursework Documents](docs/coursework/):** Academic reports, including [LK-03 Data Pipeline Architecture](docs/coursework/LK-03_DATA_PIPELINE_ARCHITECTURE.md) and [LK Roadmap](docs/coursework/ROADMAP_LK.md).
 
 ---
 

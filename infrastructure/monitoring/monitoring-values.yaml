@@ -43,7 +43,7 @@ prometheus:
         scrape_interval: 15s
         static_configs:
           - targets:
-              - 172.31.4.113:9180
+              - <CP_PRIVATE_IP>:9180
 
 grafana:
   nodeSelector:

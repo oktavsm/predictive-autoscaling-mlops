@@ -22,9 +22,9 @@
 
 | Node | Role | Access | CPU | RAM | Storage |
 |---|---|---|---:|---:|---:|
-| VM-01 | K3s control plane + monitoring + stateful demo services | `16.79.90.160`, user `ubuntu` | 2 core | 4 GB | 50 GB |
-| VM-02 | K3s worker | `15.232.116.101`, user `ubuntu` | 2 core | 2 GB | 20 GB |
-| VM-03 | K3s worker | `15.232.71.54`, user `ubuntu` | 2 core | 2 GB | 20 GB |
+| VM-01 | K3s control plane + monitoring + stateful demo services | `<CONTROL_PLANE_IP>`, user `ubuntu` | 2 core | 4 GB | 50 GB |
+| VM-02 | K3s worker | `<WORKER_1_IP>`, user `ubuntu` | 2 core | 2 GB | 20 GB |
+| VM-03 | K3s worker | `<WORKER_2_IP>`, user `ubuntu` | 2 core | 2 GB | 20 GB |
 
 > Semua VM berada di AWS dalam VPC yang sama. Komunikasi antar-node menggunakan IP private (`172.31.x.x`).
 
@@ -126,17 +126,17 @@ Isi:
 
 ```sshconfig
 Host cp
-  HostName 16.79.90.160
+  HostName <CONTROL_PLANE_IP>
   User ubuntu
   IdentityFile ~/.ssh/id_ed25519
 
 Host w1
-  HostName 15.232.116.101
+  HostName <WORKER_1_IP>
   User ubuntu
   IdentityFile ~/.ssh/id_ed25519
 
 Host w2
-  HostName 15.232.71.54
+  HostName <WORKER_2_IP>
   User ubuntu
   IdentityFile ~/.ssh/id_ed25519
 ```
@@ -156,13 +156,13 @@ ssh w2 "echo W2_OK"
 Semua VM berada di AWS VPC yang sama, jadi komunikasi K3s menggunakan **IP private**.
 
 ```text
-CP private IP  : 172.31.4.113
+CP private IP  : <CP_PRIVATE_IP>
 W1 private IP  : (cek dengan hostname -I di W1)
 W2 private IP  : (cek dengan hostname -I di W2)
-CP public IP   : 16.79.90.160
+CP public IP   : <CONTROL_PLANE_IP>
 ```
 
-`<CP_K3S_ADDR>` yang dipakai di seluruh guide ini adalah **`172.31.4.113`**.
+`<CP_K3S_ADDR>` yang dipakai di seluruh guide ini adalah **`<CP_PRIVATE_IP>`**.
 
 ---
 
@@ -194,7 +194,7 @@ Pastikan Security Group ketiga VM sudah dikonfigurasi:
 Setelah Security Group dikonfigurasi, verifikasi dari W1:
 
 ```bash
-nc -zv -w 3 172.31.4.113 22
+nc -zv -w 3 <CP_PRIVATE_IP> 22
 ```
 
 Harus: `succeeded!`
@@ -284,7 +284,7 @@ Di CP:
 
 ```bash
 curl -sfL https://get.k3s.io | \
-  INSTALL_K3S_EXEC="--disable traefik --node-ip 172.31.4.113 --node-external-ip 16.79.90.160 --tls-san 16.79.90.160 --tls-san 172.31.4.113" \
+  INSTALL_K3S_EXEC="--disable traefik --node-ip <CP_PRIVATE_IP> --node-external-ip <CONTROL_PLANE_IP> --tls-san <CONTROL_PLANE_IP> --tls-san <CP_PRIVATE_IP>" \
   sh -
 ```
 
@@ -316,7 +316,7 @@ Di W1:
 
 ```bash
 curl -sfL https://get.k3s.io | \
-  K3S_URL=https://172.31.4.113:6443 \
+  K3S_URL=https://<CP_PRIVATE_IP>:6443 \
   K3S_TOKEN='<NODE_TOKEN>' \
   sh -
 ```
@@ -325,7 +325,7 @@ Di W2:
 
 ```bash
 curl -sfL https://get.k3s.io | \
-  K3S_URL=https://172.31.4.113:6443 \
+  K3S_URL=https://<CP_PRIVATE_IP>:6443 \
   K3S_TOKEN='<NODE_TOKEN>' \
   sh -
 ```
@@ -371,7 +371,7 @@ kubectl get nodes
 Untuk **akses dari laptop**, copy `~/.kube/config` ke laptop lalu ubah `server`:
 
 ```yaml
-server: https://16.79.90.160:6443
+server: https://<CONTROL_PLANE_IP>:6443
 ```
 
 ---
@@ -1133,7 +1133,7 @@ curl -i http://127.0.0.1:30080/up
 Jika NodePort tidak listen melalui loopback, gunakan salah satu worker:
 
 ```bash
-curl -i http://15.232.116.101:30080/up
+curl -i http://<WORKER_1_IP>:30080/up
 ```
 
 Target:
@@ -1145,9 +1145,9 @@ HTTP/1.1 200
 Test endpoint public existing:
 
 ```bash
-curl -s http://15.232.116.101:30080/api/v1/categories | jq .
-curl -s http://15.232.116.101:30080/api/v1/jastip/listings | jq .
-curl -s http://15.232.116.101:30080/api/v1/preloved/listings | jq .
+curl -s http://<WORKER_1_IP>:30080/api/v1/categories | jq .
+curl -s http://<WORKER_1_IP>:30080/api/v1/jastip/listings | jq .
+curl -s http://<WORKER_1_IP>:30080/api/v1/preloved/listings | jq .
 ```
 
 ---
@@ -1177,9 +1177,9 @@ sudo apt install -y caddy
 Buat A record di Cloudflare dashboard untuk `titipin.me`:
 
 ```text
-api       -> 16.79.90.160    (DNS only)
-grafana   -> 16.79.90.160    (DNS only)
-storage   -> 16.79.90.160    (DNS only)
+api       -> <CONTROL_PLANE_IP>    (DNS only)
+grafana   -> <CONTROL_PLANE_IP>    (DNS only)
+storage   -> <CONTROL_PLANE_IP>    (DNS only)
 ```
 
 Untuk initial TLS issuance gunakan:
@@ -1467,7 +1467,7 @@ https://grafana.titipin.me
 atau tanpa domain:
 
 ```text
-http://16.79.90.160:30300
+http://<CONTROL_PLANE_IP>:30300
 ```
 
 ---
@@ -2096,7 +2096,7 @@ decision
 Di worker:
 
 ```bash
-nc -vz 172.31.4.113 6443
+nc -vz <CP_PRIVATE_IP> 6443
 ```
 
 Kalau timeout:
@@ -2180,7 +2180,7 @@ kubectl -n titipin logs statefulset/postgres
 ```bash
 kubectl -n titipin get pods
 kubectl -n titipin get svc
-curl -v http://15.232.116.101:30080/up
+curl -v http://<WORKER_1_IP>:30080/up
 ```
 
 ---

@@ -13,9 +13,9 @@ For reference, VPS/K3s remains at:
 
 | Node | Role | Public IP |
 |---|---|---|
-| VM-01 | K3s control plane | `16.79.90.160` |
-| VM-02 | Worker 1 | `15.232.116.101` |
-| VM-03 | Worker 2 | `15.232.71.54` |
+| VM-01 | K3s control plane | `<CONTROL_PLANE_IP>` |
+| VM-02 | Worker 1 | `<WORKER_1_IP>` |
+| VM-03 | Worker 2 | `<WORKER_2_IP>` |
 
 ---
 
