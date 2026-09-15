@@ -1,0 +1,7 @@
+services:
+  frontend-demo:
+    image: oktaavsm/titipin-frontend:mlops-demo
+    container_name: titipin-frontend-demo
+    ports:
+      - "3000:80"
+    restart: unless-stopped

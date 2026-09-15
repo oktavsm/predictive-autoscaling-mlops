@@ -4,8 +4,13 @@
 
   "postCreateCommand": "python -m pip install --upgrade pip && python -m pip install -r requirements-dev.txt",
 
-  "forwardPorts": [8000, 8501],
+  "forwardPorts": [3000, 8000, 8501],
   "portsAttributes": {
+    "3000": {
+      "label": "Titip.in Web Demo (Workload Target)",
+      "onAutoForward": "notify",
+      "visibility": "private"
+    },
     "8000": {
       "label": "FastAPI development preview",
       "onAutoForward": "notify",
