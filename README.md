@@ -208,38 +208,54 @@ The stack may evolve during implementation based on technical constraints and ex
 
 ## Repository Structure
 
-The repository is dedicated to the MLOps project. The existing application remains in its own repositories.
+The repository is dedicated to the predictive autoscaling MLOps system, organized following industry best practices (similar to Cookiecutter Data Science and Cloud-Native MLOps patterns).
 
 ```text
 predictive-autoscaling-mlops/
-├── README.md
-├── docs/
-│   ├── PROJECT_CONTEXT.md
-│   ├── ARCHITECTURE.md
-│   ├── ROADMAP.md
-│   └── DECISIONS.md
-├── infrastructure/
-│   ├── docker/
-│   ├── kubernetes/
-│   └── monitoring/
-├── pipelines/
-│   ├── ingestion/
-│   ├── training/
-│   └── retraining/
-├── src/
-│   ├── data/
-│   ├── features/
-│   ├── models/
-│   ├── inference/
-│   └── scaling/
-├── api/
-├── tests/
-├── notebooks/
-├── configs/
-├── scripts/
-└── .github/
-    └── workflows/
+├── .devcontainer/              # Reproducible GitHub Codespaces environment
+├── .github/workflows/          # CI/CD pipelines (testing, linting, automation)
+├── api/                        # Model Serving & Inference REST API (FastAPI)
+├── configs/                    # System, exporter, and Grafana dashboard configurations
+├── data/                       # DVC-managed data directory (raw, interim, processed)
+├── docs/                       # Technical architecture, setup guides, and LK course reports
+├── infrastructure/             # Infrastructure-as-Code (Kubernetes, Docker, Monitoring)
+│   ├── demo/                   # Demo compose setup (e.g. Titipin Frontend on port 3000)
+│   ├── docker/                 # Production & development Dockerfiles / compose files
+│   ├── kubernetes/             # K3s manifests (Deployments, Services, Ingress, HPA)
+│   └── monitoring/             # Prometheus rules, ServiceMonitors, Alertmanager
+├── notebooks/                  # Jupyter notebooks for interactive EDA & modeling experiments
+├── pipelines/                  # Automated pipeline stage definitions
+│   ├── ingestion/              # Telemetry extraction & sync pipelines
+│   ├── training/               # Model training and MLflow experiment logging pipelines
+│   └── retraining/             # Continuous Training (CT) and drift evaluation pipelines
+├── scripts/                    # Operational utility scripts & load testing runners
+├── src/                        # Core application source code
+│   ├── data/                   # Ingestion logic, dataset validation, and data loaders
+│   ├── features/               # Feature engineering (lag features, rolling stats, deltas)
+│   ├── models/                 # Model definitions, training logic, and baseline predictors
+│   ├── inference/              # Inference engine and MLflow Model Registry integration
+│   └── scaling/                # Predictive autoscaling policy and replica decision logic
+├── tests/                      # Automated quality gates and unit tests (pytest)
+└── workloads/                  # Synthetic workload generation scenarios (k6 scripts)
 ```
+
+### Directory Breakdown & Explanations
+
+| Direktori / Subdirektori | Deskripsi & Fungsi |
+|---|---|
+| **`.devcontainer/`** | **Lingkungan Pengembangan Reproducible:** Berisi konfigurasi `devcontainer.json` untuk GitHub Codespaces (Python 3.12, ekstensi VS Code, port forwarding 3000/8000/8501) agar lingkungan kerja seragam bagi siapapun yang membuka repositori. |
+| **`.github/workflows/`** | **CI/CD Automation:** Pipeline GitHub Actions untuk menjalankan automated testing (`pytest`), linting (`ruff`), serta integrasi pemicu otomatis (*code-as-a-trigger*) pada siklus MLOps (LK-08). |
+| **`api/`** | **Model Serving REST API:** Layanan inferensi berbasis FastAPI yang menyajikan endpoint prediksi (`/predict`), pemeriksaan kesehatan (`/health`), dan metrik internal (`/metrics`) untuk dikonsumsi oleh autoscaler atau sistem eksternal. |
+| **`configs/`** | **Konfigurasi Sistem:** Menyimpan file konfigurasi deklaratif, seperti template dashboard Grafana (`grafana-demo-dashboard.json`), konfigurasi parameter Prometheus exporter, ambang batas HPA, dan hyperparameter pemodelan. |
+| **`data/`** | **Data Versioning (DVC):** Direktori penyimpanan dataset yang dilacak menggunakan DVC (Data Version Control) dan dihubungkan ke MinIO S3 (`storage.titipin.me`):<br>• `data/raw/`: Partisi data mentah telemetri dari Prometheus (bersifat *immutable*).<br>• `data/interim/`: Data intermediate yang telah dibersihkan, diurutkan secara monotonik, dan diselaraskan ke grid waktu 15 detik.<br>• `data/processed/`: Matriks fitur final siap latih (*training-ready*) lengkap dengan fitur lag, rolling window, dan target horizon $t+60\text{s}$. |
+| **`docs/`** | **Dokumentasi & Laporan Perkuliahan:** Dokumentasi arsitektur sistem (`ARCHITECTURE.md`, `DATA_PIPELINE_DESIGN.md`), panduan setup (`SETUP_GUIDE.md`, `CODESPACE_SETUP.md`), strategi deployment (`ENVIRONMENT_AND_DEPLOYMENT_STRATEGY.md`), roadmap proyek (`ROADMAP_LK.md`), serta laporan resmi perancangan lembar kerja (seperti `LK-03_DATA_PIPELINE_ARCHITECTURE.md`). |
+| **`infrastructure/`** | **Infrastructure-as-Code (IaC) & Runtime Orkestrasi:**<br>• `infrastructure/kubernetes/`: Manifest Kubernetes K3s (Deployment Laravel, StatefulSet PostgreSQL/Redis/MinIO, Service, Ingress Caddy, dan konfigurasi HPA reaktif).<br>• `infrastructure/docker/`: Dockerfile dan file Docker Compose untuk pembangunan kontainer layanan.<br>• `infrastructure/monitoring/`: Konfigurasi *observability stack* (Prometheus, Grafana, Alertmanager).<br>• `infrastructure/demo/`: File compose khusus untuk menjalankan demo aplikasi Web Frontend Titipin di port 3000. |
+| **`notebooks/`** | **Eksplorasi & Analisis Data Interaktif:** Menyimpan Jupyter Notebooks untuk analisis eksploratif data (EDA), visualisasi distribusi, pengukuran *scaling lag* HPA (~45 detik), pembuktian horizon prediksi 60 detik, dan eksperimen awal (`01_initial_eda.ipynb`). |
+| **`pipelines/`** | **Definisi Alur Kerja Otomatis (DVC Pipelines):**<br>• `pipelines/ingestion/`: Alur penarikan data telemetri berkala dari Prometheus API.<br>• `pipelines/training/`: Alur pelatihan model otomatis dan pencatatan eksperimen ke MLflow.<br>• `pipelines/retraining/`: Alur evaluasi performa model baru vs model produksi dan pemicu *Continuous Training* (CT) saat terjadi data drift. |
+| **`scripts/`** | **Skrip Utilitas & Operasional:** Kumpulan skrip CLI otomasi pendukung, seperti penarikan metrik Prometheus (`export_dataset.py`), penggabungan partisi dataset (`merge_datasets.py`), dan runner sekuens skenario pengujian beban (`run_workload_sequence.sh`). |
+| **`src/`** | **Source Code Inti Aplikasi MLOps:**<br>• `src/data/`: Modul logika penarikan data, validasi skema, pembersihan, dan data loader (`demo_metrics.csv` sebagai sampel data terverifikasi).<br>• `src/features/`: Modul *feature engineering* untuk mengekstrak fitur lag ($t-1$, $t-2$), *rolling mean/std*, diferensial ($\Delta\text{RPS}$, $\Delta\text{CPU}$), dan komponen waktu.<br>• `src/models/`: Kode pelatihan model Machine Learning, algoritma baseline (*persistence*, *rolling mean*), dan fungsi evaluasi metrik (MAE, RMSE, MAPE).<br>• `src/inference/`: Mesin pemuatan model produksi dari MLflow Model Registry dan eksekusi prediksi *real-time*.<br>• `src/scaling/`: Kebijakan *predictive autoscaling* yang menerjemahkan hasil peramalan trafik menjadi rekomendasi jumlah replika pod Kubernetes. |
+| **`tests/`** | **Quality Gates & Automated Testing:** Pengujian otomatis menggunakan `pytest` untuk memvalidasi integritas dataset (`test_dataset.py`: 8 smoke tests), fungsi transformasi fitur, dan stabilitas endpoint API sebelum kode diizinkan di-merge ke branch utama. |
+| **`workloads/`** | **Generasi Beban Terkontrol (Workload Scenarios):** Definisi skrip pengujian beban menggunakan Grafana k6 (`workloads/k6/`), mencakup skenario *steady*, *spike*, *periodic*, *gradual ramp-up*, *bursty*, hingga simulasi *data drift*. |
 
 ## Development and Deployment Workflow
 
