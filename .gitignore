@@ -11,3 +11,7 @@ mlruns/
 # Ignore all .env.* files (e.g. .env.k6, .env.local) but allow .example templates
 .env.*
 !.env.*.example
+
+# Internal / Private operational notes and VM credentials
+docs/internal/
+
