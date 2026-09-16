@@ -113,6 +113,22 @@ python scripts/export_dataset.py \
   --output src/data/raw/new_session.csv
 ```
 
+### Option 4: Live Workload Target Preview (Frontend Web Client)
+
+To preview the actual client application that serves as the primary source of user interactions and operational HTTP traffic:
+
+```bash
+# Launch the containerized frontend preview on port 3000
+docker compose -f infrastructure/demo/docker-compose.demo.yml up -d
+```
+
+- **Access URL:** Open [`http://localhost:3000`](http://localhost:3000) (or click the auto-forwarded port `3000` in GitHub Codespaces **Ports** tab).
+- **Workload Role:** Provides an interactive preview of the **Titip.in Web Client** (React + Vite SPA). User actions (browsing catalog, jastip orders, preloved listings) generate real API requests against the Kubernetes backend cluster, reflecting live workload variations in Prometheus and Grafana.
+- **Stop Preview:**
+  ```bash
+  docker compose -f infrastructure/demo/docker-compose.demo.yml down
+  ```
+
 ---
 
 ## 📁 Repository Structure
