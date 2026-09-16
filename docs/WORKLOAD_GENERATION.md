@@ -650,3 +650,134 @@ The workload-generation approach follows four principles:
 2. **Observe real backend and Kubernetes behavior using Prometheus.**
 3. **Calibrate workload before defining final scenario intensity.**
 4. **Create drift by changing workload regimes, then verify that the observed data distribution actually changes.**
+
+---
+
+## 19. Operational Runbook: Executing Workloads & Data Collection
+
+This runbook provides step-by-step instructions to generate controlled traffic and collect fresh telemetry datasets whenever new experimental data is required.
+
+### 19.1 Prerequisites & Environment Setup
+
+1. **Configure Environment Variables:**
+   ```bash
+   cp .env.k6.example .env.k6
+   ```
+   Ensure `.env.k6` contains the live target endpoint:
+   ```bash
+   export BASE_URL=https://api.titipin.me
+   ```
+
+2. **Verify Cluster Readiness:**
+   Ensure the target backend is running with healthy pods:
+   ```bash
+   kubectl -n titipin get pods,hpa
+   ```
+
+---
+
+### 19.2 Automated Workload & Scraping Sequence (Recommended)
+
+To run a complete benchmark cycle across all 4 core scenarios with automated cooldown and Prometheus metric extraction:
+
+```bash
+bash scripts/run_workload_sequence.sh
+```
+
+**What this script does automatically:**
+1. Verifies `.env.k6` configuration.
+2. Checks cluster cooldown (waits until HPA stabilizes to 1 replica).
+3. Executes **Steady** scenario (`steady.js`, ~3-5 mins) ➔ Exports `src/data/raw/steady_run_001.csv`.
+4. Cooldown (stabilizes to 1 pod).
+5. Executes **Spike** scenario (`spike.js`, ~3-5 mins) ➔ Exports `src/data/raw/spike_run_001.csv`.
+6. Cooldown.
+7. Executes **Periodic** scenario (`periodic.js`, ~3-5 mins) ➔ Exports `src/data/raw/periodic_run_001.csv`.
+8. Cooldown.
+9. Executes **Gradual Ramp-Up** scenario (`gradual.js`, ~3-5 mins) ➔ Exports `src/data/raw/gradual_run_001.csv`.
+10. Automatically calls `scripts/merge_datasets.py` to create a unified `master_training_dataset.csv`.
+
+---
+
+### 19.3 Manual / Granular Scenario Execution
+
+If you wish to test or record individual scenarios one by one:
+
+#### Step 1: Run Selected k6 Scenario
+```bash
+# Skenario 1: Beban stabil konstan
+k6 run workloads/k6/scenarios/steady.js
+
+# Skenario 2: Lonjakan trafik mendadak
+k6 run workloads/k6/scenarios/spike.js
+
+# Skenario 3: Pola beban bergelombang sinusoidal
+k6 run workloads/k6/scenarios/periodic.js
+
+# Skenario 4: Peningkatan bertahap
+k6 run workloads/k6/scenarios/gradual.js
+
+# Skenario 5: Lonjakan tajam tak beraturan (bursty)
+k6 run workloads/k6/scenarios/bursty.js
+```
+
+#### Step 2: Observe Scaling Behavior Live
+In a separate terminal, watch Kubernetes HPA reacting to the load:
+```bash
+kubectl -n titipin get hpa,deployment laravel-backend -w
+```
+Or view the real-time Grafana dashboard at:
+`https://grafana.titipin.me`
+
+#### Step 3: Scrape & Export Prometheus Telemetry
+After a scenario completes, export the observed time-series metrics into a CSV partition:
+
+```bash
+# Opsi A: Quick export script (terakhir N menit)
+bash scripts/do_export.sh 30 src/data/raw/manual_run_001.csv
+
+# Opsi B: Python CLI langsung (dengan rentang waktu eksplisit UTC)
+python scripts/export_dataset.py \
+  --start "2026-09-16T10:00:00Z" \
+  --end "2026-09-16T10:30:00Z" \
+  --step 15 \
+  --output src/data/raw/manual_run_001.csv
+```
+
+---
+
+### 19.4 Merging Partitions & Quality Validation
+
+1. **Merge all raw CSV partitions into a master dataset:**
+   ```bash
+   python scripts/merge_datasets.py
+   ```
+   *Output: `src/data/raw/master_training_dataset.csv` with automatic timestamp sorting and deduplication.*
+
+2. **Run automated quality gates (Smoke Tests):**
+   ```bash
+   pytest tests/test_dataset.py -v
+   ```
+   *Validates schema integrity, monotonicity, non-negative constraints, and pod replica boundaries.*
+
+---
+
+### 19.5 Execution from GitHub Codespaces
+
+Both k6 execution and data scraping can be performed inside **GitHub Codespaces**:
+
+1. **Run k6 from Codespaces:**
+   `k6` is pre-installed in the dev container. Execute directly:
+   ```bash
+   k6 run workloads/k6/scenarios/steady.js
+   ```
+
+2. **Scrape Prometheus from Codespaces:**
+   ```bash
+   # Restore kubeconfig secret
+   mkdir -p ~/.kube && echo "$KUBECONFIG_BASE64" | base64 -d > ~/.kube/config
+
+   # Port-forward Prometheus and export
+   kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090 &
+   python scripts/export_dataset.py --minutes 30 --output src/data/raw/codespace_run.csv
+   ```
+
