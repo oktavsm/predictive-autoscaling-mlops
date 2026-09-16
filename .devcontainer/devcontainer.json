@@ -1,6 +1,15 @@
 {
   "name": "predictive-autoscaling-mlops",
-  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "installDockerBuildx": true,
+      "installDockerComposeSwitch": true
+    }
+  },
 
   "postCreateCommand": "python -m pip install --upgrade pip && python -m pip install -r requirements-dev.txt",
 
