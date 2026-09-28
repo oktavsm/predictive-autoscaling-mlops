@@ -1,6 +1,7 @@
 # Predictive Autoscaling MLOps
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![CI Quality Gate](https://github.com/oktavsm/predictive-autoscaling-mlops/actions/workflows/ci.yml/badge.svg)](https://github.com/oktavsm/predictive-autoscaling-mlops/actions/workflows/ci.yml)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-v1.36+-326ce5.svg?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![Dev Container](https://img.shields.io/badge/codespaces-supported-success.svg?logo=github)](https://github.com/features/codespaces)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -131,6 +132,37 @@ docker compose -f infrastructure/demo/docker-compose.demo.yml up -d
 
 ---
 
+### Option 5: Automated Data Ingestion Pipeline (LK-04)
+
+The ingestion pipeline collects live metrics from Prometheus and transforms them into an ML-ready dataset.
+
+```bash
+# Prerequisite: Prometheus port-forward must be active
+kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090 &
+
+# Step 1 — Ingest latest 30 minutes of metrics (timestamped, non-destructive)
+python src/ingest_data.py --minutes 30
+# Output: data/raw/metrics_YYYYMMDD_HHMMSS.csv
+
+# Step 2 — Preprocess latest raw file (clean + feature engineering)
+python src/preprocess.py
+# Output: data/processed/metrics_processed_YYYYMMDD_HHMMSS.csv
+
+# — OR specify explicit paths —
+python src/ingest_data.py --start 2026-09-27T10:00:00Z --end 2026-09-27T10:30:00Z
+python src/preprocess.py --input data/raw/metrics_20260927_100000.csv --output data/processed/out.csv
+```
+
+The preprocessed dataset includes 17 features:
+- **Raw metrics:** `request_rate`, `php_cpu_cores`, `php_memory_mb`, `replicas`, `p95_latency_seconds`
+- **Lag features:** `rps_lag1`, `rps_lag2`, `cpu_lag1`, `cpu_lag2`
+- **Rolling stats:** `rps_roll_mean_30s`, `rps_roll_mean_60s`, `rps_roll_std_60s`
+- **Delta features:** `rps_delta`, `cpu_delta`
+- **Temporal:** `hour`, `minute`
+- **Target variable:** `target_rps_60s` (request rate 60 seconds ahead — prediction horizon)
+
+---
+
 ## 📁 Repository Structure
 
 ```text
@@ -185,6 +217,7 @@ predictive-autoscaling-mlops/
 - **[Infrastructure Setup Guide](docs/SETUP_GUIDE.md):** Step-by-step guide for deploying K3s, monitoring, and backend services.
 - **[Workload Generation Guide](docs/WORKLOAD_GENERATION.md):** k6 benchmark scenarios (steady, spike, gradual, periodic).
 - **[Codespace Setup Guide](docs/CODESPACE_SETUP.md):** Development workflow and port forwarding guide.
+- **[CI/CD & CT Workflow Design](docs/CICD_DESIGN.md):** Architecture for Continuous Integration, Delivery, and Training (MLOps).
 - **[Architecture Decision Records](docs/DECISIONS.md):** Log of major technical decisions and trade-offs.
 
 ---
