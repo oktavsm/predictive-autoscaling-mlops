@@ -216,6 +216,7 @@ predictive-autoscaling-mlops/
 - **[Infrastructure Setup Guide](docs/SETUP_GUIDE.md):** Step-by-step guide for deploying K3s, monitoring, and backend services.
 - **[Workload Generation Guide](docs/WORKLOAD_GENERATION.md):** k6 benchmark scenarios (steady, spike, gradual, periodic).
 - **[Codespace Setup Guide](docs/CODESPACE_SETUP.md):** Development workflow and port forwarding guide.
+- **[CI/CD & CT Workflow Design](docs/CICD_DESIGN.md):** Architecture for Continuous Integration, Delivery, and Training (MLOps).
 - **[Architecture Decision Records](docs/DECISIONS.md):** Log of major technical decisions and trade-offs.
 
 ---
