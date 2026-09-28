@@ -1,6 +1,7 @@
 # Predictive Autoscaling MLOps
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![CI Quality Gate](https://github.com/oktavsm/predictive-autoscaling-mlops/actions/workflows/ci.yml/badge.svg)](https://github.com/oktavsm/predictive-autoscaling-mlops/actions/workflows/ci.yml)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-v1.36+-326ce5.svg?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![Dev Container](https://img.shields.io/badge/codespaces-supported-success.svg?logo=github)](https://github.com/features/codespaces)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
