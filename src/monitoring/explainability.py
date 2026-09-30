@@ -130,7 +130,9 @@ def load_validation_data(
         combined["cpu_lag2"] = combined["php_cpu_cores"].shift(2)
         combined["rps_roll_mean_30s"] = combined["request_rate"].rolling(6, min_periods=1).mean()
         combined["rps_roll_mean_60s"] = combined["request_rate"].rolling(12, min_periods=1).mean()
-        combined["rps_roll_std_60s"] = combined["request_rate"].rolling(12, min_periods=1).std().fillna(0)
+        combined["rps_roll_std_60s"] = (
+            combined["request_rate"].rolling(12, min_periods=1).std().fillna(0)
+        )
         combined["rps_delta"] = combined["request_rate"] - combined["rps_lag1"]
         combined["cpu_delta"] = combined["php_cpu_cores"] - combined["cpu_lag1"]
         if "timestamp" in combined.columns:
@@ -177,6 +179,7 @@ def load_underlying_tree_model(repo_root: Path) -> Any:
                         if f"run_id: {run_id}" in content:
                             model_dir = p.parent
                             import pickle
+
                             for pkl in model_dir.glob("*.pkl"):
                                 with open(pkl, "rb") as f_pkl:
                                     loaded = pickle.load(f_pkl)
@@ -201,7 +204,9 @@ def load_underlying_tree_model(repo_root: Path) -> Any:
             pass
 
     # 3. Fallback: Fit Surrogate Random Forest yang representatif pada dataset lokal
-    log.info("Menginisialisasi model surrogate Random Forest pada data processed untuk audit XAI...")
+    log.info(
+        "Menginisialisasi model surrogate Random Forest pada data processed untuk audit XAI..."
+    )
     X_val, y_val = load_validation_data(
         DATA_PROCESSED_DIR, FEATURE_COLUMNS, TARGET_COLUMN, sample_size=1000
     )
@@ -260,11 +265,13 @@ class ModelExplainer:
         for i, name in enumerate(self.feature_names):
             val = float(mean_abs_shap[i])
             pct = float((val / total_importance) * 100.0)
-            summary.append({
-                "feature": name,
-                "mean_abs_shap": round(val, 6),
-                "relative_importance_pct": round(pct, 2),
-            })
+            summary.append(
+                {
+                    "feature": name,
+                    "mean_abs_shap": round(val, 6),
+                    "relative_importance_pct": round(pct, 2),
+                }
+            )
 
         summary.sort(key=lambda item: item["mean_abs_shap"], reverse=True)
         return summary
@@ -305,7 +312,12 @@ class ModelExplainer:
                 color="#1e293b",
             )
 
-        ax.set_title("Top 10 Feature Attribution in Autoscaling Decision (SHAP)", fontsize=13, fontweight="bold", pad=12)
+        ax.set_title(
+            "Top 10 Feature Attribution in Autoscaling Decision (SHAP)",
+            fontsize=13,
+            fontweight="bold",
+            pad=12,
+        )
         ax.set_xlabel("Mean Absolute Impact on Forecasted RPS (%)", fontsize=10, labelpad=8)
         ax.set_xlim(0, max(pcts_rev) * 1.25)
         ax.grid(axis="x", linestyle="--", alpha=0.5)
@@ -324,7 +336,9 @@ class ModelExplainer:
             shap_vals = self.shap_values[:, feat_idx]
 
             # Normalisasi nilai fitur untuk pewarnaan (biru = rendah, merah = tinggi)
-            norm_vals = (feat_vals - np.min(feat_vals)) / (np.max(feat_vals) - np.min(feat_vals) + 1e-8)
+            norm_vals = (feat_vals - np.min(feat_vals)) / (
+                np.max(feat_vals) - np.min(feat_vals) + 1e-8
+            )
             y_jitter = y_positions[idx] + np.random.normal(0, 0.08, size=len(shap_vals))
 
             sc = ax.scatter(
@@ -340,7 +354,12 @@ class ModelExplainer:
         ax.set_yticks(y_positions)
         ax.set_yticklabels([item["feature"] for item in top_features], fontsize=10)
         ax.axvline(x=0, color="gray", linestyle="--", linewidth=1)
-        ax.set_title("SHAP Workload Telemetry Feature Impact Distribution", fontsize=13, fontweight="bold", pad=12)
+        ax.set_title(
+            "SHAP Workload Telemetry Feature Impact Distribution",
+            fontsize=13,
+            fontweight="bold",
+            pad=12,
+        )
         ax.set_xlabel("SHAP Value (Impact on Traffic Prediction in RPS)", fontsize=10, labelpad=8)
         ax.grid(axis="x", linestyle=":", alpha=0.6)
 
@@ -427,7 +446,9 @@ def generate_ai_governance_model_card(
 # ---------------------------------------------------------------------------
 def main() -> int:
     parser = argparse.ArgumentParser(description="Audit Tata Kelola & Etika AI (XAI / SHAP)")
-    parser.add_argument("--sample-size", type=int, default=250, help="Jumlah sampel validasi untuk evaluasi SHAP")
+    parser.add_argument(
+        "--sample-size", type=int, default=250, help="Jumlah sampel validasi untuk evaluasi SHAP"
+    )
     parser.add_argument("--output-json", type=str, default=str(REPORTS_DIR / "xai_model_card.json"))
     args = parser.parse_args()
 
@@ -457,7 +478,9 @@ def main() -> int:
     print(f"{'Fitur':<25} | {'Mean |SHAP|':<15} | {'Kontribusi Relatif':<20}")
     print("-" * 70)
     for item in summary:
-        print(f"{item['feature']:<25} | {item['mean_abs_shap']:<15.6f} | {item['relative_importance_pct']:<6.2f} %")
+        print(
+            f"{item['feature']:<25} | {item['mean_abs_shap']:<15.6f} | {item['relative_importance_pct']:<6.2f} %"
+        )
     print("-" * 70)
 
     # 4. Generate Plot
@@ -471,7 +494,9 @@ def main() -> int:
 
     print("\n✅ AUDIT TATA KELOLA & ETIKA AI SUKSES:")
     print(f"  - Status Tata Kelola: {card['governance_status']}")
-    print(f"  - Verifikasi Kausalitas Fitur: {card['explainability_audit']['feature_causality_verified']}")
+    print(
+        f"  - Verifikasi Kausalitas Fitur: {card['explainability_audit']['feature_causality_verified']}"
+    )
     print(f"  - Laporan Model Card: {card_path}")
     print(f"  - Visualisasi SHAP: {summary_plot}")
     print("=" * 80)

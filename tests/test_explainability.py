@@ -16,10 +16,7 @@ from src.monitoring.explainability import (
 def sample_features_df():
     np.random.seed(42)
     n = 50
-    data = {
-        col: np.random.uniform(1.0, 50.0, size=n)
-        for col in FEATURE_COLUMNS
-    }
+    data = {col: np.random.uniform(1.0, 50.0, size=n) for col in FEATURE_COLUMNS}
     data["target_rps_60s"] = data["request_rate"] * 1.2 + np.random.normal(0, 0.5, size=n)
     return pd.DataFrame(data)
 
