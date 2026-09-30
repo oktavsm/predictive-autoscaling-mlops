@@ -1,4 +1,4 @@
-.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess preview clean
+.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess preview minio-console clean
 
 PYTHON ?= python3
 VENV ?= .venv
@@ -31,6 +31,7 @@ help:
 	@echo "  make dvc-pull           Pull latest datasets from MinIO S3 remote"
 	@echo "  make dvc-status         Check DVC data status vs remote storage"
 	@echo "  make dvc-diff           Inspect dataset changes and lineage diffs"
+	@echo "  make minio-console      Tunnel MinIO Web UI to http://localhost:9001"
 	@echo ""
 	@echo "Workload Generation (k6):"
 	@echo "  make workload-spike     Run quick 6-minute spike scenario (HPA scale-up)"
@@ -99,6 +100,13 @@ dvc-status: venv
 
 dvc-diff: venv
 	@$(BIN)/dvc diff
+
+minio-console:
+	@echo ">>> Membuka tunnel port-forward ke MinIO Web Console..."
+	@echo ">>> Akses Browser -> http://127.0.0.1:9001"
+	@echo ">>> Kredensial    -> Gunakan MINIO_ROOT_USER & MINIO_ROOT_PASSWORD dari .env.secrets"
+	@echo ">>> Tekan Ctrl+C untuk menutup tunnel."
+	@kubectl port-forward -n titipin svc/minio 9001:9001
 
 
 clean:
