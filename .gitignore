@@ -18,3 +18,7 @@ docs/internal/
 
 # Academic Coursework & College Assignment Deliverables
 docs/coursework/
+
+# Large binary artifacts
+docker/*-bin
+

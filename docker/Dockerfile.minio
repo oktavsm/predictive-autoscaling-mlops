@@ -1,0 +1,16 @@
+# ==============================================================================
+# Dockerfile — Standalone MinIO S3 Object Storage Service
+# ==============================================================================
+FROM alpine:3.20
+
+RUN apk add --no-cache curl libc6-compat ca-certificates
+
+COPY docker/minio-bin /usr/local/bin/minio
+RUN chmod +x /usr/local/bin/minio
+
+EXPOSE 9000 9001
+
+VOLUME ["/data"]
+
+ENTRYPOINT ["/usr/local/bin/minio"]
+CMD ["server", "/data", "--console-address", ":9001"]
