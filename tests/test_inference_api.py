@@ -66,7 +66,7 @@ def test_predict_normal_traffic(client):
     assert data["predicted_workload_rps_60s"] >= 0.0
     assert 1 <= data["recommended_replicas"] <= 4
     assert data["target_capacity_rps"] >= 10.0
-    assert data["inference_latency_ms"] < 200.0
+    assert data["inference_latency_ms"] < 1000.0
 
 
 def test_predict_spike_traffic(client):

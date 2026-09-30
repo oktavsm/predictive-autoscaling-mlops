@@ -126,6 +126,18 @@ mlflow-ui: venv
 	@echo ">>> Tekan Ctrl+C untuk menutup server UI."
 	@$(BIN)/mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
 
+compose-build:
+	@docker compose build
+
+compose-up:
+	@docker compose up -d
+
+compose-down:
+	@docker compose down
+
+compose-ps:
+	@docker compose ps
+
 
 
 clean:
