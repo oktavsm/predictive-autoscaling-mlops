@@ -166,6 +166,19 @@ prometheus-ui:
 	@echo ">>> Forwarding Prometheus Server to http://127.0.0.1:9090..."
 	@kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
 
+drift-check: venv
+	@echo ">>> Running Data Drift Detection (PSI & KS-Test)..."
+	@$(BIN)/python src/monitoring/drift_detector.py
+
+continuous-training: venv
+	@echo ">>> Executing Continuous Training (CT) Pipeline..."
+	@$(BIN)/python src/pipeline/continuous_training.py
+
+cronjob-status:
+	@echo ">>> Checking Continuous Training CronJobs in 'mlops' namespace:"
+	@kubectl get cronjobs,jobs -n mlops
+
+
 
 
 

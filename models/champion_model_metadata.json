@@ -1,6 +1,6 @@
 {
   "champion_run_name": "random-forest-default",
-  "champion_run_id": "aae2b79415914481884bc8c88d95a9e0",
+  "champion_run_id": "950fc7ea498b4cb7a2aaf0aa58cb2102",
   "champion_model_type": "random_forest",
   "horizon_seconds": 60,
   "parameters": {
@@ -9,12 +9,12 @@
     "max_depth": 6
   },
   "metrics": {
-    "val_mae": 0.0295,
-    "val_rmse": 0.1523,
-    "val_r2": -148.8417,
-    "val_mape": 25656.6,
-    "train_mae": 0.4398,
-    "latency_ms": 42.38
+    "val_mae": 0.076,
+    "val_rmse": 0.2147,
+    "val_r2": -575.8186,
+    "val_mape": 75874.5489,
+    "train_mae": 0.6966,
+    "latency_ms": 35.372
   },
   "features": [
     "request_rate",
@@ -33,5 +33,5 @@
     "hour",
     "minute"
   ],
-  "registered_at": "2026-09-30T13:35:11Z"
+  "registered_at": "2026-09-30T17:43:08Z"
 }
