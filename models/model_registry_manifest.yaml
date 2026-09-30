@@ -1,0 +1,49 @@
+# ===================================================================
+# MLflow Model Registry Manifest — Predictive Autoscaling MLOps
+# Aligned with LK-07 (Model Registry, Versioning, dan Kesiapan Inferensi)
+# ===================================================================
+
+model_name: "predictive-autoscaler"
+dvc_data_lineage:
+  dataset_version: "v2.0-data"
+  remote_storage: "s3://mlops-dvc"
+  minio_endpoint: "https://storage.titipin.me"
+  prediction_horizon: "60s"
+
+versions:
+  version_1:
+    version: "1"
+    run_name: "lightgbm-default"
+    run_id: "fcdb4240016d4bbc9ac1430dd3f827f6"
+    architecture: "LightGBM Regressor"
+    stage: "Staging"
+    alias: "challenger"
+    metrics:
+      val_mae: 0.1246
+      val_rmse: 0.2745
+      latency_ms: 3.061
+    description: "Model kandidat alternatif dengan latensi ultra-cepat (<4ms)"
+
+  version_2:
+    version: "2"
+    run_name: "random-forest-default"
+    run_id: "aae2b79415914481884bc8c88d95a9e0"
+    architecture: "Random Forest Regressor"
+    stage: "Production"
+    alias: "champion"
+    status: "ACTIVE_INFERENCE"
+    metrics:
+      val_mae: 0.0295
+      val_rmse: 0.1523
+      latency_ms: 42.38
+    description: "Champion production model dengan galat MAE terendah (0.0295 RPS)"
+
+deployment_policy:
+  scaling_target_rps_per_pod: 10.0
+  min_replicas: 1
+  max_replicas: 4
+  inference_readiness_status: "PASSED"
+  serving_verification:
+    average_latency_ms: 35.17
+    model_load_latency_ms: 2052.63
+    verified_at: "2026-09-30T13:48:24Z"

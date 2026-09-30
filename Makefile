@@ -115,6 +115,12 @@ minio-console:
 train: venv
 	@$(BIN)/python src/models/train.py --all
 
+register: venv
+	@$(BIN)/python src/models/register_model.py
+
+verify-model: venv
+	@$(BIN)/python src/models/register_model.py --verify-only
+
 mlflow-ui: venv
 	@echo ">>> Membuka MLflow Tracking UI pada http://127.0.0.1:5000..."
 	@echo ">>> Tekan Ctrl+C untuk menutup server UI."
