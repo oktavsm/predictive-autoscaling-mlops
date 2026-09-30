@@ -18,6 +18,8 @@ Before generating code, refactoring architecture, or proposing solutions, **the 
 | **Telemetry & ETL Pipeline Design** | [`docs/DATA_PIPELINE.md`](docs/DATA_PIPELINE.md) |
 | **Ingestion & Preprocessing Code Guide (LK-04)** | [`docs/DATA_INGESTION_AND_PREPROCESSING.md`](docs/DATA_INGESTION_AND_PREPROCESSING.md) |
 | **Data Versioning & DVC Remote (LK-05)** | [`docs/DATA_VERSIONING_DVC.md`](docs/DATA_VERSIONING_DVC.md) |
+| **MLflow Experiment Tracking & Modeling (LK-06)**| [`docs/EXPERIMENT_TRACKING_MLFLOW.md`](docs/EXPERIMENT_TRACKING_MLFLOW.md) |
+| **Cloudflare Domains & Caddy UI Setup** | [`docs/CLOUDFLARE_DOMAIN_SETUP.md`](docs/CLOUDFLARE_DOMAIN_SETUP.md) |
 | **Workload Generation (k6 Scenarios & Runbook)**| [`docs/WORKLOAD_GENERATION.md`](docs/WORKLOAD_GENERATION.md) |
 | **CI/CD & Continuous Training (CT) Strategy** | [`docs/CICD_DESIGN.md`](docs/CICD_DESIGN.md) |
 | **Architecture Decision Records (ADRs & Horizon)**| [`docs/DECISIONS.md`](docs/DECISIONS.md) |
