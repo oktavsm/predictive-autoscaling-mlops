@@ -5,6 +5,7 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 mlruns/
+mlflow.db*
 .dvc/config.local
 /src/data/raw/*
 !/src/data/raw/.gitkeep

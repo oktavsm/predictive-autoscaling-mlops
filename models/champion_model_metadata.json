@@ -1,0 +1,37 @@
+{
+  "champion_run_name": "random-forest-default",
+  "champion_run_id": "aae2b79415914481884bc8c88d95a9e0",
+  "champion_model_type": "random_forest",
+  "horizon_seconds": 60,
+  "parameters": {
+    "run_name": "random-forest-default",
+    "n_estimators": 100,
+    "max_depth": 6
+  },
+  "metrics": {
+    "val_mae": 0.0295,
+    "val_rmse": 0.1523,
+    "val_r2": -148.8417,
+    "val_mape": 25656.6,
+    "train_mae": 0.4398,
+    "latency_ms": 42.38
+  },
+  "features": [
+    "request_rate",
+    "php_cpu_cores",
+    "p95_latency_seconds",
+    "php_memory_mb",
+    "rps_lag1",
+    "rps_lag2",
+    "cpu_lag1",
+    "cpu_lag2",
+    "rps_roll_mean_30s",
+    "rps_roll_mean_60s",
+    "rps_roll_std_60s",
+    "rps_delta",
+    "cpu_delta",
+    "hour",
+    "minute"
+  ],
+  "registered_at": "2026-09-30T13:35:11Z"
+}

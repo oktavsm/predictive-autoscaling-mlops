@@ -1,4 +1,4 @@
-.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess preview minio-console clean
+.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess preview minio-console train mlflow-ui clean
 
 PYTHON ?= python3
 VENV ?= .venv
@@ -32,6 +32,10 @@ help:
 	@echo "  make dvc-status         Check DVC data status vs remote storage"
 	@echo "  make dvc-diff           Inspect dataset changes and lineage diffs"
 	@echo "  make minio-console      Tunnel MinIO Web UI to http://localhost:9001"
+	@echo ""
+	@echo "Experiment Tracking & Modeling (LK-06):"
+	@echo "  make train              Train candidate forecasting models and log to MLflow"
+	@echo "  make mlflow-ui          Start MLflow Tracking UI on http://localhost:5000"
 	@echo ""
 	@echo "Workload Generation (k6):"
 	@echo "  make workload-spike     Run quick 6-minute spike scenario (HPA scale-up)"
@@ -107,6 +111,15 @@ minio-console:
 	@echo ">>> Kredensial    -> Gunakan MINIO_ROOT_USER & MINIO_ROOT_PASSWORD dari .env.secrets"
 	@echo ">>> Tekan Ctrl+C untuk menutup tunnel."
 	@kubectl port-forward -n titipin svc/minio 9001:9001
+
+train: venv
+	@$(BIN)/python src/models/train.py --all
+
+mlflow-ui: venv
+	@echo ">>> Membuka MLflow Tracking UI pada http://127.0.0.1:5000..."
+	@echo ">>> Tekan Ctrl+C untuk menutup server UI."
+	@$(BIN)/mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
+
 
 
 clean:
