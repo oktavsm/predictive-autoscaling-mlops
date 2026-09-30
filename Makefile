@@ -138,6 +138,26 @@ compose-down:
 compose-ps:
 	@docker compose ps
 
+k8s-apply:
+	@echo ">>> Deploying MLOps infrastructure & predictive autoscaler to Kubernetes cluster..."
+	@kubectl apply -k infrastructure/kubernetes/mlops/
+
+k8s-status:
+	@echo ">>> Status of resources in 'mlops' namespace:"
+	@kubectl get all,servicemonitors -n mlops
+
+k8s-logs:
+	@echo ">>> Streaming logs from predictive-scaler controller in 'mlops' namespace..."
+	@kubectl logs -n mlops deploy/mlops-inference -c predictive-scaler -f
+
+k8s-dashboard:
+	@echo ">>> Forwarding Streamlit dashboard to http://127.0.0.1:8501..."
+	@kubectl port-forward -n mlops svc/mlops-dashboard-svc 8501:8501
+
+k8s-inference:
+	@echo ">>> Forwarding inference API to http://127.0.0.1:8000..."
+	@kubectl port-forward -n mlops svc/mlops-inference-svc 8000:8000
+
 
 
 clean:

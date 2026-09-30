@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mlops-inference-monitor
+  namespace: mlops
+  labels:
+    release: monitoring
+    app.kubernetes.io/name: mlops-inference-monitor
+    app.kubernetes.io/part-of: predictive-autoscaling-mlops
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mlops-inference-svc
+  endpoints:
+    - port: http-api
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+    - port: metrics-scaler
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s

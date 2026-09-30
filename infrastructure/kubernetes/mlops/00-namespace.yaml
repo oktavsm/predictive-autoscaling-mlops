@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mlops
+  labels:
+    name: mlops
+    app.kubernetes.io/part-of: predictive-autoscaling-mlops
+    app.kubernetes.io/managed-by: kubectl
