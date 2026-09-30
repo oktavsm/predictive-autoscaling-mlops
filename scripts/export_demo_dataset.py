@@ -81,10 +81,7 @@ def query_range(promql):
 
         values = result[0]["values"]
         return pd.Series(
-            {
-                pd.to_datetime(ts, unit="s", utc=True): float(value)
-                for ts, value in values
-            }
+            {pd.to_datetime(ts, unit="s", utc=True): float(value) for ts, value in values}
         )
     except Exception as e:
         print(f"Warning on query: {e}")

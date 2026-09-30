@@ -32,14 +32,15 @@ import requests
 # Configuration
 # ---------------------------------------------------------------------------
 PROM_URL = os.getenv("PROM_URL", "http://127.0.0.1:9090")
-DEFAULT_STEP = 15       # resolusi data: 15 detik (sesuai interval HPA)
-MAX_RETRIES = 3         # maksimum retry per query sebelum menyerah
-RETRY_BACKOFF = 2.0     # faktor backoff eksponensial (detik)
-REQUEST_TIMEOUT = 30    # timeout HTTP per request (detik)
+DEFAULT_STEP = 15  # resolusi data: 15 detik (sesuai interval HPA)
+MAX_RETRIES = 3  # maksimum retry per query sebelum menyerah
+RETRY_BACKOFF = 2.0  # faktor backoff eksponensial (detik)
+REQUEST_TIMEOUT = 30  # timeout HTTP per request (detik)
 
 OUTPUT_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "raw",
+    "data",
+    "raw",
 )
 
 # ---------------------------------------------------------------------------
@@ -160,10 +161,7 @@ def query_range(
 
             values = result[0]["values"]
             series = pd.Series(
-                {
-                    pd.to_datetime(float(ts), unit="s", utc=True): float(val)
-                    for ts, val in values
-                }
+                {pd.to_datetime(float(ts), unit="s", utc=True): float(val) for ts, val in values}
             )
             log.info("[%s] Fetched %d data points", metric_name, len(series))
             return series
@@ -171,12 +169,18 @@ def query_range(
         except requests.exceptions.ConnectionError:
             log.error(
                 "[%s] Attempt %d/%d — Cannot connect to Prometheus at %s",
-                metric_name, attempt, MAX_RETRIES, PROM_URL,
+                metric_name,
+                attempt,
+                MAX_RETRIES,
+                PROM_URL,
             )
         except requests.exceptions.Timeout:
             log.error(
                 "[%s] Attempt %d/%d — Request timed out after %ds",
-                metric_name, attempt, MAX_RETRIES, REQUEST_TIMEOUT,
+                metric_name,
+                attempt,
+                MAX_RETRIES,
+                REQUEST_TIMEOUT,
             )
         except requests.exceptions.HTTPError as e:
             log.error("[%s] HTTP error: %s", metric_name, e)
@@ -184,7 +188,7 @@ def query_range(
             log.error("[%s] Unexpected error: %s", metric_name, e)
 
         if attempt < MAX_RETRIES:
-            wait = RETRY_BACKOFF ** attempt
+            wait = RETRY_BACKOFF**attempt
             log.info("[%s] Retrying in %.1fs...", metric_name, wait)
             time.sleep(wait)
 
@@ -211,7 +215,11 @@ def ingest(start: datetime, end: datetime, step: int, output_path: str) -> int:
         Jumlah baris yang berhasil diekstrak. 0 jika gagal.
     """
     log.info("Prometheus URL : %s", PROM_URL)
-    log.info("Window         : %s → %s", start.strftime("%Y-%m-%dT%H:%M:%SZ"), end.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    log.info(
+        "Window         : %s → %s",
+        start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
     log.info("Step           : %ds | Output: %s", step, output_path)
 
     # Health check
@@ -234,7 +242,9 @@ def ingest(start: datetime, end: datetime, step: int, output_path: str) -> int:
     df = df.sort_index()
 
     if df.empty:
-        log.error("Tidak ada data yang dikembalikan. Pastikan Prometheus memiliki data untuk window ini.")
+        log.error(
+            "Tidak ada data yang dikembalikan. Pastikan Prometheus memiliki data untuk window ini."
+        )
         return 0
 
     # Simpan ke CSV
