@@ -1,4 +1,4 @@
-.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess preview minio-console train mlflow-ui security-scan xai-audit clean
+.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess preview minio-console train mlflow-ui security-scan xai-audit demo-spike demo-live clean
 
 PYTHON ?= python3
 VENV ?= .venv
@@ -37,9 +37,11 @@ help:
 	@echo "  make train              Train candidate forecasting models and log to MLflow"
 	@echo "  make mlflow-ui          Start MLflow Tracking UI on http://localhost:5000"
 	@echo ""
-	@echo "Workload Generation (k6):"
+	@echo "Workload Generation & Live Demo (k6 / LK-14):"
 	@echo "  make workload-spike     Run quick 6-minute spike scenario (HPA scale-up)"
 	@echo "  make workload-sequence  Run full multi-scenario sequence (~70m)"
+	@echo "  make demo-spike         Run live demo traffic spike with automated monitoring"
+	@echo "  make demo-live          Start step-by-step interactive live demo walkthrough"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean              Remove caches and temporary files"
@@ -186,6 +188,14 @@ security-scan:
 xai-audit: venv
 	@echo ">>> Running AI Governance & XAI Explainability Audit (SHAP)..."
 	@$(BIN)/python src/monitoring/explainability.py
+
+demo-spike:
+	@echo ">>> Running Live Demo Traffic Spike Scenario (k6)..."
+	@bash scripts/demo_traffic_spike.sh
+
+demo-live:
+	@echo ">>> Starting LK-14 Interactive Live Demonstration Guide..."
+	@bash scripts/demo_live.sh
 
 clean:
 	rm -rf .pytest_cache .ruff_cache
