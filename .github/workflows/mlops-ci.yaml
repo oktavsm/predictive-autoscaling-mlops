@@ -94,6 +94,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
+      - name: Generate Processed Dataset for Evaluation Gate
+        run: |
+          python src/preprocess.py \
+            --input src/data/demo_metrics.csv \
+            --output data/processed/metrics_demo_processed.csv
+
+      - name: Train and Register Multi-Model Candidates
+        run: |
+          python src/models/train.py --all
+          python src/models/register_model.py
+
       - name: Run Model Registry Unit Tests
         run: pytest -v tests/test_model_registry.py
 
@@ -102,6 +113,15 @@ jobs:
 
       - name: Verify Model Serving Readiness & Pod Policy
         run: python src/models/register_model.py --verify-only
+
+      - name: Upload Trained Model Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: |
+            mlflow.db
+            mlruns/
+          retention-days: 1
 
   # --------------------------------------------------------------------------
   # 4. Container Build & Packaging Validation
@@ -113,6 +133,12 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Download Model Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: model-artifacts
+          path: .
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
