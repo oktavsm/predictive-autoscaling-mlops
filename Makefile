@@ -26,6 +26,12 @@ help:
 	@echo "  make preprocess         Clean and feature-engineer latest raw data"
 	@echo "  make preview            Print structured preview of latest processed data"
 	@echo ""
+	@echo "Data Versioning with DVC & MinIO (LK-05):"
+	@echo "  make dvc-push           Push tracked datasets to MinIO S3 remote"
+	@echo "  make dvc-pull           Pull latest datasets from MinIO S3 remote"
+	@echo "  make dvc-status         Check DVC data status vs remote storage"
+	@echo "  make dvc-diff           Inspect dataset changes and lineage diffs"
+	@echo ""
 	@echo "Workload Generation (k6):"
 	@echo "  make workload-spike     Run quick 6-minute spike scenario (HPA scale-up)"
 	@echo "  make workload-sequence  Run full multi-scenario sequence (~70m)"
@@ -79,6 +85,21 @@ preprocess: venv
 
 preview: venv
 	@$(BIN)/python -c "import pandas as pd, pathlib as p; files = list(p.Path('data/processed').glob('*.csv')); f = max(files, key=lambda x: x.stat().st_mtime) if files else None; df = pd.read_csv(f, index_col='timestamp') if f else None; print(f'=== DATASET PROCESSED: {f.name} ===\nDimensi: {len(df)} baris x {len(df.columns)} kolom\n' + df[['request_rate', 'php_cpu_cores', 'replicas', 'rps_lag1', 'rps_roll_mean_60s', 'target_rps_60s']].tail(8).to_string()) if df is not None else print('Belum ada file di data/processed/.')"
+
+dvc-push: venv
+	@echo ">>> Pushing tracked datasets to MinIO S3 (storage.titipin.me/mlops-dvc)..."
+	@AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required $(BIN)/dvc push
+
+dvc-pull: venv
+	@echo ">>> Pulling datasets from MinIO S3 (storage.titipin.me/mlops-dvc)..."
+	@AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required $(BIN)/dvc pull
+
+dvc-status: venv
+	@AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required $(BIN)/dvc status
+
+dvc-diff: venv
+	@$(BIN)/dvc diff
+
 
 clean:
 	rm -rf .pytest_cache .ruff_cache
