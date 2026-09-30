@@ -158,6 +158,15 @@ k8s-inference:
 	@echo ">>> Forwarding inference API to http://127.0.0.1:8000..."
 	@kubectl port-forward -n mlops svc/mlops-inference-svc 8000:8000
 
+grafana-dashboard:
+	@echo ">>> Forwarding Grafana Observability Dashboard to http://127.0.0.1:3000..."
+	@kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
+
+prometheus-ui:
+	@echo ">>> Forwarding Prometheus Server to http://127.0.0.1:9090..."
+	@kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
+
+
 
 
 clean:
