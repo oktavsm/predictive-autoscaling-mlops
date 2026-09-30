@@ -1,0 +1,45 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mlops-predictive-autoscaler-alerts
+  namespace: monitoring
+  labels:
+    release: monitoring
+    app.kubernetes.io/name: mlops-predictive-autoscaler-alerts
+    app.kubernetes.io/part-of: predictive-autoscaling-mlops
+spec:
+  groups:
+    - name: mlops.predictive.autoscaler.rules
+      rules:
+        # 1. Alert if MLOps inference service is unreachable / down
+        - alert: MLOpsInferenceServiceDown
+          expr: up{job="mlops-inference-svc"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            component: inference-engine
+          annotations:
+            summary: "MLOps Inference or Predictive Scaler service is unreachable"
+            description: "Target {{ $labels.instance }} has been down for more than 1 minute."
+
+        # 2. Alert if inference latency spikes above SLO threshold (> 200ms)
+        - alert: MLOpsInferenceHighLatency
+          expr: histogram_quantile(0.95, sum by (le) (rate(caddy_http_request_duration_seconds_bucket{host=~"api.titipin.me.*"}[2m]))) > 0.200
+          for: 2m
+          labels:
+            severity: warning
+            component: inference-serving
+          annotations:
+            summary: "High P95 latency detected on workload API"
+            description: "Workload P95 latency is {{ $value }}s, exceeding 200ms threshold."
+
+        # 3. Alert if max replica saturation is reached for extended duration
+        - alert: MLOpsMaxReplicaSaturation
+          expr: predictive_scaler_current_replicas >= 4
+          for: 5m
+          labels:
+            severity: warning
+            component: capacity-planning
+          annotations:
+            summary: "Backend has reached maximum scaling capacity (4 Pods)"
+            description: "Workload has sustained maximum replica bounds for 5 minutes."
