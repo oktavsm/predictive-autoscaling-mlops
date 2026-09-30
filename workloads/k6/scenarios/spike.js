@@ -1,88 +1,54 @@
+#!/usr/bin/env js
 /**
- * SPIKE workload — sudden burst from baseline to high load, then back.
+ * k6 Traffic Spike Scenario for LK-14 Live Demonstration
+ * ========================================================
+ * Mensimulasikan lonjakan trafik eskalatif ke backend API Laravel
+ * untuk membuktikan predictive autoscaler bereaksi SEBELUM puncak trafik.
  *
- * Purpose:
- *   - Evaluate reactive scaling delay (the key weakness reactive HPA has).
- *   - Measure latency and error impact during the spike onset.
- *   - KEY COMPARISON SCENARIO: predictive scaling should pre-warm replicas
- *     before the spike arrives, avoiding the initial latency cliff.
- *
- * Shape:
- *   req/s
- *     │           ┌──────────┐
- *     │           │          │
- *     │───────────┘          └──────────
- *     └────────────────────────────────→ time
- *
- * Timeline:
- *   0-5m    →  3 req/s   (LOW baseline — steady before spike)
- *   5-5:30  → 18 req/s   (spike onset — fast ramp in 30s)
- *   5:30-12 → 18 req/s   (hold spike — replicas must have scaled by here)
- *   12-12:30 → 3 req/s   (drop — scale-down observation)
- *   12:30-15 → 3 req/s   (recovery window)
- *
- * The 30-second ramp-up simulates a realistic sudden spike (e.g., flash sale
- * or viral link). For an instantaneous spike, set the ramp duration to '0s'.
- *
- * Usage:
- *   k6 run workloads/k6/scenarios/spike.js
- *   BASE_URL=https://api.titipin.me RUN_ID=spike-001 k6 run workloads/k6/scenarios/spike.js
- *
- *   # Change spike intensity:
- *   SPIKE_RATE=20 k6 run workloads/k6/scenarios/spike.js
+ * Usage: k6 run workloads/k6/scenarios/spike.js -e TARGET_URL=https://api.titipin.me
  */
-
 import http from 'k6/http';
-import { check } from 'k6';
-import { Trend, Counter } from 'k6/metrics';
-import { BASE_URL, RUN_ID } from '../common/config.js';
-import { pickEndpoint } from '../common/endpoints.js';
+import { check, sleep } from 'k6';
 
-const spikeRate = parseInt(__ENV.SPIKE_RATE || '18');
+const TARGET_URL = __ENV.TARGET_URL || 'https://api.titipin.me';
 
 export const options = {
-  scenarios: {
-    spike: {
-      executor:        'ramping-arrival-rate',
-      startRate:       3,
-      timeUnit:        '1s',
-      preAllocatedVUs: 40,
-      maxVUs:          120,
-      stages: [
-        { target: 3,         duration: '1m'  },   // baseline (LOW)
-        { target: spikeRate, duration: '30s' },   // spike onset (fast ramp)
-        { target: spikeRate, duration: '3m'  },   // hold spike (near SATURATION)
-        { target: 3,         duration: '30s' },   // drop
-        { target: 3,         duration: '1m'  },   // recovery / scale-down window
-      ],
-    },
-  },
+  stages: [
+    { duration: '30s', target: 30 },   // Warm-up baseline
+    { duration: '60s', target: 60 },   // Steady state
+    { duration: '60s', target: 120 },  // Ramp spike (Phase 1)
+    { duration: '60s', target: 200 },  // Peak spike (Phase 2)
+    { duration: '30s', target: 200 },  // Hold peak
+    { duration: '30s', target: 30 },   // Cool-down
+    { duration: '30s', target: 0 },    // Ramp down
+  ],
   thresholds: {
-    // During a spike, some degradation is expected — threshold is lenient.
-    http_req_failed:   ['rate<0.05'],
-    http_req_duration: ['p(95)<2000'],
+    http_req_duration: ['p(95)<2000'], // 95% requests under 2s
+    http_req_failed: ['rate<0.10'],    // Error rate under 10%
   },
-  tags: { run_id: RUN_ID, scenario: 'spike', spike_rate: String(spikeRate) },
 };
 
-const latency = new Trend('custom_latency_ms', true);
-const errors  = new Counter('custom_errors');
-
 export default function () {
-  const url = `${BASE_URL}${pickEndpoint()}`;
-  const res = http.get(url, { tags: { name: url } });
+  // Mix of different API endpoints to simulate realistic traffic
+  const endpoints = [
+    `${TARGET_URL}/api/health`,
+    `${TARGET_URL}/api`,
+    `${TARGET_URL}/`,
+  ];
 
-  const ok = check(res, {
-    'status < 500': (r) => r.status < 500,
+  const url = endpoints[Math.floor(Math.random() * endpoints.length)];
+  const res = http.get(url, {
+    headers: {
+      'Accept': 'application/json',
+      'X-Demo-Source': 'lk14-predictive-autoscaler-demo',
+    },
+    timeout: '10s',
   });
 
-  latency.add(res.timings.duration);
-  if (!ok) errors.add(1);
-}
+  check(res, {
+    'status 2xx or 3xx': (r) => r.status >= 200 && r.status < 400,
+    'response time < 2s': (r) => r.timings.duration < 2000,
+  });
 
-export function handleSummary(data) {
-  const p95 = data.metrics.http_req_duration?.values?.['p(95)'];
-  const errRate = data.metrics.http_req_failed?.values?.rate;
-  console.log(`[${RUN_ID}] Spike done. p95=${p95} ms, error_rate=${errRate}`);
-  return {};
+  sleep(Math.random() * 0.5 + 0.1); // 0.1–0.6s think time
 }

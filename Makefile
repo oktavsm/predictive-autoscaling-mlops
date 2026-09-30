@@ -1,4 +1,4 @@
-.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess preview minio-console train mlflow-ui clean
+.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess preview minio-console train mlflow-ui security-scan xai-audit clean
 
 PYTHON ?= python3
 VENV ?= .venv
@@ -179,8 +179,13 @@ cronjob-status:
 	@kubectl get cronjobs,jobs -n mlops
 
 
+security-scan:
+	@echo ">>> Running Container Security Audit (Trivy) on docker image..."
+	@bash scripts/security_scan.sh oktaavsm/predictive-autoscaler:latest
 
-
+xai-audit: venv
+	@echo ">>> Running AI Governance & XAI Explainability Audit (SHAP)..."
+	@$(BIN)/python src/monitoring/explainability.py
 
 clean:
 	rm -rf .pytest_cache .ruff_cache
