@@ -1,0 +1,24 @@
+{
+  "pipeline_status": "COMPLETED",
+  "timestamp": "2026-09-30T17:43:21.406915+00:00",
+  "drift_info": {
+    "drift_detected": true,
+    "drifted_features": [
+      "request_rate",
+      "php_cpu_cores",
+      "p95_latency_seconds",
+      "rps_roll_mean_60s"
+    ],
+    "timestamp": "2026-09-30T17:42:10.733380+00:00"
+  },
+  "training_results": {
+    "status": "SUCCESS",
+    "duration_seconds": 58.78,
+    "output_summary": "826         1.839 23004730e5994811a50f38863d9ca440\nrandom-forest-default  random_forest   0.0760    0.2147    -575.8186        35.372 950fc7ea498b4cb7a2aaf0aa58cb2102\n     lightgbm-default       lightgbm   0.1233    0.2303    -662.8375         2.375 d9fbd148a882492687434fbb1da18f8c\n       lightgbm-tuned lightgbm_tuned   0.1552    0.2903   -1053.1113         1.679 a2184e73356f42ecbd1c6d236b492522\n\n"
+  },
+  "registry_promotion": {
+    "status": "PROMOTED",
+    "model_name": "predictive-autoscaler",
+    "output": ""
+  }
+}

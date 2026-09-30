@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mlops-continuous-training
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: mlops-continuous-training
+    app.kubernetes.io/component: continuous-training-pipeline
+    app.kubernetes.io/part-of: predictive-autoscaling-mlops
+spec:
+  schedule: "0 2 * * *"  # Runs daily at 02:00 AM UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: mlops-continuous-training
+            app.kubernetes.io/component: continuous-training-pipeline
+            app.kubernetes.io/part-of: predictive-autoscaling-mlops
+        spec:
+          serviceAccountName: mlops-service-account
+          restartPolicy: OnFailure
+          containers:
+            - name: continuous-training-runner
+              image: docker.io/oktaavsm/predictive-autoscaler:latest
+              imagePullPolicy: IfNotPresent
+              command:
+                - "python"
+                - "src/pipeline/continuous_training.py"
+              envFrom:
+                - configMapRef:
+                    name: mlops-config
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+                limits:
+                  cpu: 1500m
+                  memory: 2Gi

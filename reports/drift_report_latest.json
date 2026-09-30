@@ -1,0 +1,77 @@
+{
+  "timestamp": "2026-09-30T17:41:37.346535+00:00",
+  "reference_dataset": "metrics_demo_processed.csv",
+  "current_dataset": "simulated_drift_evaluation",
+  "reference_samples": 248,
+  "current_samples": 248,
+  "overall_drift_detected": true,
+  "features_analyzed": 5,
+  "features_with_drift": [
+    "request_rate",
+    "php_cpu_cores",
+    "p95_latency_seconds",
+    "rps_roll_mean_60s"
+  ],
+  "details": {
+    "request_rate": {
+      "feature_name": "request_rate",
+      "psi_score": 4.0498,
+      "ks_statistic": 0.4758,
+      "ks_pvalue": 0.0,
+      "drift_level": "SIGNIFICANT_DRIFT",
+      "has_drift": true,
+      "ref_mean": 5.556,
+      "curr_mean": 17.146,
+      "ref_std": 6.08,
+      "curr_std": 13.565
+    },
+    "php_cpu_cores": {
+      "feature_name": "php_cpu_cores",
+      "psi_score": 2.3238,
+      "ks_statistic": 0.2903,
+      "ks_pvalue": 0.0,
+      "drift_level": "SIGNIFICANT_DRIFT",
+      "has_drift": true,
+      "ref_mean": 0.095,
+      "curr_mean": 0.2,
+      "ref_std": 0.105,
+      "curr_std": 0.221
+    },
+    "p95_latency_seconds": {
+      "feature_name": "p95_latency_seconds",
+      "psi_score": 6.9574,
+      "ks_statistic": 0.8548,
+      "ks_pvalue": 0.0,
+      "drift_level": "SIGNIFICANT_DRIFT",
+      "has_drift": true,
+      "ref_mean": 0.052,
+      "curr_mean": 0.093,
+      "ref_std": 0.015,
+      "curr_std": 0.026
+    },
+    "php_memory_mb": {
+      "feature_name": "php_memory_mb",
+      "psi_score": 0.0,
+      "ks_statistic": 0.0,
+      "ks_pvalue": 1.0,
+      "drift_level": "NO_DRIFT",
+      "has_drift": false,
+      "ref_mean": 77.236,
+      "curr_mean": 77.236,
+      "ref_std": 40.653,
+      "curr_std": 40.653
+    },
+    "rps_roll_mean_60s": {
+      "feature_name": "rps_roll_mean_60s",
+      "psi_score": 0.6072,
+      "ks_statistic": 0.2984,
+      "ks_pvalue": 0.0,
+      "drift_level": "SIGNIFICANT_DRIFT",
+      "has_drift": true,
+      "ref_mean": 5.556,
+      "curr_mean": 12.223,
+      "ref_std": 5.959,
+      "curr_std": 13.11
+    }
+  }
+}
