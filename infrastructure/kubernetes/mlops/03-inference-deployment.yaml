@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-inference
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: mlops-inference
+    app.kubernetes.io/component: inference-engine
+    app.kubernetes.io/part-of: predictive-autoscaling-mlops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mlops-inference
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mlops-inference
+        app.kubernetes.io/component: inference-engine
+        app.kubernetes.io/part-of: predictive-autoscaling-mlops
+    spec:
+      serviceAccountName: mlops-service-account
+      containers:
+        # 1. FastAPI Model Serving Microservice
+        - name: inference-api
+          image: docker.io/oktaavsm/predictive-autoscaler:latest
+          imagePullPolicy: Always
+          command:
+            - "uvicorn"
+            - "src.inference.service:app"
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "8000"
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: mlops-config
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+
+        # 2. Predictive Autoscaler Control Loop & Exporter
+        - name: predictive-scaler
+          image: docker.io/oktaavsm/predictive-autoscaler:latest
+          imagePullPolicy: Always
+          command:
+            - "python"
+            - "src/scaling/predictive_scaler.py"
+          ports:
+            - name: metrics
+              containerPort: 9102
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: mlops-config
+          env:
+            - name: INFERENCE_URL
+              value: "http://127.0.0.1:8000"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9102
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9102
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-config
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: mlops-config
+    app.kubernetes.io/part-of: predictive-autoscaling-mlops
+data:
+  MODEL_NAME: "predictive-autoscaler"
+  MODEL_ALIAS: "champion"
+  MODEL_STAGE: "Production"
+  PROMETHEUS_URL: "http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
+  INFERENCE_URL: "http://mlops-inference-svc.mlops.svc.cluster.local:8000"
+  TARGET_NAMESPACE: "titipin"
+  TARGET_DEPLOYMENT: "laravel-backend"
+  MIN_REPLICAS: "1"
+  MAX_REPLICAS: "4"
+  SCALE_INTERVAL_SECONDS: "15"
+  COOLDOWN_SECONDS: "60"
+  EXPORTER_PORT: "9102"
+  MLFLOW_TRACKING_URI: "sqlite:////data/mlflow.db"
