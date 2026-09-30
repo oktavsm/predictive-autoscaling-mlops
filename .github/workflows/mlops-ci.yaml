@@ -69,7 +69,7 @@ jobs:
       - name: Verify Data Preprocessing Pipeline
         run: |
           python src/preprocess.py \
-            --input data/raw/metrics_periodic_20260924_001.csv \
+            --input src/data/demo_metrics.csv \
             --output /tmp/test_processed.csv
 
   # --------------------------------------------------------------------------
