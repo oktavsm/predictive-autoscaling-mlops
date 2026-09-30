@@ -49,8 +49,8 @@ EXPECTED_COLS = [
 PREDICTION_HORIZON_STEPS = 4
 
 # Rolling window dalam jumlah baris (1 baris = 15 detik)
-ROLL_WINDOW_30S = 2   # 2 baris × 15s = 30 detik
-ROLL_WINDOW_60S = 4   # 4 baris × 15s = 60 detik
+ROLL_WINDOW_30S = 2  # 2 baris × 15s = 30 detik
+ROLL_WINDOW_60S = 4  # 4 baris × 15s = 60 detik
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -191,7 +191,9 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
             log.info("ffill p95_latency_seconds: mengisi %d nilai kosong", before - after)
 
     # Metrik lainnya: interpolasi linear untuk gap kecil (≤5 baris)
-    interp_cols = [c for c in ["request_rate", "php_cpu_cores", "php_memory_mb", "replicas"] if c in df.columns]
+    interp_cols = [
+        c for c in ["request_rate", "php_cpu_cores", "php_memory_mb", "replicas"] if c in df.columns
+    ]
     for col in interp_cols:
         n_na = df[col].isna().sum()
         if n_na > 0:
@@ -229,9 +231,15 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["cpu_lag2"] = df["php_cpu_cores"].shift(2)
 
     # Rolling features untuk request_rate
-    df["rps_roll_mean_30s"] = df["request_rate"].rolling(window=ROLL_WINDOW_30S, min_periods=1).mean().round(4)
-    df["rps_roll_mean_60s"] = df["request_rate"].rolling(window=ROLL_WINDOW_60S, min_periods=1).mean().round(4)
-    df["rps_roll_std_60s"] = df["request_rate"].rolling(window=ROLL_WINDOW_60S, min_periods=1).std().round(4)
+    df["rps_roll_mean_30s"] = (
+        df["request_rate"].rolling(window=ROLL_WINDOW_30S, min_periods=1).mean().round(4)
+    )
+    df["rps_roll_mean_60s"] = (
+        df["request_rate"].rolling(window=ROLL_WINDOW_60S, min_periods=1).mean().round(4)
+    )
+    df["rps_roll_std_60s"] = (
+        df["request_rate"].rolling(window=ROLL_WINDOW_60S, min_periods=1).std().round(4)
+    )
 
     # Delta features (laju perubahan antar langkah)
     df["rps_delta"] = df["request_rate"].diff().round(4)
@@ -285,7 +293,9 @@ def save_processed(df: pd.DataFrame, output_path: Path) -> None:
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path)
-    log.info("Dataset processed disimpan: %s (%d baris, %d kolom)", output_path, len(df), len(df.columns))
+    log.info(
+        "Dataset processed disimpan: %s (%d baris, %d kolom)", output_path, len(df), len(df.columns)
+    )
 
 
 # ---------------------------------------------------------------------------

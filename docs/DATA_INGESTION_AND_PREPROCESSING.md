@@ -124,8 +124,8 @@ Modul ini bertugas membersihkan anomali data mentah dan membentuk fitur-fitur ba
 
 ```python
 PREDICTION_HORIZON_STEPS = 4  # 4 langkah x 15 detik = 60 detik ke depan
-ROLL_WINDOW_30S = 2           # 2 langkah x 15 detik = 30 detik
-ROLL_WINDOW_60S = 4           # 4 langkah x 15 detik = 60 detik
+ROLL_WINDOW_30S = 2  # 2 langkah x 15 detik = 30 detik
+ROLL_WINDOW_60S = 4  # 4 langkah x 15 detik = 60 detik
 ```
 * **Justifikasi Empiris Horizon 60 Detik:**  
   Hasil pengukuran langsung pada cluster K3s menunjukkan bahwa proses *scale-out* pod Laravel (mulai dari evaluasi HPA, pull image, inisialisasi sidecar Nginx & PHP-FPM, hingga readiness probe `Ready`) membutuhkan waktu rata-rata **45 detik**. Oleh karena itu, horizon peramalan ditetapkan sebesar **60 detik** (4 langkah $\times$ 15 detik) agar pod baru siap menerima trafik *sebelum* degradasi latensi terjadi.

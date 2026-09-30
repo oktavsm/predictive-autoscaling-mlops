@@ -129,7 +129,9 @@ def load_and_prepare_dataset(
 
     combined_df = pd.concat(dfs, ignore_index=True)
     if "timestamp" in combined_df.columns:
-        combined_df = combined_df.sort_values("timestamp").drop_duplicates(subset=["timestamp"], keep="last")
+        combined_df = combined_df.sort_values("timestamp").drop_duplicates(
+            subset=["timestamp"], keep="last"
+        )
 
     # Pastikan seluruh kolom yang dibutuhkan ada
     missing_cols = [c for c in feature_cols + [target_col] if c not in combined_df.columns]
@@ -142,7 +144,9 @@ def load_and_prepare_dataset(
     log.info("Total data sampel bersih siap latih: %d baris", total_samples)
 
     if total_samples < 20:
-        raise ValueError(f"Jumlah sampel terlalu sedikit ({total_samples} baris) untuk pelatihan model.")
+        raise ValueError(
+            f"Jumlah sampel terlalu sedikit ({total_samples} baris) untuk pelatihan model."
+        )
 
     # Time-series chronological split (tanpa shuffle untuk menghindari lookahead bias)
     split_idx = int(total_samples * train_ratio)
@@ -188,7 +192,9 @@ def calculate_metrics(y_true: pd.Series, y_pred: np.ndarray) -> Dict[str, float]
     }
 
 
-def measure_inference_latency(model: Any, sample_input: pd.DataFrame, n_iterations: int = 100) -> float:
+def measure_inference_latency(
+    model: Any, sample_input: pd.DataFrame, n_iterations: int = 100
+) -> float:
     """
     Mengukur rata-rata latensi inferensi per request dalam milidetik (ms).
     """
@@ -226,7 +232,13 @@ def generate_and_log_plots(
 
     # 1. Plot Prediksi vs Aktual pada Validation Set
     fig, ax = plt.subplots(figsize=(10, 4.5))
-    ax.plot(range(len(y_true)), y_true.values, label="Aktual (Ground Truth)", color="#1f77b4", linewidth=2.0)
+    ax.plot(
+        range(len(y_true)),
+        y_true.values,
+        label="Aktual (Ground Truth)",
+        color="#1f77b4",
+        linewidth=2.0,
+    )
     ax.plot(
         range(len(y_pred)),
         y_pred,
@@ -235,7 +247,9 @@ def generate_and_log_plots(
         linestyle="--",
         linewidth=2.0,
     )
-    ax.set_title(f"Evaluasi Horizon 60s: Aktual vs Prediksi — {model_name}", fontsize=12, fontweight="bold")
+    ax.set_title(
+        f"Evaluasi Horizon 60s: Aktual vs Prediksi — {model_name}", fontsize=12, fontweight="bold"
+    )
     ax.set_xlabel("Langkah Waktu Uji (Interval 15s)", fontsize=10)
     ax.set_ylabel("Request Rate (RPS)", fontsize=10)
     ax.grid(True, linestyle=":", alpha=0.6)
@@ -523,15 +537,17 @@ def main() -> None:
         lat = r["metrics"]["latency_ms"]
         name = r["run_name"]
 
-        summary_table.append({
-            "Run Name": name,
-            "Tipe Model": r["model_type"],
-            "Val MAE": mae,
-            "Val RMSE": rmse,
-            "Val R²": r2,
-            "Latency (ms)": lat,
-            "Run ID": r["run_id"],
-        })
+        summary_table.append(
+            {
+                "Run Name": name,
+                "Tipe Model": r["model_type"],
+                "Val MAE": mae,
+                "Val RMSE": rmse,
+                "Val R²": r2,
+                "Latency (ms)": lat,
+                "Run ID": r["run_id"],
+            }
+        )
 
         if mae < lowest_mae:
             lowest_mae = mae

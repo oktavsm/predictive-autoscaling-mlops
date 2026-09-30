@@ -204,32 +204,37 @@ jobs:
 import mlflow
 from mlflow.tracking import MlflowClient
 
+
 def evaluate_and_promote(candidate_run_id: str, model_name: str = "workload-forecaster"):
     client = MlflowClient()
-    
+
     # Get current champion metrics
     champion = client.get_model_version_by_alias(model_name, "champion")
     champion_mae = float(champion.tags.get("val_mae", 999.0))
-    
+
     # Get challenger metrics
     candidate_run = client.get_run(candidate_run_id)
     candidate_mae = candidate_run.data.metrics["val_mae"]
     candidate_latency = candidate_run.data.metrics.get("p95_inference_ms", 5.0)
-    
+
     # Gate condition: strictly better MAE and inference latency < 20ms
     if candidate_mae < champion_mae and candidate_latency < 20.0:
         # Register new model version
         model_uri = f"runs:/{candidate_run_id}/model"
         mv = mlflow.register_model(model_uri, model_name)
-        
+
         # Promote alias
         client.set_registered_model_alias(model_name, "champion", mv.version)
-        print(f"[+] Promoted version {mv.version} to @champion (MAE: {candidate_mae:.4f} < {champion_mae:.4f})")
-        
+        print(
+            f"[+] Promoted version {mv.version} to @champion (MAE: {candidate_mae:.4f} < {champion_mae:.4f})"
+        )
+
         # Trigger hot-reload in live FastAPI pod
         trigger_api_reload()
     else:
-        print(f"[-] Candidate rejected (Candidate MAE: {candidate_mae:.4f} >= Champion: {champion_mae:.4f})")
+        print(
+            f"[-] Candidate rejected (Candidate MAE: {candidate_mae:.4f} >= Champion: {champion_mae:.4f})"
+        )
 ```
 
 ---

@@ -87,10 +87,7 @@ def query_range(promql, start, end, step):
 
         values = result[0]["values"]
         return pd.Series(
-            {
-                pd.to_datetime(float(ts), unit="s", utc=True): float(val)
-                for ts, val in values
-            }
+            {pd.to_datetime(float(ts), unit="s", utc=True): float(val) for ts, val in values}
         )
     except Exception as e:
         print(f"Warning on query: {e}")
@@ -99,16 +96,24 @@ def query_range(promql, start, end, step):
 
 def main():
     parser = argparse.ArgumentParser(description="Export Prometheus metrics to CSV")
-    parser.add_argument("--minutes", type=int, default=30, help="Minutes of history to export (default: 30)")
-    parser.add_argument("--step", type=int, default=15, help="Step resolution in seconds (default: 15)")
-    parser.add_argument("--output", type=str, default="src/data/raw/dataset.csv", help="Destination CSV path")
+    parser.add_argument(
+        "--minutes", type=int, default=30, help="Minutes of history to export (default: 30)"
+    )
+    parser.add_argument(
+        "--step", type=int, default=15, help="Step resolution in seconds (default: 15)"
+    )
+    parser.add_argument(
+        "--output", type=str, default="src/data/raw/dataset.csv", help="Destination CSV path"
+    )
     args = parser.parse_args()
 
     end = datetime.now(timezone.utc)
     start = end - timedelta(minutes=args.minutes)
 
     print(f"[*] Querying Prometheus at {PROM_URL}")
-    print(f"[*] Window: {start.strftime('%Y-%m-%d %H:%M:%S UTC')} -> {end.strftime('%Y-%m-%d %H:%M:%S UTC')} ({args.minutes} min, step={args.step}s)")
+    print(
+        f"[*] Window: {start.strftime('%Y-%m-%d %H:%M:%S UTC')} -> {end.strftime('%Y-%m-%d %H:%M:%S UTC')} ({args.minutes} min, step={args.step}s)"
+    )
 
     df = pd.DataFrame()
     for name, query in QUERIES.items():
@@ -118,7 +123,9 @@ def main():
     df = df.sort_index()
 
     if df.empty:
-        print("[!] Warning: No data points returned. Ensure Prometheus is accessible and port-forwarded.")
+        print(
+            "[!] Warning: No data points returned. Ensure Prometheus is accessible and port-forwarded."
+        )
         sys.exit(1)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)

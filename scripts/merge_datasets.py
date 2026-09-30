@@ -15,7 +15,8 @@ DEMO_FILE = os.path.join(os.path.dirname(__file__), "../src/data/demo_metrics.cs
 
 def main():
     csv_files = [
-        f for f in sorted(glob.glob(os.path.join(RAW_DIR, "*.csv")))
+        f
+        for f in sorted(glob.glob(os.path.join(RAW_DIR, "*.csv")))
         if not os.path.basename(f).startswith("master_")
     ]
 

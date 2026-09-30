@@ -1,0 +1,126 @@
+name: MLOps CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/**'
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # --------------------------------------------------------------------------
+  # 1. Lint and Code Formatting Quality Gate
+  # --------------------------------------------------------------------------
+  lint-and-format:
+    name: Lint & Code Hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Linting Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff==0.16.7
+
+      - name: Check Code Quality (Ruff Lint)
+        run: ruff check .
+
+      - name: Check Code Formatting (Ruff Format)
+        run: ruff format --check .
+
+  # --------------------------------------------------------------------------
+  # 2. Data Quality & Preprocessing Integrity
+  # --------------------------------------------------------------------------
+  data-quality-tests:
+    name: Data Quality & Preprocessing Gates
+    needs: [lint-and-format]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Project Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run Telemetry Data Smoke Tests
+        run: pytest -v tests/test_dataset.py
+
+      - name: Verify Data Preprocessing Pipeline
+        run: |
+          python src/preprocess.py \
+            --input data/raw/metrics_periodic_20260924_001.csv \
+            --output /tmp/test_processed.csv
+
+  # --------------------------------------------------------------------------
+  # 3. Model Evaluation Quality Gate & Serving Readiness
+  # --------------------------------------------------------------------------
+  model-evaluation-gate:
+    name: Model Quality Gate & Serving Readiness
+    needs: [data-quality-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Project Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run Model Registry Unit Tests
+        run: pytest -v tests/test_model_registry.py
+
+      - name: Run Inference Serving API Tests
+        run: pytest -v tests/test_inference_api.py
+
+      - name: Verify Model Serving Readiness & Pod Policy
+        run: python src/models/register_model.py --verify-only
+
+  # --------------------------------------------------------------------------
+  # 4. Container Build & Packaging Validation
+  # --------------------------------------------------------------------------
+  docker-build-check:
+    name: Container Build & Packaging Check
+    needs: [model-evaluation-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Inference Service Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: predictive-autoscaler:ci-latest

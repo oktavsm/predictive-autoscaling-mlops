@@ -258,7 +258,9 @@ def verify_inference_readiness(
         infer_latency_ms = (time.perf_counter() - t0) * 1000.0
         total_infer_time += infer_latency_ms
 
-        pred_val = float(pred_output[0]) if hasattr(pred_output, "__getitem__") else float(pred_output)
+        pred_val = (
+            float(pred_output[0]) if hasattr(pred_output, "__getitem__") else float(pred_output)
+        )
         pred_rps = max(0.0, round(pred_val, 2))
 
         # Algoritma Rekomendasi Penskalaan Pod:
@@ -268,24 +270,39 @@ def verify_inference_readiness(
 
         log.info("[%s]", sc["name"])
         log.info("  ➔ Prediksi Traffic t+60s : %.2f RPS", pred_rps)
-        log.info("  ➔ Rekomendasi Replika Pod : %d Pods (Kapasitas: %.0f RPS)", recommended_replicas, recommended_replicas * TARGET_RPS_PER_POD)
+        log.info(
+            "  ➔ Rekomendasi Replika Pod : %d Pods (Kapasitas: %.0f RPS)",
+            recommended_replicas,
+            recommended_replicas * TARGET_RPS_PER_POD,
+        )
         log.info("  ➔ Latensi Eksekusi Inferensi : %.2f ms", infer_latency_ms)
 
-        scenario_results.append({
-            "scenario": sc["name"],
-            "current_rps": sc["input"]["request_rate"],
-            "predicted_rps_60s": pred_rps,
-            "recommended_replicas": recommended_replicas,
-            "latency_ms": round(infer_latency_ms, 2),
-        })
+        scenario_results.append(
+            {
+                "scenario": sc["name"],
+                "current_rps": sc["input"]["request_rate"],
+                "predicted_rps_60s": pred_rps,
+                "recommended_replicas": recommended_replicas,
+                "latency_ms": round(infer_latency_ms, 2),
+            }
+        )
 
     avg_latency = round(total_infer_time / len(test_scenarios), 2)
     success = (load_duration_ms < 5000.0) and (avg_latency < 100.0)
     log.info("=" * 65)
-    log.info("STATUS KESIAPAN INFERENSI: %s (Rata-rata Latensi: %.2f ms, Load Time: %.2f ms)", "SIAP (PASSED)" if success else "FAILED", avg_latency, load_duration_ms)
+    log.info(
+        "STATUS KESIAPAN INFERENSI: %s (Rata-rata Latensi: %.2f ms, Load Time: %.2f ms)",
+        "SIAP (PASSED)" if success else "FAILED",
+        avg_latency,
+        load_duration_ms,
+    )
     log.info("=" * 65)
 
-    return success, avg_latency, {"load_ms": round(load_duration_ms, 2), "scenarios": scenario_results}
+    return (
+        success,
+        avg_latency,
+        {"load_ms": round(load_duration_ms, 2), "scenarios": scenario_results},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -314,29 +331,29 @@ dvc_data_lineage:
 versions:
   version_1:
     version: "1"
-    run_name: "{v1_info.get('run_name', 'lightgbm-default')}"
-    run_id: "{v1_info.get('run_id', 'unknown')}"
+    run_name: "{v1_info.get("run_name", "lightgbm-default")}"
+    run_id: "{v1_info.get("run_id", "unknown")}"
     architecture: "LightGBM Regressor"
     stage: "Staging"
     alias: "challenger"
     metrics:
-      val_mae: {v1_info.get('metrics', {}).get('val_mae', 0.1246)}
-      val_rmse: {v1_info.get('metrics', {}).get('val_rmse', 0.2745)}
-      latency_ms: {v1_info.get('metrics', {}).get('latency_ms', 3.06)}
+      val_mae: {v1_info.get("metrics", {}).get("val_mae", 0.1246)}
+      val_rmse: {v1_info.get("metrics", {}).get("val_rmse", 0.2745)}
+      latency_ms: {v1_info.get("metrics", {}).get("latency_ms", 3.06)}
     description: "Model kandidat alternatif dengan latensi ultra-cepat (<4ms)"
 
   version_2:
     version: "2"
-    run_name: "{v2_info.get('run_name', 'random-forest-default')}"
-    run_id: "{v2_info.get('run_id', 'unknown')}"
+    run_name: "{v2_info.get("run_name", "random-forest-default")}"
+    run_id: "{v2_info.get("run_id", "unknown")}"
     architecture: "Random Forest Regressor"
     stage: "Production"
     alias: "champion"
     status: "ACTIVE_INFERENCE"
     metrics:
-      val_mae: {v2_info.get('metrics', {}).get('val_mae', 0.0295)}
-      val_rmse: {v2_info.get('metrics', {}).get('val_rmse', 0.1523)}
-      latency_ms: {v2_info.get('metrics', {}).get('latency_ms', 42.38)}
+      val_mae: {v2_info.get("metrics", {}).get("val_mae", 0.0295)}
+      val_rmse: {v2_info.get("metrics", {}).get("val_rmse", 0.1523)}
+      latency_ms: {v2_info.get("metrics", {}).get("latency_ms", 42.38)}
     description: "Champion production model dengan galat MAE terendah (0.0295 RPS)"
 
 deployment_policy:
@@ -345,9 +362,9 @@ deployment_policy:
   max_replicas: {MAX_REPLICAS}
   inference_readiness_status: "PASSED"
   serving_verification:
-    average_latency_ms: {inference_check.get('average_latency_ms', 3.5)}
-    model_load_latency_ms: {inference_check.get('details', {}).get('load_ms', 45.0)}
-    verified_at: "{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
+    average_latency_ms: {inference_check.get("average_latency_ms", 3.5)}
+    model_load_latency_ms: {inference_check.get("details", {}).get("load_ms", 45.0)}
+    verified_at: "{time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}"
 """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
@@ -461,8 +478,12 @@ def main() -> None:
         log.info("Versi 2 sudah terdaftar.")
 
     # 6. Lifecycle Management: Promosikan Versi 2 ke Production (@champion) & Versi 1 ke Staging (@challenger)
-    promote_model_lifecycle(client, REGISTERED_MODEL_NAME, version=v1, stage="Staging", alias="challenger")
-    promote_model_lifecycle(client, REGISTERED_MODEL_NAME, version=v2, stage="Production", alias="champion")
+    promote_model_lifecycle(
+        client, REGISTERED_MODEL_NAME, version=v1, stage="Staging", alias="challenger"
+    )
+    promote_model_lifecycle(
+        client, REGISTERED_MODEL_NAME, version=v2, stage="Production", alias="champion"
+    )
 
     # 7. Uji Kesiapan Inferensi secara Programatik
     success, avg_latency, infer_details = verify_inference_readiness(
@@ -474,14 +495,22 @@ def main() -> None:
     # 8. Ekspor Manifes YAML Model Registry
     v1_metrics = {
         "val_mae": challenger_run.data.metrics.get("val_mae", 0.1246) if challenger_run else 0.1246,
-        "val_rmse": challenger_run.data.metrics.get("val_rmse", 0.2745) if challenger_run else 0.2745,
-        "latency_ms": challenger_run.data.metrics.get("latency_ms", 3.06) if challenger_run else 3.06,
+        "val_rmse": challenger_run.data.metrics.get("val_rmse", 0.2745)
+        if challenger_run
+        else 0.2745,
+        "latency_ms": challenger_run.data.metrics.get("latency_ms", 3.06)
+        if challenger_run
+        else 3.06,
     }
     v2_metrics = champion_data["metrics"]
 
     generate_registry_manifest(
         model_name=REGISTERED_MODEL_NAME,
-        v1_info={"run_name": challenger_run_name, "run_id": challenger_run_id, "metrics": v1_metrics},
+        v1_info={
+            "run_name": challenger_run_name,
+            "run_id": challenger_run_id,
+            "metrics": v1_metrics,
+        },
         v2_info={"run_name": champion_run_name, "run_id": champion_run_id, "metrics": v2_metrics},
         inference_check={"average_latency_ms": avg_latency, "details": infer_details},
         output_path=MANIFEST_YAML,

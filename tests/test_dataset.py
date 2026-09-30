@@ -4,6 +4,7 @@ Smoke tests for the committed sample dataset.
 These tests run in a fresh Codespace against src/data/demo_metrics.csv.
 They do not require VPS access or Prometheus credentials.
 """
+
 import pandas as pd
 import pytest
 
@@ -41,9 +42,7 @@ def test_has_rows(df):
 
 def test_index_is_datetime(df):
     """Timestamp index has datetime dtype."""
-    assert pd.api.types.is_datetime64_any_dtype(df.index), (
-        "Index is not datetime"
-    )
+    assert pd.api.types.is_datetime64_any_dtype(df.index), "Index is not datetime"
 
 
 def test_index_is_sorted(df):
