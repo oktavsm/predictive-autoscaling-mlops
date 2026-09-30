@@ -215,6 +215,7 @@ predictive-autoscaling-mlops/
 - **[System Architecture](docs/ARCHITECTURE.md):** Detailed component relationships, data flow, and scaling loops.
 - **[Data Pipeline Design](docs/DATA_PIPELINE.md):** Prometheus query parameters, ETL stages, and feature definitions.
 - **[Data Ingestion & Preprocessing Guide](docs/DATA_INGESTION_AND_PREPROCESSING.md):** Detailed technical code walkthrough for `ingest_data.py` and `preprocess.py`.
+- **[Data Versioning with DVC & MinIO](docs/DATA_VERSIONING_DVC.md):** Remote storage tracking, continual learning lineage, and diff audits (LK-05).
 - **[Infrastructure Setup Guide](docs/SETUP_GUIDE.md):** Step-by-step guide for deploying K3s, monitoring, and backend services.
 - **[Workload Generation Guide](docs/WORKLOAD_GENERATION.md):** k6 benchmark scenarios (steady, spike, gradual, periodic).
 - **[Codespace Setup Guide](docs/CODESPACE_SETUP.md):** Development workflow and port forwarding guide.
