@@ -53,11 +53,11 @@
               },
               {
                 "color": "orange",
-                "value": 3
+                "value": 4
               },
               {
                 "color": "red",
-                "value": 4
+                "value": 6
               }
             ]
           }
@@ -118,12 +118,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
+                "color": "green",
                 "value": null
               },
               {
-                "color": "purple",
-                "value": 3
+                "color": "orange",
+                "value": 4
+              },
+              {
+                "color": "red",
+                "value": 6
               }
             ]
           }
