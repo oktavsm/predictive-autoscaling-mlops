@@ -814,6 +814,63 @@ with tab_registry:
             unsafe_allow_html=True,
         )
 
+    st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
+    st.markdown("#### 🗄️ Mengapa di MinIO Berupa MD5 Hash? (Arsitektur DVC CAS)")
+    st.markdown(
+        """
+        Di MinIO Object Storage (`https://minio.titipin.me`), data tidak disimpan dengan nama file teks biasa melainkan berupa **MD5 Hash** 
+        (contoh: `6bb27924...` atau `b72a5376...`). Ini adalah **prinsip Content-Addressable Storage (CAS)** yang sama persis dengan cara kerja Git:
+        - **Git:** Hanya melacak berkas teks pointer kecil (`data/raw.dvc` dan `data/processed.dvc`).
+        - **MinIO S3 Remote:** Menyimpan blok data biner terenkripsi hash MD5 untuk menjamin **Data Integrity** (anti-tamper) dan **Deduplikasi**.
+        - **Workspace Lokal:** Berisi file `.csv` asli yang dapat dibaca manusia dan dimuat oleh pandas.
+        """
+    )
+
+    st.markdown("#### 📑 Pemetaan Silsilah Data (Git Tag ↔ File CSV ↔ MD5 MinIO S3)")
+    dvc_lineage_data = {
+        "Versi / Git Tag": [
+            "v1.0-data",
+            "v1.0-data",
+            "v2.0-data (Aktif)",
+            "v2.0-data (Aktif)",
+            "v2.0-data (Aktif)",
+        ],
+        "Tipe": ["Raw", "Processed", "Raw", "Processed", "Processed (Drift)"],
+        "Nama File CSV": [
+            "metrics_gradual_20260924_001.csv",
+            "metrics_processed_20260927_132354.csv",
+            "metrics_20260928_102236.csv",
+            "metrics_demo_processed.csv",
+            "metrics_flashsale_drifted.csv",
+        ],
+        "Hash MD5 di MinIO S3": [
+            "b4d0a70e7115a4e4c370909ba364518b",
+            "4aec50d2130dd676189c7192eb66a078",
+            "b7dccb5bfc334d2647218067177aeb4e",
+            "5a8e0291dfbb38ac471029cba8d19321",
+            "70caf5ea7e6f4e72243ecd8a15e8f4e5",
+        ],
+        "Deskripsi Operasional": [
+            "Terkunci di Git Tag v1.0",
+            "Baseline data awal model v1-v6",
+            "Batch telemetri continual learning",
+            "Dataset latih model champion",
+            "Simulasi lonjakan beban flash-sale",
+        ],
+    }
+    st.dataframe(pd.DataFrame(dvc_lineage_data).set_index("Versi / Git Tag"), use_container_width=True)
+
+    st.markdown("#### 🔍 Pratinjau Baris Data CSV Asli (`data/processed/metrics_flashsale_drifted.csv`)")
+    sample_csv_records = [
+        {"timestamp": "2026-09-09 09:21:18", "request_rate": 64.46, "php_cpu_cores": 1.057, "p95_latency": 0.119, "php_mem_mb": 165.5, "replicas": 4, "target_rps_60s": 70.55},
+        {"timestamp": "2026-09-09 09:21:33", "request_rate": 65.28, "php_cpu_cores": 1.083, "p95_latency": 0.119, "php_mem_mb": 165.6, "replicas": 4, "target_rps_60s": 69.27},
+        {"timestamp": "2026-09-09 09:21:48", "request_rate": 67.41, "php_cpu_cores": 0.972, "p95_latency": 0.120, "php_mem_mb": 165.7, "replicas": 4, "target_rps_60s": 62.50},
+        {"timestamp": "2026-09-09 09:22:03", "request_rate": 69.31, "php_cpu_cores": 0.872, "p95_latency": 0.115, "php_mem_mb": 165.2, "replicas": 4, "target_rps_60s": 47.00},
+        {"timestamp": "2026-09-09 09:22:18", "request_rate": 73.20, "php_cpu_cores": 1.077, "p95_latency": 0.121, "php_mem_mb": 165.5, "replicas": 4, "target_rps_60s": 31.35},
+    ]
+    st.dataframe(pd.DataFrame(sample_csv_records).set_index("timestamp"), use_container_width=True)
+
+
 # =============================================================================
 # TAB 7: Kubernetes Architecture
 # =============================================================================
