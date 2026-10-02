@@ -19,14 +19,6 @@ spec:
         app.kubernetes.io/component: model-registry
         app.kubernetes.io/part-of: predictive-autoscaling-mlops
     spec:
-      nodeName: control-plane
-      tolerations:
-        - key: "node-role.kubernetes.io/control-plane"
-          operator: "Exists"
-          effect: "NoSchedule"
-        - key: "node-role.kubernetes.io/master"
-          operator: "Exists"
-          effect: "NoSchedule"
       containers:
         - name: mlflow-server
           image: docker.io/oktaavsm/predictive-autoscaler:latest
@@ -42,12 +34,10 @@ spec:
             - "0.0.0.0"
             - "--port"
             - "5000"
+            - "--workers"
+            - "1"
             - "--allowed-hosts"
             - "*"
-            - "--cors-allowed-origins"
-            - "*"
-            - "--gunicorn-opts"
-            - "-w 1 --threads 2"
           ports:
             - name: http
               containerPort: 5000
