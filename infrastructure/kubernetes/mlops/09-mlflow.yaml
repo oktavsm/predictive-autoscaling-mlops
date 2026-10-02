@@ -23,21 +23,24 @@ spec:
         - name: mlflow-server
           image: docker.io/oktaavsm/predictive-autoscaler:latest
           imagePullPolicy: IfNotPresent
+          env:
+            - name: MLFLOW_BACKEND_STORE_URI
+              value: "sqlite:////app/mlflow.db"
+            - name: MLFLOW_DEFAULT_ARTIFACT_ROOT
+              value: "/app/mlruns"
+            - name: MLFLOW_SERVER_ALLOWED_HOSTS
+              value: "*"
           command:
-            - "mlflow"
-            - "server"
-            - "--backend-store-uri"
-            - "sqlite:////app/mlflow.db"
-            - "--default-artifact-root"
-            - "/app/mlruns"
+            - "python"
+            - "-m"
+            - "uvicorn"
+            - "mlflow.server.fastapi_app:app"
             - "--host"
             - "0.0.0.0"
             - "--port"
             - "5000"
             - "--workers"
             - "1"
-            - "--allowed-hosts"
-            - "*"
           ports:
             - name: http
               containerPort: 5000
@@ -45,10 +48,10 @@ spec:
           resources:
             requests:
               cpu: 50m
-              memory: 200Mi
+              memory: 150Mi
             limits:
               cpu: 1000m
-              memory: 1200Mi
+              memory: 800Mi
 ---
 apiVersion: v1
 kind: Service
