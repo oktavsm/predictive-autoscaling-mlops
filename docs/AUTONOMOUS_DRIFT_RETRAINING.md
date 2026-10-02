@@ -1,4 +1,4 @@
-# 🔄 Panduan Closed-Loop Event-Driven Drift Retraining (LK-12)
+# Panduan Closed-Loop Event-Driven Drift Retraining
 ## Level 2 MLOps Maturity: Autonomous Self-Healing Pipeline
 
 Dokumen ini menjelaskan rancangan arsitektur, algoritma evaluasi drift Population Stability Index (PSI), pemicuan otomatis (*event-driven triggering*), gerbang evaluasi model (*evaluation gate*), dan *zero-downtime hot reload* pada sistem MLOps produksi.
@@ -60,7 +60,7 @@ python3 src/pipeline/autonomous_drift_retrain.py --threshold 0.25
 * `--ref-file`: Berkas acuan dasar (default: `src/data/raw/spike_run_001.csv`).
 * `--curr-file`: Berkas data telemetri terkini (default: `src/data/raw/periodic_run_001.csv`).
 * `--threshold`: Nilai batas toleransi PSI (default: `0.25`).
-* `--force-retrain`: Memaksa pemicuan retraining tanpa menunggu drift terdeteksi (cocok untuk demonstrasi live LK-14).
+* `--force-retrain`: Memaksa pemicuan retraining tanpa menunggu drift terdeteksi (berguna untuk simulasi dan verifikasi end-to-end).
 * `--output-json`: Lokasi penyimpanan rekam jejak eksekusi (`docs/coursework/AUTONOMOUS_DRIFT_REPORT.json`).
 
 ---
@@ -86,7 +86,7 @@ Salah satu keunggulan teknis utama arsitektur ini adalah **ketiadaan kebutuhan m
 
 ---
 
-## 🎓 5. Nilai Tambah Akademis untuk Lembar Kerja (LK-12)
+## 🏆 5. Standar Rekayasa MLOps (Enterprise Readiness)
 
 * **Google MLOps Maturity Level 2:** Memenuhi seluruh prasyarat otomasi pipeline: *Continuous Integration* (test data), *Continuous Delivery* (model registry), dan *Continuous Training* (drift-triggered execution).
 * **Closed-Loop Feedback:** Menghilangkan ketergantungan pada intervensi manusia untuk menjaga akurasi model di lingkungan produksi yang dinamis.

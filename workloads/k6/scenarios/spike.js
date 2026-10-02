@@ -1,7 +1,7 @@
 #!/usr/bin/env js
 /**
- * k6 Traffic Spike Scenario for LK-14 Live Demonstration
- * ========================================================
+ * k6 Traffic Spike Scenario for Predictive Autoscaler Verification
+ * ================================================================
  * Mensimulasikan lonjakan trafik eskalatif ke backend API Laravel
  * untuk membuktikan predictive autoscaler bereaksi SEBELUM puncak trafik.
  *
@@ -40,7 +40,7 @@ export default function () {
   const res = http.get(url, {
     headers: {
       'Accept': 'application/json',
-      'X-Demo-Source': 'lk14-predictive-autoscaler-demo',
+      'X-Traffic-Source': 'predictive-autoscaler-spike',
     },
     timeout: '10s',
   });

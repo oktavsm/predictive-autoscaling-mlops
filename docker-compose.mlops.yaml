@@ -1,5 +1,5 @@
 # ==============================================================================
-# Docker Compose Orchestration — Predictive Autoscaling MLOps (LK-09)
+# Docker Compose Orchestration — Predictive Autoscaling MLOps
 # ==============================================================================
 # Orchestrates 4 unified microservices:
 #   1. minio                : MinIO S3 Object Storage & Console (:9000, :9001)

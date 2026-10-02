@@ -1,4 +1,4 @@
-# Panduan Audit Log Operasional & Telemetri Real-Time (MLOps LK-14)
+# Panduan Audit Log Operasional & Telemetri Real-Time
 
 Dokumen ini menjelaskan arsitektur, cara kerja, dan panduan verifikasi dari **Operational Telemetry & Audit Console** yang tersedia pada platform [https://mlops.titipin.me](https://mlops.titipin.me).
 
@@ -166,7 +166,7 @@ kubectl exec -n mlops deploy/mlops-inference -c inference-api -- \
 
 ---
 
-## 4. Nilai Tambah untuk Sidang / Laporan Akhir (LK-14)
+## 4. Keunggulan Teknis & Kepatuhan Tata Kelola MLOps
 
 1. **Enterprise Observability**: Menggabungkan metrik performa (*telemetry metrics*), siklus model AI (*model lifecycle*), dan status infrastruktur (*infrastructure orchestration*) ke dalam satu layar kaca tunggal.
 2. **Explainability & Accountability**: Setiap keputusan autoscaling memiliki audit trail yang jelas (fitur input, estimasi beban $t+60$s, formula policy, hingga nomor replika pod yang dihasilkan).

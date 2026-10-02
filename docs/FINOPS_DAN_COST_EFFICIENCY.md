@@ -1,4 +1,4 @@
-# 💰 Analisis FinOps & Green Computing: Efisiensi Biaya & Karbon (LK-13)
+# Analisis FinOps & Green Computing: Efisiensi Biaya & Karbon
 ## Tata Kelola AI Berkelanjutan (*Sustainable MLOps & Resource Optimization*)
 
 > **Periode Evaluasi:** 1 Bulan Kalender (720 Jam Operasional)  
@@ -37,5 +37,5 @@
    Reactive HPA cenderung lambat melakukan *scale-down* (default K8s stabilisasi 5 menit), sehingga pod berlebih tetap menyala dan membakar biaya komputasi jauh setelah lonjakan trafik mereda.
 2. **Right-Sizing Presisi Berbasis Beban Aktual:**  
    Model ML memprediksi kebutuhan kapasitas secara adaptif sesuai *request rate* (RPS), menjaga klaster tetap berada di batas minimum 1 Pod selama periode sepi/malam hari (*idle hours*).
-3. **Penyelarasan Prinsip Green Computing (LK-13):**  
+3. **Penyelarasan Prinsip Green Computing & Sustainability:**  
    Pengurangan penggunaan *vCPU-hours* secara langsung berkontribusi pada penurunan konsumsi listrik datacenter AWS dan pemenuhan target *sustainable AI governance*.

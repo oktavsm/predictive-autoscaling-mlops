@@ -1,4 +1,4 @@
-# 🚨 Panduan Observabilitas & Alerting Terintegrasi: Discord & Telegram (LK-11 & LK-13)
+# Panduan Observabilitas & Alerting Terintegrasi: Discord & Telegram
 
 Dokumen ini memaparkan arsitektur observabilitas aktif, konfigurasi *PrometheusRule*, dan modul *incident management dispatcher* yang mengirimkan notifikasi insiden operasional klaster secara otomatis ke **Discord Webhook** dan **Telegram Bot**.
 
@@ -61,7 +61,7 @@ export TELEGRAM_CHAT_ID="-100123456789"
 python3 src/monitoring/alert_dispatcher.py --test
 ```
 
-Output audit log tersimpan secara persisten dalam format JSON Lines di `logs/alerts_history.jsonl` untuk keperluan audit compliance dan rekam jejak tata kelola AI (**LK-13**).
+Output audit log tersimpan secara persisten dalam format JSON Lines di `logs/alerts_history.jsonl` untuk keperluan audit compliance dan rekam jejak tata kelola AI (*AI Governance & Compliance*).
 
 ---
 
@@ -88,7 +88,7 @@ Output audit log tersimpan secara persisten dalam format JSON Lines di `logs/ale
 
 ---
 
-## 🎓 5. Nilai Akademis untuk Lembar Kerja
+## 🛡️ 5. Standar Industri SRE & Kepatuhan Tata Kelola AI
 
-* **LK-11 (Observability & Alerting):** Memenuhi standar SRE industri (*Site Reliability Engineering*) dengan menghubungkan metrik pasif ke kanal komunikasi aktif tim engineering.
-* **LK-13 (Governance & Security Audit):** Menyediakan berkas audit insiden terstruktur (`logs/alerts_history.jsonl`) yang membuktikan transparansi, akuntabilitas, dan keterlacakan anomali pada sistem AI produksi.
+* **Observability & Proactive Alerting:** Memenuhi standar SRE (*Site Reliability Engineering*) dengan menghubungkan metrik pasif ke kanal komunikasi aktif tim engineering.
+* **Governance & Security Audit Trail:** Menyediakan berkas audit insiden terstruktur (`logs/alerts_history.jsonl`) yang membuktikan transparansi, akuntabilitas, dan keterlacakan anomali pada sistem AI produksi.

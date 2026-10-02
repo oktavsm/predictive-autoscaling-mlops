@@ -1,6 +1,6 @@
 """
-Tests for MLflow Model Registry and Inference Readiness (LK-07).
-================================================================
+Tests for MLflow Model Registry and Inference Readiness.
+========================================================
 Verifies that:
 1. Champion model metadata file exists and contains valid metrics.
 2. Model registry manifest exists and conforms to expected structure.

@@ -132,7 +132,7 @@ docker compose -f infrastructure/demo/docker-compose.demo.yml up -d
 
 ---
 
-### Option 5: Automated Data Ingestion Pipeline (LK-04)
+### Option 5: Automated Data Ingestion Pipeline
 
 The ingestion pipeline collects live metrics from Prometheus and transforms them into an ML-ready dataset.
 
@@ -215,10 +215,17 @@ predictive-autoscaling-mlops/
 - **[System Architecture](docs/ARCHITECTURE.md):** Detailed component relationships, data flow, and scaling loops.
 - **[Data Pipeline Design](docs/DATA_PIPELINE.md):** Prometheus query parameters, ETL stages, and feature definitions.
 - **[Data Ingestion & Preprocessing Guide](docs/DATA_INGESTION_AND_PREPROCESSING.md):** Detailed technical code walkthrough for `ingest_data.py` and `preprocess.py`.
-- **[Data Versioning with DVC & MinIO](docs/DATA_VERSIONING_DVC.md):** Remote storage tracking, continual learning lineage, and diff audits (LK-05).
-- **[Experiment Tracking & Modeling with MLflow](docs/EXPERIMENT_TRACKING_MLFLOW.md):** Multi-model training, horizon 60s forecasting, metrics evaluation, and champion selection (LK-06).
-- **[Cloudflare Domain & Caddy Proxy Setup](docs/CLOUDFLARE_DOMAIN_SETUP.md):** Public domain mapping and Caddy configuration for demoing UIs in LK-14.
+- **[Data Versioning with DVC & MinIO](docs/DATA_VERSIONING_DVC.md):** Remote storage tracking, continual learning lineage, and diff audits.
+- **[Experiment Tracking & Modeling with MLflow](docs/EXPERIMENT_TRACKING_MLFLOW.md):** Multi-model training, horizon 60s forecasting, metrics evaluation, and champion selection.
+- **[Operational Telemetry & Audit Log](docs/PANDUAN_AUDIT_LOG_DAN_TELEMETRI_OPERASIONAL.md):** Real-time cluster audit, API call tracking, and pod scaling history.
+- **[DVC Lineage & MinIO Storage Guide](docs/PANDUAN_DVC_DAN_MINIO_STORAGE.md):** Content-addressable storage (CAS), MD5 hashing, and time-travel versioning.
+- **[Autonomous Drift Retraining Pipeline](docs/AUTONOMOUS_DRIFT_RETRAINING.md):** Closed-loop PSI monitoring, event-driven CT triggers, and zero-downtime hot reloads.
+- **[HPA vs Predictive Autoscaler Benchmark](docs/BENCHMARK_HPA_VS_PREDICTIVE.md):** Empirical head-to-head performance under flash-sale spikes.
+- **[FinOps & Carbon Efficiency Analysis](docs/FINOPS_DAN_COST_EFFICIENCY.md):** Cloud cost calculations, vCPU savings, and carbon footprint reduction.
+- **[Integrated Alerting & Incident Management](docs/ALERTING_DAN_INCIDENT_MANAGEMENT.md):** Discord and Telegram dispatchers for operational anomalies.
+- **[Cloudflare Domain & Caddy Proxy Setup](docs/CLOUDFLARE_DOMAIN_SETUP.md):** Public domain mapping and Caddy configuration for web UI services.
 - **[Infrastructure Setup Guide](docs/SETUP_GUIDE.md):** Step-by-step guide for deploying K3s, monitoring, and backend services.
+- **[Live Demonstration Guide](docs/LIVE_DEMO_GUIDE.md):** Runbook for executing live traffic verification and observation.
 - **[Workload Generation Guide](docs/WORKLOAD_GENERATION.md):** k6 benchmark scenarios (steady, spike, gradual, periodic).
 - **[Codespace Setup Guide](docs/CODESPACE_SETUP.md):** Development workflow and port forwarding guide.
 - **[CI/CD & CT Workflow Design](docs/CICD_DESIGN.md):** Architecture for Continuous Integration, Delivery, and Training (MLOps).

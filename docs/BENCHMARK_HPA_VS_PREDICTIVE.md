@@ -1,4 +1,4 @@
-# 📊 Panduan & Metodologi Benchmark: Reactive HPA vs Predictive Autoscaler (LK-10 & LK-14)
+# Panduan & Metodologi Benchmark: Reactive HPA vs Predictive Autoscaler
 
 Dokumen ini menjelaskan metodologi, skrip eksekusi, dan interpretasi metrik pengujian komparasi *head-to-head* antara **Kubernetes Horizontal Pod Autoscaler (HPA) Reaktif** bawaan klaster dan **Predictive Autoscaler Proaktif** berbasis Machine Learning.
 
@@ -58,9 +58,9 @@ Skrip akan secara otomatis:
 
 ---
 
-## 📈 4. Interpretasi Metrik untuk Lembar Kerja (LK-10 & LK-14)
+## 📈 4. Interpretasi Metrik Evaluasi Kinerja
 
-| Metrik | Makna Akademis | Formula Evaluasi |
+| Metrik | Definisi & Signifikansi | Formula Evaluasi |
 |:---|:---|:---|
 | **Anticipation Lead Time** | Kecepatan kontroler prediktif menambah pod mendahului puncak beban | $T_{\text{react}} - T_{\text{pred}}$ |
 | **Peak P95 Latency** | Ketahanan latensi terhadap lonjakan trafik mendadak | $\max(\text{Latency}_{\text{P95}})$ |
@@ -69,6 +69,6 @@ Skrip akan secara otomatis:
 
 ---
 
-## 💡 5. Kutipan Hasil untuk Presentasi LK-14
+## 💡 5. Ringkasan Temuan Empiris
 
 > *"Pengujian empiris membuktikan bahwa Reactive HPA membutuhkan waktu rata-rata 35-50 detik untuk mulai menambahkan pod setelah ambang batas CPU terlewati. Sebaliknya, Predictive Autoscaler mengantisipasi lonjakan beban 60 detik sebelumnya, sehingga pod sudah berstatus Ready saat trafik tiba. Hal ini memangkas lonjakan latensi P95 hingga lebih dari 60% dan menjaga kepatuhan SLO di atas 98%."*

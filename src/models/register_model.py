@@ -7,7 +7,7 @@ MLflow Model Registry ('predictive-autoscaler'), mengelola transisi siklus
 hidup model (Staging vs Production / @champion vs @challenger), menyinkronkan
 silsilah data ke DVC, dan menguji kesiapan inferensi serving secara programatik.
 
-Alur Kerja (Sesuai LK-07):
+Alur Kerja:
   1. Hubungkan ke MLflow Tracking Client (sqlite:///mlflow.db).
   2. Daftarkan model kandidat (LightGBM) sebagai Versi 1 (Stage: Staging / @challenger).
   3. Daftarkan model terbaik (Random Forest) sebagai Versi 2 (Stage: Production / @champion).
@@ -337,7 +337,7 @@ def generate_registry_manifest(
     """Menulis berkas model_registry_manifest.yaml untuk sinkronisasi DVC & audit."""
     manifest_content = f"""# ===================================================================
 # MLflow Model Registry Manifest — Predictive Autoscaling MLOps
-# Aligned with LK-07 (Model Registry, Versioning, dan Kesiapan Inferensi)
+# Model Registry, Versioning, dan Kesiapan Inferensi
 # ===================================================================
 
 model_name: "{model_name}"
@@ -396,7 +396,7 @@ deployment_policy:
 # ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="MLflow Model Registry & Lifecycle Management (LK-07)"
+        description="MLflow Model Registry & Lifecycle Management"
     )
     parser.add_argument(
         "--tracking-uri",
@@ -422,7 +422,7 @@ def main() -> None:
         )
         sys.exit(0 if success else 1)
 
-    # 1. Pastikan file metadata champion dari LK-06 ada
+    # 1. Pastikan file metadata champion ada
     if not CHAMPION_META_FILE.exists():
         raise FileNotFoundError(
             f"Berkas {CHAMPION_META_FILE} tidak ditemukan. "
@@ -537,7 +537,7 @@ def main() -> None:
     )
 
     log.info("\n" + "=" * 70)
-    log.info("RINGKASAN MODEL REGISTRY (LEMBAR KERJA LK-07)")
+    log.info("RINGKASAN MODEL REGISTRY (PRODUCTION DEPLOYMENT)")
     log.info("=" * 70)
     log.info("Model Name           : %s", REGISTERED_MODEL_NAME)
     log.info("Active Version (v2)  : Random Forest (@champion / Production)")

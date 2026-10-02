@@ -424,7 +424,7 @@ def train_single_model(
 # ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Pelatihan Model Prediksi Autoscaling dengan Tracking MLflow (LK-06)"
+        description="Pelatihan Model Prediksi Autoscaling dengan Tracking MLflow"
     )
     parser.add_argument(
         "--model",
@@ -523,7 +523,7 @@ def main() -> None:
     # Champion Selection (Pemilihan Model Terbaik Berdasarkan Val MAE)
     # -----------------------------------------------------------------------
     log.info("\n" + "=" * 70)
-    log.info("RINGKASAN HASIL PERBANDINGAN EKSPERIMEN (LEMBAR KERJA LK-06)")
+    log.info("RINGKASAN HASIL PERBANDINGAN EKSPERIMEN (MODEL EVALUATION)")
     log.info("=" * 70)
 
     summary_table = []
@@ -563,7 +563,7 @@ def main() -> None:
             lowest_mae,
         )
 
-        # Simpan metadata model terbaik ke file JSON untuk konsumsi LK-07 (Model Registry)
+        # Simpan metadata model terbaik ke file JSON untuk Model Registry
         metadata = {
             "champion_run_name": best_candidate["run_name"],
             "champion_run_id": best_candidate["run_id"],

@@ -43,7 +43,7 @@
   },
   "ethical_considerations": {
     "fairness_and_bias": "Dataset telemetri murni berisi metrik infrastruktur komputasi (RPS, CPU, Memori, Latensi) tanpa data sensitif atau Personally Identifiable Information (PII), meniadakan risiko bias demografis.",
-    "transparency": "Bobot kontribusi fitur dipublikasikan secara terbuka melalui metrik SHAP dan terdokumentasi pada laporan audit tata kelola LK-13.",
+    "transparency": "Bobot kontribusi fitur dipublikasikan secara terbuka melalui metrik SHAP dan terdokumentasi pada laporan audit tata kelola model AI.",
     "accountability": "Setiap transisi model dari Staging ke Production diwajibkan melewati automated gate MLflow dengan metrik Val MAE lebih baik daripada champion sebelumnya."
   },
   "container_security_compliance": {

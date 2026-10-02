@@ -1,16 +1,16 @@
-# 📦 Panduan Lengkap Silsilah Data DVC & MinIO S3 Storage (LK-05)
-## Penjelasan Arsitektur Content-Addressable Storage (CAS), Hash MD5, & Alur Versioning
+# Panduan Lengkap Silsilah Data DVC & MinIO S3 Storage
+## Arsitektur Content-Addressable Storage (CAS), Hash MD5, & Alur Versioning
 
-Dokumen ini disusun khusus untuk menjawab pertanyaan dosen penguji mengenai **bagaimana data mentah (*raw*) dan data olahan (*processed*) disimpan, mengapa di MinIO hanya terlihat string hash MD5, serta bagaimana versioning data dibuktikan secara ilmiah dan praktis.**
+Dokumen ini menjelaskan arsitektur penyimpanan dataset **Predictive Autoscaling MLOps**, mekanisme Content-Addressable Storage (CAS) pada MinIO S3, integritas hash MD5, serta cara kerja pelacakan silsilah (*data lineage*) dan *time-travel versioning*.
 
 ---
 
-## 🔍 1. Jawaban Langsung untuk Pertanyaan Dosen
+## 🔍 1. Prinsip Content-Addressable Storage (CAS) di MinIO S3
 
-> **Pertanyaan Dosen:**  
-> *"Kenapa saat saya buka MinIO di browser, di dalam bucket `mlops-dvc` tidak ada folder `raw` atau `processed` biasa yang berisi file `.csv`, melainkan folder kode-kode aneh seperti `6b/`, `b7/`, `70/` dengan nama file hash panjang? Di mana data aslinya dan bagaimana versioning-nya?"*
+> **Pertanyaan Umum / FAQ:**  
+> *"Mengapa di dalam bucket `mlops-dvc` pada MinIO S3 tidak ditemukan struktur folder konvensional berisi file `.csv`, melainkan direktori seperti `6b/`, `b7/`, `70/` dengan nama file berupa hash panjang? Di mana data aslinya dan bagaimana versioning-nya bekerja?"*
 
-### 💡 Penjelasan Akademis & Industri:
+### 💡 Penjelasan Arsitektur Sistem:
 MinIO dalam arsitektur MLOps ini berfungsi sebagai **Remote Cache DVC (Data Version Control)** yang mengadopsi mekanisme **Content-Addressable Storage (CAS)**. Ini adalah **standar industri yang sama persis dengan cara kerja Git**:
 
 1. **Analogi dengan Git:**  
@@ -77,9 +77,9 @@ Di dalam file pointer DVC directory (`.dir`), DVC menyimpan kamus mapping JSON y
 
 ---
 
-## ⚡ 4. Cara Membuktikan Versioning Data di Depan Dosen
+## ⚡ 4. Verifikasi Time-Travel Versioning Data
 
-Tunjukkan demonstrasi dua arah (*Time Travel Data Versioning*):
+DVC dan Git memungkinkan reproduktibilitas dataset dua arah (*Time Travel Data Versioning*):
 
 ### A. Memeriksa Versi 1.0 (Baseline Awal):
 ```bash
@@ -113,14 +113,13 @@ dvc checkout
 
 ---
 
-## 🌐 5. Cara Memperlihatkan Dataset Secara Visual di Web UI
+## 🌐 5. Visualisasi Silsilah Data di Web UI
 
-Jika dosen enggan melihat terminal, buka **Streamlit Control Center**:
+Untuk melihat pemetaan silsilah dataset tanpa CLI terminal, akses **Streamlit Control Center**:
 1. Buka: 👉 **https://mlops.titipin.me**
-2. Klik tab: **`📦 Model Registry (LK-07)`**
+2. Klik tab: **`Model Registry`**
 3. Gulir ke bagian bawah:
    * **Tabel Pemetaan Silsilah Data DVC:** Memperlihatkan hubungan langsung antara nama file CSV, Git Tag, dan hash MD5 MinIO.
    * **Pratinjau Baris Data CSV Asli:** Menampilkan tabel interaktif berisi 5 baris pertama data telemetri aktual (`timestamp`, `request_rate`, `php_cpu_cores`, `p95_latency`, `target_rps_60s`).
 4. Buka tab baru ke MinIO: 👉 **https://minio.titipin.me**  
-   Tunjukkan bucket `mlops-dvc` dan jelaskan:  
-   *"Pak, ini adalah penyimpanan fisik Content-Addressable Storage (CAS) di MinIO S3 yang menyimpan blok biner terenkripsi hash MD5 sesuai tabel pemetaan di dashboard tadi."*
+   Bucket `mlops-dvc` membuktikan penyimpanan fisik Content-Addressable Storage (CAS) di MinIO S3 yang menyimpan blok biner terenkripsi hash MD5 sesuai tabel pemetaan silsilah di atas.

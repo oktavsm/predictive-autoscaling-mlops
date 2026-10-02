@@ -1,6 +1,6 @@
 # ===================================================================
 # MLflow Model Registry Manifest — Predictive Autoscaling MLOps
-# Aligned with LK-07 (Model Registry, Versioning, dan Kesiapan Inferensi)
+# Model Registry, Versioning, dan Kesiapan Inferensi
 # ===================================================================
 
 model_name: "predictive-autoscaler"

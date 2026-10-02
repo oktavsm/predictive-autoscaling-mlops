@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Demo Traffic Spike Script for LK-14 Live Demonstration
+# Demo Traffic Spike Script for Predictive Autoscaler Verification
 # ==============================================================================
 # Mensimulasikan lonjakan trafik HTTP yang eskalatif ke backend Laravel via k6
 # untuk membuktikan kemampuan predictive autoscaler merespons SEBELUM lonjakan
@@ -25,7 +25,7 @@ NAMESPACE_TARGET="titipin"
 DEMO_DURATION_SECONDS=360
 
 echo "================================================================================"
-echo "       LK-14 LIVE DEMO: Predictive Autoscaling Traffic Spike Simulation        "
+echo "       LIVE DEMO: Predictive Autoscaling Traffic Spike Simulation        "
 echo "================================================================================"
 echo "Target URL     : ${TARGET_URL}"
 echo "Watch Namespace: ${NAMESPACE_WATCH}"

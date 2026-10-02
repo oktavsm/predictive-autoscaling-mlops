@@ -417,7 +417,7 @@ def generate_ai_governance_model_card(
             ),
             "transparency": (
                 "Bobot kontribusi fitur dipublikasikan secara terbuka melalui metrik SHAP dan terdokumentasi "
-                "pada laporan audit tata kelola LK-13."
+                "pada laporan audit tata kelola dan transparansi model AI."
             ),
             "accountability": (
                 "Setiap transisi model dari Staging ke Production diwajibkan melewati automated gate MLflow "
