@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Production Observability & Autoscaling Control Console
+Titipin MLOps — Predictive Autoscaling Control Console
 ======================================================
-Titipin MLOps Platform — Multi-Node AWS K3s Cluster
-Interactive operational telemetry, predictive pod scaling simulator,
-automated drift detection, FinOps cost analysis, and workload injector.
+Production observability dashboard for a multi-node AWS K3s cluster.
+Workload forecasting, pod scaling simulation, drift monitoring,
+cost analysis, and live traffic injection.
 """
 
 import json
@@ -17,9 +17,9 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# -----------------------------------------------------------------------------
-# Service Configuration & Endpoints
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Service Configuration
+# ---------------------------------------------------------------------------
 INFERENCE_API_URL = (
     os.getenv("INFERENCE_API_URL")
     or os.getenv("INFERENCE_SERVICE_URL")
@@ -32,17 +32,19 @@ GRAFANA_URL = os.getenv("GRAFANA_URL", "https://grafana.titipin.me")
 MINIO_URL = os.getenv("MINIO_URL", "https://minio.titipin.me")
 API_URL = os.getenv("API_URL", "https://api.titipin.me")
 
-# -----------------------------------------------------------------------------
-# Streamlit Configuration & Styling (Anti-Slop Modern SRE Theme)
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Page Setup
+# ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Titipin MLOps • Predictive Autoscaling Console",
-    page_icon="⚡",
+    page_title="Titipin MLOps — Predictive Autoscaling",
+    page_icon="T",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# High-precision dark theme with subtle borders, clean typography, and interactive tooltips
+# ---------------------------------------------------------------------------
+# Theme: Neutral dark palette — zinc/gray base, restrained accent colors
+# ---------------------------------------------------------------------------
 st.markdown(
     """
     <style>
@@ -50,194 +52,162 @@ st.markdown(
 
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        color: #E2E8F0;
+        color: #E4E4E7;
     }
     code, pre {
         font-family: 'JetBrains Mono', monospace !important;
     }
 
-    /* Background and Canvas Polish */
     .stApp {
-        background-color: #0A0E17;
+        background-color: #09090B;
     }
 
-    /* Executive Top Bar */
-    .console-header {
-        background: #0F172A;
-        border: 1px solid #1E293B;
-        border-radius: 10px;
-        padding: 18px 24px;
-        margin-bottom: 20px;
+    /* --- Header bar --- */
+    .hdr {
+        background: #18181B;
+        border: 1px solid #27272A;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 16px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
-    .console-title {
-        font-size: 20px;
+    .hdr-title {
+        font-size: 18px;
         font-weight: 700;
-        color: #F8FAFC;
-        margin: 0;
+        color: #FAFAFA;
         letter-spacing: -0.02em;
     }
-    .console-subtitle {
-        font-size: 13px;
-        color: #94A3B8;
-        margin-top: 4px;
+    .hdr-sub {
+        font-size: 12px;
+        color: #A1A1AA;
+        margin-top: 2px;
     }
 
-    /* Metric Cards */
+    /* --- Metric cards --- */
     div[data-testid="stMetric"] {
-        background: #0F172A !important;
-        border: 1px solid #1E293B !important;
-        border-radius: 8px !important;
-        padding: 14px 16px !important;
+        background: #18181B !important;
+        border: 1px solid #27272A !important;
+        border-radius: 6px !important;
+        padding: 12px 14px !important;
     }
     div[data-testid="stMetricLabel"] {
-        color: #64748B !important;
+        color: #71717A !important;
         font-size: 11px !important;
         font-weight: 600 !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.06em !important;
+        letter-spacing: 0.05em !important;
     }
     div[data-testid="stMetricValue"] {
-        color: #F1F5F9 !important;
-        font-size: 20px !important;
+        color: #FAFAFA !important;
+        font-size: 18px !important;
         font-weight: 700 !important;
         font-family: 'JetBrains Mono', monospace !important;
     }
 
-    /* Tooltip Terminology */
-    .tip-term {
+    /* --- Hover tooltips on terminology --- */
+    .tt {
         position: relative;
         display: inline-block;
-        border-bottom: 1px dotted #38BDF8;
+        border-bottom: 1px dotted #52525B;
         cursor: help;
-        color: #F1F5F9;
+        color: #E4E4E7;
         font-weight: 600;
     }
-    .tip-term:hover::after {
-        content: attr(data-tooltip);
+    .tt:hover::after {
+        content: attr(data-tip);
         position: absolute;
         bottom: 125%;
         left: 50%;
         transform: translateX(-50%);
-        background-color: #0B132B;
-        color: #E2E8F0;
+        background-color: #18181B;
+        color: #D4D4D8;
         padding: 8px 12px;
         border-radius: 6px;
-        border: 1px solid #38BDF8;
+        border: 1px solid #3F3F46;
         font-size: 11px;
         font-weight: 400;
         white-space: normal;
-        width: 250px;
+        width: 260px;
         z-index: 1000;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-        line-height: 1.4;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+        line-height: 1.45;
     }
 
-    /* Service Badge */
-    .badge-live {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10B981;
-        border: 1px solid rgba(16, 185, 129, 0.3);
+    /* --- Status pills --- */
+    .pill {
+        display: inline-block;
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 11px;
         font-weight: 600;
         font-family: 'JetBrains Mono', monospace;
     }
+    .pill-ok   { background: rgba(20,184,166,0.12); color: #5EEAD4; border: 1px solid rgba(20,184,166,0.3); }
+    .pill-warn { background: rgba(245,158,11,0.12); color: #FCD34D; border: 1px solid rgba(245,158,11,0.3); }
+    .pill-crit { background: rgba(239,68,68,0.12);  color: #FCA5A5; border: 1px solid rgba(239,68,68,0.3); }
+    .pill-info { background: rgba(99,102,241,0.12);  color: #C7D2FE; border: 1px solid rgba(99,102,241,0.3); }
+    .pill-mute { background: rgba(161,161,170,0.10); color: #A1A1AA; border: 1px solid rgba(161,161,170,0.2); }
 
-    /* Pod Rack Rack Visuals */
-    .pod-rack-box {
-        border-radius: 8px;
-        padding: 14px 10px;
-        text-align: center;
-        margin: 4px 0;
-        border: 1px solid #1E293B;
-        background: #0B1120;
+    /* --- Card panels --- */
+    .card {
+        background: #18181B;
+        border: 1px solid #27272A;
+        border-radius: 6px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
     }
-    .pod-rack-active {
-        border: 1px solid #10B981;
-        background: rgba(16, 185, 129, 0.08);
+    .card-accent-l {
+        border-left: 3px solid #14B8A6;
     }
-    .pod-label {
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 4px;
-    }
-    .pod-sub {
-        font-size: 10px;
-        color: #94A3B8;
-        font-family: 'JetBrains Mono', monospace;
+    .card-accent-amber {
+        border-left: 3px solid #F59E0B;
     }
 
-    /* Nav Links Sidebar */
-    .portal-link {
+    /* --- Sidebar links --- */
+    .slink {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: #0F172A;
-        border: 1px solid #1E293B;
-        color: #CBD5E1 !important;
+        background: #18181B;
+        border: 1px solid #27272A;
+        color: #D4D4D8 !important;
         text-decoration: none !important;
-        padding: 8px 12px;
-        border-radius: 6px;
-        margin: 5px 0;
+        padding: 7px 11px;
+        border-radius: 5px;
+        margin: 4px 0;
         font-size: 12px;
         font-weight: 500;
+        transition: border-color 0.15s;
     }
-    .portal-link:hover {
-        background: #1E293B;
-        border-color: #38BDF8;
-        color: #FFFFFF !important;
+    .slink:hover {
+        border-color: #52525B;
+        color: #FAFAFA !important;
     }
 
-    /* Audit Card & Operational Badges */
-    .audit-card {
-        background: #0F172A;
-        border: 1px solid #1E293B;
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 12px;
+    /* --- Pod rack --- */
+    .pod-box {
+        border-radius: 6px;
+        padding: 12px 8px;
+        text-align: center;
+        margin: 3px 0;
+        border: 1px solid #27272A;
+        background: #18181B;
     }
-    .badge-scaleup {
-        background: rgba(239, 68, 68, 0.15);
-        color: #F87171;
-        border: 1px solid rgba(239, 68, 68, 0.4);
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        font-family: 'JetBrains Mono', monospace;
+    .pod-box.active {
+        border-color: #14B8A6;
+        background: rgba(20,184,166,0.06);
     }
-    .badge-scaledown {
-        background: rgba(56, 189, 248, 0.15);
-        color: #38BDF8;
-        border: 1px solid rgba(56, 189, 248, 0.4);
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 11px;
+    .pod-name {
+        font-size: 12px;
         font-weight: 600;
-        font-family: 'JetBrains Mono', monospace;
+        margin-bottom: 3px;
+        color: #E4E4E7;
     }
-    .badge-maintain {
-        background: rgba(16, 185, 129, 0.15);
-        color: #34D399;
-        border: 1px solid rgba(16, 185, 129, 0.4);
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        font-family: 'JetBrains Mono', monospace;
-    }
-    .badge-sync {
-        background: rgba(99, 102, 241, 0.15);
-        color: #A5B4FC;
-        border: 1px solid rgba(99, 102, 241, 0.4);
-        padding: 3px 10px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
+    .pod-detail {
+        font-size: 10px;
+        color: #71717A;
         font-family: 'JetBrains Mono', monospace;
     }
     </style>
@@ -245,9 +215,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# -----------------------------------------------------------------------------
-# Dynamic Health & Cluster State Ingestion
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Cluster & Model State
+# ---------------------------------------------------------------------------
 health_data = {}
 try:
     resp = requests.get(f"{INFERENCE_API_URL}/health", timeout=2)
@@ -262,7 +232,6 @@ is_healthy = health_data.get("status") == "healthy"
 replica_bounds = health_data.get("replica_bounds", {"min": 1, "max": 6})
 target_rps_cfg = health_data.get("target_rps_per_pod", 10.0)
 
-# Fetch workload coordinator state (from VM cp-bcc bridge)
 workload_status = {}
 try:
     w_resp = requests.get(f"{INFERENCE_API_URL}/workload/status", timeout=2)
@@ -274,129 +243,87 @@ except Exception:
 active_traffic_mode = workload_status.get("override_state") or "AUTONOMOUS_MARKOV"
 cmd_seq_id = workload_status.get("override_id", 0)
 
-# -----------------------------------------------------------------------------
-# Sidebar: Controls & Infrastructure Portals
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Sidebar
+# ---------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("### ⚡ Control Console")
+    st.markdown("### Control Console")
     st.markdown(
-        """
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-            <span class="badge-live">● AWS K3s MULTI-NODE</span>
-            <span style="font-size: 11px; color: #94A3B8;">3 Instances</span>
-        </div>
-        """,
+        '<div style="margin-bottom:10px;"><span class="pill pill-ok">LIVE</span> '
+        '<span style="font-size:11px;color:#71717A;margin-left:6px;">AWS K3s — 3 nodes</span></div>',
         unsafe_allow_html=True,
     )
 
-    st.markdown("#### 🌐 Infrastructure Services")
+    st.markdown("#### Services")
     st.markdown(
         f"""
-        <a class="portal-link" href="{GRAFANA_URL}" target="_blank">
-            <span>📊 Grafana Observability</span> <span>↗</span>
-        </a>
-        <a class="portal-link" href="{MLFLOW_URL}" target="_blank">
-            <span>🔬 MLflow Model Registry</span> <span>↗</span>
-        </a>
-        <a class="portal-link" href="{MINIO_URL}" target="_blank">
-            <span>🗄️ MinIO S3 (DVC Storage)</span> <span>↗</span>
-        </a>
-        <a class="portal-link" href="{PUBLIC_INFERENCE_DOCS}" target="_blank">
-            <span>📑 FastAPI Swagger Docs</span> <span>↗</span>
-        </a>
-        <a class="portal-link" href="{API_URL}" target="_blank">
-            <span>🎯 Target Laravel API</span> <span>↗</span>
-        </a>
+        <a class="slink" href="{GRAFANA_URL}" target="_blank"><span>Grafana Observability</span><span style="color:#52525B;">&#8599;</span></a>
+        <a class="slink" href="{MLFLOW_URL}" target="_blank"><span>MLflow Model Registry</span><span style="color:#52525B;">&#8599;</span></a>
+        <a class="slink" href="{MINIO_URL}" target="_blank"><span>MinIO S3 / DVC Storage</span><span style="color:#52525B;">&#8599;</span></a>
+        <a class="slink" href="{PUBLIC_INFERENCE_DOCS}" target="_blank"><span>Inference API Docs</span><span style="color:#52525B;">&#8599;</span></a>
+        <a class="slink" href="{API_URL}" target="_blank"><span>Laravel Target API</span><span style="color:#52525B;">&#8599;</span></a>
         """,
         unsafe_allow_html=True,
     )
     st.divider()
 
-    st.markdown("#### ⚙️ Scaling Policy Bounds")
+    st.markdown("#### Scaling Policy")
     cfg_target_rps = st.number_input(
-        "Target Pod Capacity (RPS)",
+        "Target RPS per Pod",
         value=float(target_rps_cfg),
-        min_value=2.0,
-        max_value=30.0,
-        step=1.0,
-        help="Beban ideal per instance PHP-FPM untuk menjaga P95 latency < 100ms.",
+        min_value=2.0, max_value=30.0, step=1.0,
+        help="Ideal throughput per PHP-FPM replica to keep P95 latency below 100 ms.",
     )
-    cfg_min_pods = st.number_input("Floor (Min Replicas)", value=int(replica_bounds.get("min", 1)), min_value=1, max_value=2)
-    cfg_max_pods = st.number_input("Ceiling (Max Replicas)", value=int(replica_bounds.get("max", 6)), min_value=2, max_value=8)
+    cfg_min_pods = st.number_input("Min Replicas", value=int(replica_bounds.get("min", 1)), min_value=1, max_value=2)
+    cfg_max_pods = st.number_input("Max Replicas", value=int(replica_bounds.get("max", 6)), min_value=2, max_value=8)
 
     st.divider()
-    st.markdown("#### ⏱️ Real-Time Telemetry Stream")
-    auto_refresh = st.toggle(
-        "Auto-Refresh Telemetry",
-        value=True,
-        help="Aktifkan sinkronisasi otomatis status data ingestion, log inferensi API, dan eksekusi penskalaan klaster tanpa reload browser.",
-    )
+    st.markdown("#### Telemetry Refresh")
+    auto_refresh = st.toggle("Auto-refresh", value=True, help="Periodically poll the audit API for fresh data without reloading the page.")
     refresh_rate = st.select_slider(
-        "Interval Refresh",
+        "Interval",
         options=[5, 10, 15, 30],
         value=10,
-        format_func=lambda s: f"{s} detik",
+        format_func=lambda s: f"{s}s",
         disabled=not auto_refresh,
     )
 
-# -----------------------------------------------------------------------------
-# Top Console Header
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Header
+# ---------------------------------------------------------------------------
 st.markdown(
     """
-    <div class="console-header">
+    <div class="hdr">
         <div>
-            <div class="console-title">Titipin MLOps • Predictive Autoscaling Console</div>
-            <div class="console-subtitle">
-                Closed-Loop Telemetry Ingestion, Workload Forecasting (t+60s), and Proactive Kubernetes Pod Allocation.
-            </div>
+            <div class="hdr-title">Titipin MLOps &mdash; Predictive Autoscaling Console</div>
+            <div class="hdr-sub">Closed-loop telemetry ingestion, workload forecasting (t+60 s), and proactive Kubernetes pod allocation.</div>
         </div>
-        <div>
-            <span class="badge-live">MODEL: @champion (v10)</span>
-        </div>
+        <div><span class="pill pill-ok">MODEL @champion v10</span></div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# -----------------------------------------------------------------------------
-# Status Strip
-# -----------------------------------------------------------------------------
-col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-with col_s1:
-    st.metric(
-        "Serving Engine",
-        "HEALTHY" if is_healthy else "OFFLINE",
-        delta="Sub-15ms Latency",
-        help="Status kontainer FastAPI inferensi model di namespace mlops.",
-    )
-with col_s2:
-    st.metric(
-        "Active Model",
-        f"v10 Random Forest",
-        delta="@champion (Prod)",
-        help="Model aktif saat ini yang melayani traffic di klaster (dilatih pada flashsale dataset pasca evaluasi drift).",
-    )
-with col_s3:
-    st.metric(
-        "Replica Bounds",
-        f"{cfg_min_pods} - {cfg_max_pods} Pods",
-        delta=f"Target: {cfg_target_rps:.0f} RPS/Pod",
-        help="Rentang penskalaan replika pod Kubernetes yang diizinkan policy controller.",
-    )
-with col_s4:
-    st.metric(
-        "Traffic Generator",
-        active_traffic_mode,
-        delta=f"Sequence #{cmd_seq_id}",
-        help="Profil lalu lintas yang sedang dijalankan oleh daemon 24/7 di VM cp-bcc.",
-    )
+# Status strip
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.metric("Serving Engine", "HEALTHY" if is_healthy else "OFFLINE", delta="Sub-15 ms latency",
+              help="FastAPI inference container status in namespace mlops.")
+with c2:
+    st.metric("Active Model", "v10 Random Forest", delta="@champion",
+              help="Currently serving model trained on post-drift flash-sale dataset.")
+with c3:
+    st.metric("Replica Range", f"{cfg_min_pods}–{cfg_max_pods} pods", delta=f"Target: {cfg_target_rps:.0f} RPS/pod",
+              help="Allowed pod scaling bounds enforced by the policy controller.")
+with c4:
+    st.metric("Traffic Profile", active_traffic_mode, delta=f"Seq #{cmd_seq_id}",
+              help="Current workload profile running on the 24/7 load generator VM.")
 
-st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# -----------------------------------------------------------------------------
-# Main Application Tabs
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Tabs
+# ---------------------------------------------------------------------------
 (
     tab_audit,
     tab_sim,
@@ -406,554 +333,333 @@ st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
     tab_benchmark,
     tab_registry,
     tab_k8s,
-) = st.tabs(
-    [
-        "⏱️ Telemetry & Operational Audit",
-        "🎮 Scaling Simulator",
-        "🚀 Workload Injector (VM cp-bcc)",
-        "💰 FinOps Cost & Carbon (LK-13)",
-        "🔄 Autonomous CT & Drift (LK-12)",
-        "📊 A/B Benchmark (LK-10)",
-        "📦 Model Registry (LK-07)",
-        "☸️ Cluster Architecture",
-    ]
-)
+) = st.tabs([
+    "Telemetry Audit",
+    "Scaling Simulator",
+    "Workload Injector",
+    "FinOps & Carbon",
+    "Drift & Retraining",
+    "HPA vs Predictive",
+    "Model Registry",
+    "Cluster Architecture",
+])
 
-# =============================================================================
-# TAB 0: Operational Telemetry & Audit Trail
-# =============================================================================
+
+# =========================================================================
+# TAB: Telemetry Audit
+# =========================================================================
 with tab_audit:
     refresh_param = int(refresh_rate) if auto_refresh else None
 
     @st.fragment(run_every=refresh_param)
-    def render_audit_view():
-        # Fetch operational audit data from inference service
-        audit_data = {}
+    def render_audit():
+        audit = {}
         try:
-            r_aud = requests.get(f"{INFERENCE_API_URL}/operations/audit", timeout=2.5)
-            if r_aud.status_code == 200:
-                audit_data = r_aud.json()
+            r = requests.get(f"{INFERENCE_API_URL}/operations/audit", timeout=2.5)
+            if r.status_code == 200:
+                audit = r.json()
         except Exception:
             pass
 
-        # Fallback if API momentarily unreachable
-        if not audit_data:
-            audit_data = {
+        if not audit:
+            audit = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "last_ingestion": {
-                    "timestamp": "2026-10-02 14:00:00 UTC",
-                    "window_minutes": 15,
-                    "records_count": 250,
-                    "target_dataset": "data/processed/metrics_flashsale_drifted.csv",
-                    "status": "HEALTHY_INGESTED",
-                },
+                "last_ingestion": {"timestamp": "2026-10-02 14:00:00 UTC", "window_minutes": 15, "records_count": 250,
+                                   "target_dataset": "data/processed/metrics_flashsale_drifted.csv", "status": "HEALTHY_INGESTED"},
                 "retraining": {
-                    "latest": {
-                        "version": "10",
-                        "timestamp": "2026-10-02 14:00:50 UTC",
-                        "algorithm": "Random Forest Regressor",
-                        "val_mae": "0.0210 RPS",
-                        "stage": "Production (@champion)",
-                        "trigger": "Autonomous CT Job (PSI > 0.25)",
-                    },
-                    "history": [
-                        {
-                            "version": "10",
-                            "timestamp": "2026-10-02 14:00:50 UTC",
-                            "algorithm": "Random Forest Regressor",
-                            "val_mae": "0.0210 RPS",
-                            "stage": "Production (@champion)",
-                            "trigger": "Autonomous CT Job (PSI > 0.25)",
-                        },
-                        {
-                            "version": "9",
-                            "timestamp": "2026-10-02 14:00:50 UTC",
-                            "algorithm": "LightGBM Regressor",
-                            "val_mae": "0.1246 RPS",
-                            "stage": "Staging (@challenger)",
-                            "trigger": "Autonomous Evaluation Gate",
-                        },
-                        {
-                            "version": "8",
-                            "timestamp": "2026-10-02 12:20:00 UTC",
-                            "algorithm": "Random Forest Regressor",
-                            "val_mae": "0.0241 RPS",
-                            "stage": "Archived",
-                            "trigger": "Flash-Sale Training Run",
-                        },
-                        {
-                            "version": "7",
-                            "timestamp": "2026-09-30 20:45:00 UTC",
-                            "algorithm": "LightGBM Regressor",
-                            "val_mae": "0.1310 RPS",
-                            "stage": "Archived",
-                            "trigger": "Continual Learning Batch 2",
-                        },
-                        {
-                            "version": "6",
-                            "timestamp": "2026-09-28 10:30:00 UTC",
-                            "algorithm": "Ridge / Random Forest",
-                            "val_mae": "0.1450 RPS",
-                            "stage": "Archived",
-                            "trigger": "Baseline Dataset v1.0",
-                        },
-                    ],
+                    "latest": {"version": "10", "timestamp": "2026-10-02 14:00:50 UTC", "algorithm": "Random Forest Regressor",
+                               "val_mae": "0.0210 RPS", "stage": "Production (@champion)", "trigger": "Autonomous CT Job (PSI > 0.25)"},
+                    "history": [],
                 },
-                "scaling_api": {
-                    "total_calls_tracked": 12,
-                    "recent_decisions": [],
-                },
-                "scaling_actions": {
-                    "total_events_tracked": 4,
-                    "recent_actions": [],
-                },
+                "scaling_api": {"total_calls_tracked": 0, "recent_decisions": []},
+                "scaling_actions": {"total_events_tracked": 0, "recent_actions": []},
             }
 
-        # Time references
         wib = timezone(timedelta(hours=7))
-        now_utc = datetime.now(timezone.utc)
-        now_wib_str = now_utc.astimezone(wib).strftime("%H:%M:%S WIB")
-        now_utc_str = now_utc.strftime("%Y-%m-%d %H:%M:%S UTC")
+        now_wib = datetime.now(timezone.utc).astimezone(wib).strftime("%H:%M:%S WIB")
 
-        st.markdown("### ⏱️ Telemetri Operasional & Audit Trail MLOps")
+        st.markdown("### Operational Telemetry & Audit Trail")
         st.markdown(
             """
-            Konsol audit terpadu untuk memantau siklus operasional platform secara end-to-end: 
-            <span class="tip-term" data-tooltip="Data Ingestion: Pengambilan metrik Prometheus (RPS, CPU, RAM, Latensi P95) secara periodik ke feature store DVC.">Data Ingestion</span>, 
-            <span class="tip-term" data-tooltip="Continuous Training: Siklus retraining model otonom saat deteksi drift terpicu di klaster K8s.">Retraining Model</span>, 
-            <span class="tip-term" data-tooltip="Scale Decision API: Pemanggilan inferensi beban t+60s oleh controller setiap 15 detik.">API Scaling Calls</span>, dan 
-            <span class="tip-term" data-tooltip="Kubernetes Scale Actions: Perubahan nyata jumlah pod PHP-FPM yang dieksekusi langsung ke klaster K3s.">Eksekusi Penskalaan Pod</span>.
+            End-to-end audit console covering
+            <span class="tt" data-tip="Periodic collection of Prometheus metrics (RPS, CPU, RAM, P95 latency) into the DVC feature store.">data ingestion</span>,
+            <span class="tt" data-tip="Autonomous model retraining triggered when production data drift exceeds the PSI threshold.">model retraining</span>,
+            <span class="tt" data-tip="Inference API calls made by the scaler daemon every 15 seconds to predict workload at t+60 s.">scaling API calls</span>, and
+            <span class="tt" data-tip="Actual Kubernetes replica changes applied to the laravel-backend deployment.">pod scaling actions</span>.
             """,
             unsafe_allow_html=True,
         )
 
-        # Top Sync & Refresh Status Bar
-        col_bar1, col_bar2 = st.columns([3, 1])
-        with col_bar1:
-            refresh_status_badge = (
-                f'<span class="badge-sync">● AUTO-REFRESH AKTIF ({refresh_rate}s)</span>'
-                if auto_refresh
-                else '<span style="background: rgba(148,163,184,0.15); color: #94A3B8; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-family: monospace;">○ MANUAL REFRESH</span>'
-            )
+        # Sync bar
+        cb1, cb2 = st.columns([3, 1])
+        with cb1:
+            pill_cls = "pill-info" if auto_refresh else "pill-mute"
+            pill_txt = f"AUTO-REFRESH {refresh_rate}s" if auto_refresh else "MANUAL"
             st.markdown(
-                f"""
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    {refresh_status_badge}
-                    <span style="font-size: 12px; color: #94A3B8;">Terakhir disinkronkan: <b>{now_wib_str}</b> ({now_utc_str})</span>
-                </div>
-                """,
+                f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+                f'<span class="pill {pill_cls}">{pill_txt}</span>'
+                f'<span style="font-size:12px;color:#71717A;">Last sync: <b style="color:#A1A1AA;">{now_wib}</b></span>'
+                f'</div>',
                 unsafe_allow_html=True,
             )
-        with col_bar2:
-            if st.button("🔄 Segarkan Data Sekarang", use_container_width=True):
+        with cb2:
+            if st.button("Refresh now", use_container_width=True):
                 st.rerun()
 
-        # 4 Core Highlights
-        last_ing = audit_data.get("last_ingestion", {})
-        retrain_info = audit_data.get("retraining", {})
-        latest_model = retrain_info.get("latest", {})
-        api_info = audit_data.get("scaling_api", {})
-        act_info = audit_data.get("scaling_actions", {})
-        recent_actions = act_info.get("recent_actions", [])
-        last_action = recent_actions[-1] if recent_actions else {"action": "MAINTAIN", "from_replicas": 1, "to_replicas": 1, "status": "STABLE"}
+        # Summary metrics
+        ing = audit.get("last_ingestion", {})
+        ret = audit.get("retraining", {})
+        latest = ret.get("latest", {})
+        api = audit.get("scaling_api", {})
+        acts = audit.get("scaling_actions", {})
+        recent_acts = acts.get("recent_actions", [])
+        last_act = recent_acts[-1] if recent_acts else {"action": "MAINTAIN", "from_replicas": 1, "to_replicas": 1, "status": "STABLE"}
 
-        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-        with col_m1:
-            st.metric(
-                "Ingestion Terakhir",
-                f"{last_ing.get('records_count', 250)} Records",
-                delta=f"Window: {last_ing.get('window_minutes', 15)}m",
-                help="Waktu dan volume pengumpulan telemetri Prometheus terbaru.",
-            )
-        with col_m2:
-            st.metric(
-                "Retraining Terakhir",
-                f"Model v{latest_model.get('version', '10')}",
-                delta=f"MAE: {latest_model.get('val_mae', '0.0210 RPS')}",
-                help="Versi model aktif hasil autonomous retraining di MLflow Model Registry.",
-            )
-        with col_m3:
-            st.metric(
-                "Panggilan API Scaling",
-                f"{api_info.get('total_calls_tracked', 0)} Terlacak",
-                delta="Loop Interval 15s",
-                help="Jumlah permintaan evaluasi beban ke endpoint /scale-decision.",
-            )
-        with col_m4:
-            st.metric(
-                "Aksi Skala Terakhir",
-                f"{last_action.get('action', 'MAINTAIN')} ({last_action.get('from_replicas', 1)} ➔ {last_action.get('to_replicas', 1)} Pods)",
-                delta=last_action.get("status", "APPLIED"),
-                help="Eksekusi perubahan pod Kubernetes terakhir oleh predictive autoscaler daemon.",
-            )
+        m1, m2, m3, m4 = st.columns(4)
+        with m1:
+            st.metric("Last Ingestion", f"{ing.get('records_count', 250)} records", delta=f"Window: {ing.get('window_minutes', 15)}m",
+                      help="Volume and observation window of the most recent telemetry collection.")
+        with m2:
+            st.metric("Last Retrain", f"Model v{latest.get('version', '10')}", delta=f"MAE: {latest.get('val_mae', '0.0210 RPS')}",
+                      help="Active champion model version from the MLflow registry.")
+        with m3:
+            st.metric("API Calls Tracked", f"{api.get('total_calls_tracked', 0)}", delta="Every 15 s",
+                      help="Number of /scale-decision evaluations recorded in the ring buffer.")
+        with m4:
+            st.metric("Last Scale Action", f"{last_act['action']} ({last_act['from_replicas']} > {last_act['to_replicas']})",
+                      delta=last_act.get("status", "STABLE"),
+                      help="Most recent Kubernetes replica change by the predictive scaler.")
 
-        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-        # ---------------------------------------------------------------------
-        # 1. DATA INGESTION ACTIVITY & SCHEDULE
-        # ---------------------------------------------------------------------
-        st.markdown("#### 1. 📥 Aktivitas & Jadwal Data Ingestion Terakhir")
+        # -- Section 1: Ingestion --
+        st.markdown("#### Data Ingestion Activity")
         st.markdown(
             """
-            Daemon pengumpul telemetri mengumpulkan metrik performa (*time-series*) dari Prometheus (Caddy Ingress & PHP-FPM) 
-            secara berkala menggunakan 
-            <span class="tip-term" data-tooltip="Rolling Window: Rentang waktu observasi dinamis (misal 15 menit) untuk menghitung rata-rata bergerak, deviasi standar, dan tren lonjakan beban.">Rolling Window</span>. 
-            Data yang telah diolah disimpan ke storage dengan pelacakan integritas 
-            <span class="tip-term" data-tooltip="DVC Versioning: Menyimpan data biner di MinIO S3 dengan hashing MD5 Content-Addressable Storage (CAS).">DVC Versioning</span>.
+            The telemetry collector scrapes Prometheus (Caddy Ingress and PHP-FPM cAdvisor) using a
+            <span class="tt" data-tip="A sliding observation window (e.g. 15 min) used to compute rolling means, standard deviations, and trend features.">rolling window</span>,
+            then persists processed features to
+            <span class="tt" data-tip="Data Version Control: binary data stored in MinIO S3 via MD5 content-addressable hashing for integrity and deduplication.">DVC-tracked storage</span>.
             """,
             unsafe_allow_html=True,
         )
-
-        col_ing1, col_ing2 = st.columns(2)
-        with col_ing1:
+        ci1, ci2 = st.columns(2)
+        with ci1:
             st.markdown(
                 f"""
-                <div class="audit-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 13px; font-weight: 600; color: #F8FAFC;">Status Eksekusi Ingestion</span>
-                        <span class="badge-live">{last_ing.get('status', 'HEALTHY_INGESTED')}</span>
+                <div class="card card-accent-l">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span style="font-size:13px;font-weight:600;color:#FAFAFA;">Ingestion Status</span>
+                        <span class="pill pill-ok">{ing.get('status', 'HEALTHY_INGESTED')}</span>
                     </div>
-                    <ul style="font-size: 12px; color: #CBD5E1; line-height: 1.8; margin: 0; padding-left: 18px;">
-                        <li><b>Waktu Ingestion Terakhir:</b> <code style="color: #38BDF8;">{last_ing.get('timestamp', '2026-10-02 14:00:00 UTC')}</code></li>
-                        <li><b>Waktu Lokal (WIB):</b> <code>2026-10-02 21:00:00 WIB</code> (15m Rolling Window)</li>
-                        <li><b>Volume Metrik Masuk:</b> <code>{last_ing.get('records_count', 250)} Baris Telemetri</code></li>
-                        <li><b>Frekuensi Pengambilan:</b> Setiap 15 detik (Agregasi Scrape Prometheus)</li>
+                    <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
+                        <li><b>Timestamp:</b> <code>{ing.get('timestamp', '2026-10-02 14:00:00 UTC')}</code></li>
+                        <li><b>Records:</b> <code>{ing.get('records_count', 250)}</code> telemetry rows</li>
+                        <li><b>Scrape interval:</b> every 15 s (Prometheus aggregation)</li>
                     </ul>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-        with col_ing2:
+        with ci2:
             st.markdown(
                 f"""
-                <div class="audit-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 13px; font-weight: 600; color: #F8FAFC;">Dataset Feature Store & Silsilah DVC</span>
-                        <span style="font-size: 11px; color: #38BDF8; font-family: monospace;">MinIO S3 Connected</span>
+                <div class="card card-accent-amber">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span style="font-size:13px;font-weight:600;color:#FAFAFA;">Feature Store & DVC Lineage</span>
+                        <span class="pill pill-mute">MinIO S3</span>
                     </div>
-                    <ul style="font-size: 12px; color: #CBD5E1; line-height: 1.8; margin: 0; padding-left: 18px;">
-                        <li><b>File Target Dataset:</b> <code>{last_ing.get('target_dataset', 'data/processed/metrics_flashsale_drifted.csv')}</code></li>
-                        <li><b>Git Lineage Tag:</b> <code>v2.0-data</code> (Active Production Reference)</li>
-                        <li><b>Hash Integritas MD5:</b> <code>70caf5ea7e6f4e72243ecd8a15e8f4e5</code></li>
-                        <li><b>Storage Bucket:</b> <code>s3://titipin-dvc/</code> (MinIO Object Storage)</li>
+                    <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
+                        <li><b>Dataset:</b> <code>{ing.get('target_dataset', 'data/processed/metrics_flashsale_drifted.csv')}</code></li>
+                        <li><b>Git tag:</b> <code>v2.0-data</code></li>
+                        <li><b>MD5:</b> <code>70caf5ea7e6f4e72243ecd8a15e8f4e5</code></li>
+                        <li><b>Bucket:</b> <code>s3://titipin-dvc/</code></li>
                     </ul>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        # Ingestion Batches Table
-        ing_history_df = pd.DataFrame([
-            {
-                "Batch ID": "ING-20261002-004",
-                "Waktu Eksekusi (UTC)": "2026-10-02 14:00:00 UTC",
-                "Waktu Lokal (WIB)": "21:00:00 WIB",
-                "Sumber Telemetri": "Prometheus (Caddy RPS + PHP CPU/RAM)",
-                "Jumlah Record": 250,
-                "Window Observasi": "15 Menit",
-                "Dataset Output": "data/processed/metrics_flashsale_drifted.csv",
-                "Status": "HEALTHY_INGESTED",
-            },
-            {
-                "Batch ID": "ING-20261002-003",
-                "Waktu Eksekusi (UTC)": "2026-10-02 12:15:00 UTC",
-                "Waktu Lokal (WIB)": "19:15:00 WIB",
-                "Sumber Telemetri": "Prometheus (Spike Flash-Sale Ingress)",
-                "Jumlah Record": 250,
-                "Window Observasi": "15 Menit",
-                "Dataset Output": "data/processed/metrics_flashsale_drifted.csv",
-                "Status": "HEALTHY_INGESTED",
-            },
-            {
-                "Batch ID": "ING-20260930-002",
-                "Waktu Eksekusi (UTC)": "2026-09-30 20:30:00 UTC",
-                "Waktu Lokal (WIB)": "03:30:00 WIB (+1)",
-                "Sumber Telemetri": "Prometheus (Gradual Ramp Workload)",
-                "Jumlah Record": 250,
-                "Window Observasi": "15 Menit",
-                "Dataset Output": "data/processed/metrics_demo_processed.csv",
-                "Status": "ARCHIVED_DVC",
-            },
-            {
-                "Batch ID": "ING-20260928-001",
-                "Waktu Eksekusi (UTC)": "2026-09-28 10:15:00 UTC",
-                "Waktu Lokal (WIB)": "17:15:00 WIB",
-                "Sumber Telemetri": "Prometheus (Baseline Cluster Launch)",
-                "Jumlah Record": 250,
-                "Window Observasi": "15 Menit",
-                "Dataset Output": "data/processed/metrics_processed_20260927_132354.csv",
-                "Status": "ARCHIVED_DVC",
-            },
+        ing_df = pd.DataFrame([
+            {"Batch": "ING-20261002-004", "Time (UTC)": "2026-10-02 14:00:00", "Source": "Prometheus (Caddy + PHP)", "Records": 250, "Window": "15 min", "Output": "metrics_flashsale_drifted.csv", "Status": "HEALTHY"},
+            {"Batch": "ING-20261002-003", "Time (UTC)": "2026-10-02 12:15:00", "Source": "Prometheus (Flash-Sale)", "Records": 250, "Window": "15 min", "Output": "metrics_flashsale_drifted.csv", "Status": "HEALTHY"},
+            {"Batch": "ING-20260930-002", "Time (UTC)": "2026-09-30 20:30:00", "Source": "Prometheus (Gradual Ramp)", "Records": 250, "Window": "15 min", "Output": "metrics_demo_processed.csv", "Status": "ARCHIVED"},
+            {"Batch": "ING-20260928-001", "Time (UTC)": "2026-09-28 10:15:00", "Source": "Prometheus (Baseline)", "Records": 250, "Window": "15 min", "Output": "metrics_processed_20260927.csv", "Status": "ARCHIVED"},
         ])
-        st.dataframe(ing_history_df.set_index("Batch ID"), use_container_width=True)
+        st.dataframe(ing_df.set_index("Batch"), use_container_width=True)
 
-        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-        # ---------------------------------------------------------------------
-        # 2. RETRAINING HISTORY (MLFLOW REGISTRY)
-        # ---------------------------------------------------------------------
-        st.markdown("#### 2. 🔄 Riwayat Retraining Terakhir & Versi Sebelumnya (MLflow Registry)")
+        # -- Section 2: Retraining --
+        st.markdown("#### Retraining History (MLflow Registry)")
         st.markdown(
             """
-            Ketika modul pemantau drift mendeteksi pergeseran pola beban ($\text{PSI} > 0.25$), sistem secara otomatis 
-            memicu pipeline 
-            <span class="tip-term" data-tooltip="Autonomous Continuous Training: Pelatihan ulang model regresi multi-algoritma (Random Forest vs LightGBM) tanpa intervensi manual pengembang.">Continuous Training (CT)</span>. 
-            Model yang lolos 
-            <span class="tip-term" data-tooltip="Evaluation Gate: Pengujian galat MAE pada dataset validasi. Model baru hanya dipromosikan jika MAE lebih kecil dari model aktif saat ini.">Evaluation Gate</span> 
-            dipromosikan ke tahap **@champion (Production)** dan di-reload secara zero-downtime.
+            When the drift monitor detects distribution shift (PSI > 0.25), the system triggers
+            <span class="tt" data-tip="Autonomous multi-algorithm training (Random Forest vs LightGBM) without manual intervention.">continuous training</span>.
+            Models passing the
+            <span class="tt" data-tip="Validation gate: a new model is promoted only if its MAE on held-out data beats the current champion.">evaluation gate</span>
+            are promoted to @champion and hot-reloaded with zero downtime.
             """,
             unsafe_allow_html=True,
         )
 
-        col_rt1, col_rt2 = st.columns(2)
-        with col_rt1:
+        cr1, cr2 = st.columns(2)
+        with cr1:
             st.markdown(
                 f"""
-                <div class="audit-card" style="border-color: #10B981;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span class="badge-live">🏆 RETRAINING TERAKHIR (AKTIF DI PRODUKSI)</span>
-                        <span style="font-size: 11px; color: #10B981; font-family: monospace;">@champion</span>
+                <div class="card" style="border-left:3px solid #14B8A6;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span class="pill pill-ok">CHAMPION — PRODUCTION</span>
+                        <span style="font-size:11px;color:#5EEAD4;font-family:monospace;">@champion</span>
                     </div>
-                    <h4 style="margin: 4px 0; color: #F8FAFC;">Model Version {latest_model.get('version', '10')} • {latest_model.get('algorithm', 'Random Forest Regressor')}</h4>
-                    <ul style="font-size: 12px; color: #CBD5E1; line-height: 1.8; margin: 8px 0 0 0; padding-left: 18px;">
-                        <li><b>Waktu Retraining:</b> <code style="color: #10B981;">{latest_model.get('timestamp', '2026-10-02 14:00:50 UTC')} (21:00:50 WIB)</code></li>
-                        <li><b>Pemicu Retraining:</b> <code>{latest_model.get('trigger', 'Autonomous CT Job (PSI > 0.25)')}</code></li>
-                        <li><b>Akurasi Prediksi:</b> <b>Validation MAE: {latest_model.get('val_mae', '0.0210 RPS')}</b> (Akurasi tertinggi)</li>
-                        <li><b>Status Deployment:</b> <code>Lolos Evaluation Gate ➔ Hot-Reloaded (0 Restart)</code></li>
+                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {latest.get('version','10')} — {latest.get('algorithm','Random Forest Regressor')}</div>
+                    <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">
+                        <li><b>Trained:</b> <code>{latest.get('timestamp','2026-10-02 14:00:50 UTC')}</code></li>
+                        <li><b>Trigger:</b> {latest.get('trigger','Autonomous CT Job (PSI > 0.25)')}</li>
+                        <li><b>Validation MAE:</b> <b>{latest.get('val_mae','0.0210 RPS')}</b></li>
+                        <li><b>Deployment:</b> Hot-reloaded, zero restarts</li>
                     </ul>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-        with col_rt2:
+        with cr2:
             st.markdown(
-                f"""
-                <div class="audit-card" style="border-color: #38BDF8;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">🥈 KANDIDAT RETRAINING EVALUATION GATE</span>
-                        <span style="font-size: 11px; color: #38BDF8; font-family: monospace;">@challenger</span>
+                """
+                <div class="card" style="border-left:3px solid #F59E0B;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span class="pill pill-warn">CHALLENGER — STAGING</span>
+                        <span style="font-size:11px;color:#FCD34D;font-family:monospace;">@challenger</span>
                     </div>
-                    <h4 style="margin: 4px 0; color: #F8FAFC;">Model Version 9 • LightGBM Regressor</h4>
-                    <ul style="font-size: 12px; color: #CBD5E1; line-height: 1.8; margin: 8px 0 0 0; padding-left: 18px;">
-                        <li><b>Waktu Retraining:</b> <code>2026-10-02 14:00:50 UTC (21:00:50 WIB)</code></li>
-                        <li><b>Pemicu Retraining:</b> <code>Autonomous Multi-Model Evaluation Job</code></li>
-                        <li><b>Akurasi Prediksi:</b> <b>Validation MAE: 0.1246 RPS</b> (Latensi inferensi: 2.8 ms)</li>
-                        <li><b>Hasil Gate:</b> <code>Dipertahankan di Staging sebagai Challenger</code></li>
+                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version 9 — LightGBM Regressor</div>
+                    <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">
+                        <li><b>Trained:</b> <code>2026-10-02 14:00:50 UTC</code></li>
+                        <li><b>Trigger:</b> Multi-model evaluation job</li>
+                        <li><b>Validation MAE:</b> 0.1246 RPS (inference: 2.8 ms)</li>
+                        <li><b>Result:</b> Retained as staging candidate</li>
                     </ul>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        # Historical Retrainings Table
-        retrain_history = retrain_info.get("history", [])
-        if retrain_history:
-            st.markdown("##### 📜 Tabel Riwayat Retraining Sebelumnya (MLflow Model Lineage)")
-            df_retrain = pd.DataFrame(retrain_history)
-            rename_map = {
-                "version": "Versi Model",
-                "timestamp": "Waktu Retraining (UTC)",
-                "algorithm": "Algoritma Machine Learning",
-                "val_mae": "Validation MAE",
-                "stage": "Tahap MLflow",
-                "trigger": "Pemicu Retraining / Konteks",
-            }
-            df_retrain = df_retrain.rename(columns=rename_map)
-            st.dataframe(df_retrain.set_index("Versi Model"), use_container_width=True)
+        history = ret.get("history", [])
+        if history:
+            st.markdown("##### Model Version Lineage")
+            df_h = pd.DataFrame(history).rename(columns={
+                "version": "Version", "timestamp": "Trained (UTC)", "algorithm": "Algorithm",
+                "val_mae": "MAE", "stage": "Stage", "trigger": "Trigger",
+            })
+            st.dataframe(df_h.set_index("Version"), use_container_width=True)
 
-        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-        # ---------------------------------------------------------------------
-        # 3. SCALING API CALLS LOG
-        # ---------------------------------------------------------------------
-        st.markdown("#### 3. 📡 Log Pemanggilan API Scaling (`/scale-decision` & `/predict`)")
+        # -- Section 3: API calls --
+        st.markdown("#### Scaling API Call Log")
         st.markdown(
             """
-            Daemon *predictive scaler* memanggil API inferensi secara berkala (setiap 15 detik) dengan mengirimkan snapshot 
-            <span class="tip-term" data-tooltip="Telemetri Masuk: Laju permintaan HTTP (RPS), utilisasi CPU worker, dan latensi P95 saat ini dari Ingress Caddy dan cAdvisor.">fitur telemetri masuk</span>. 
-            Model ML menghitung estimasi beban $t+60$ detik ke depan dan Policy Controller menentukan rekomendasi replika pod yang optimal.
+            The predictive scaler daemon calls the inference API every 15 seconds with a snapshot of
+            <span class="tt" data-tip="Current HTTP request rate, CPU utilization, and P95 latency collected from Caddy Ingress and cAdvisor.">live telemetry features</span>.
+            The model returns a workload forecast at t+60 s and the policy controller computes recommended replicas.
             """,
             unsafe_allow_html=True,
         )
 
-        decisions = api_info.get("recent_decisions", [])
+        decisions = api.get("recent_decisions", [])
         if decisions:
-            df_dec = pd.DataFrame(decisions)
-            cols_order = [
-                "timestamp",
-                "input_rps",
-                "input_cpu",
-                "input_p95_ms",
-                "current_replicas",
-                "predicted_rps_60s",
-                "desired_replicas",
-                "action",
-                "latency_ms",
-            ]
-            cols_exist = [c for c in cols_order if c in df_dec.columns]
-            df_dec = df_dec[cols_exist]
-            df_dec = df_dec.rename(
-                columns={
-                    "timestamp": "Waktu Panggilan (UTC)",
-                    "input_rps": "Incoming RPS",
-                    "input_cpu": "CPU Cores",
-                    "input_p95_ms": "P95 Latency (ms)",
-                    "current_replicas": "Pod Saat Ini",
-                    "predicted_rps_60s": "Prediksi RPS (t+60s)",
-                    "desired_replicas": "Rekomendasi Pod",
-                    "action": "Keputusan Aksi",
-                    "latency_ms": "Latensi Model (ms)",
-                }
-            )
-            st.dataframe(df_dec.set_index("Waktu Panggilan (UTC)"), use_container_width=True)
+            df_d = pd.DataFrame(decisions)
+            col_map = {"timestamp": "Time (UTC)", "input_rps": "RPS In", "input_cpu": "CPU",
+                       "input_p95_ms": "P95 (ms)", "current_replicas": "Pods Now",
+                       "predicted_rps_60s": "Predicted RPS", "desired_replicas": "Target Pods",
+                       "action": "Decision", "latency_ms": "Latency (ms)"}
+            cols = [c for c in col_map if c in df_d.columns]
+            st.dataframe(df_d[cols].rename(columns=col_map).set_index("Time (UTC)"), use_container_width=True)
         else:
-            st.info("Belum ada data panggilan API dalam buffer ring saat ini.")
+            st.info("No API calls recorded in the current ring buffer.")
 
-        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-        # ---------------------------------------------------------------------
-        # 4. SCALING ACTIONS EXECUTION LOG
-        # ---------------------------------------------------------------------
-        st.markdown("#### 4. ⚡ Log Riwayat Eksekusi Penskalaan Pod Kubernetes (Scaling Actions)")
+        # -- Section 4: Scale actions --
+        st.markdown("#### Pod Scaling Execution Log")
         st.markdown(
             """
-            Log audit tindakan penskalaan aktual yang dieksekusi langsung ke objek `Deployment/laravel-backend` di klaster Kubernetes AWS K3s. 
-            Setiap aksi mencatat 
-            <span class="tip-term" data-tooltip="Transisi Pod: Perubahan jumlah replika pod aktif dari kondisi sebelumnya ke kondisi target (misal 1 -> 6 pods).">transisi replika</span>, 
-            <span class="tip-term" data-tooltip="Pemicu Beban: Laju trafik prediksi yang mendasari penambahan kapasitas pod sebelum overload terjadi.">prediksi beban pemicu</span>, 
-            dan alasan verifikasi kontroler (*controller reason*).
+            Audit trail of actual replica changes applied to `Deployment/laravel-backend` on the K3s cluster.
+            Each entry records the
+            <span class="tt" data-tip="The change in active pod count — e.g. from 1 to 6 replicas.">pod transition</span>,
+            the
+            <span class="tt" data-tip="The predicted RPS that triggered the scaling decision.">trigger workload</span>,
+            and the controller's verification reason.
             """,
             unsafe_allow_html=True,
         )
 
-        actions = act_info.get("recent_actions", [])
-        if actions:
-            df_act = pd.DataFrame(actions)
-            df_act["Transisi Pod"] = df_act.apply(
-                lambda row: f"{row.get('from_replicas', 1)} ➔ {row.get('to_replicas', 1)} Pods", axis=1
-            )
-            df_act = df_act.rename(
-                columns={
-                    "timestamp": "Waktu Eksekusi (UTC)",
-                    "action": "Aksi Skala",
-                    "predicted_rps": "Beban Pemicu (RPS)",
-                    "reason": "Alasan Kontroler (Controller Reason)",
-                    "status": "Status Klaster Kubernetes",
-                }
-            )
-            display_cols = [
-                "Waktu Eksekusi (UTC)",
-                "Aksi Skala",
-                "Transisi Pod",
-                "Beban Pemicu (RPS)",
-                "Alasan Kontroler (Controller Reason)",
-                "Status Klaster Kubernetes",
-            ]
-            cols_avail = [c for c in display_cols if c in df_act.columns]
-            st.dataframe(df_act[cols_avail].set_index("Waktu Eksekusi (UTC)"), use_container_width=True)
+        if recent_acts:
+            df_a = pd.DataFrame(recent_acts)
+            df_a["Transition"] = df_a.apply(lambda r: f"{r.get('from_replicas',1)} > {r.get('to_replicas',1)} pods", axis=1)
+            df_a = df_a.rename(columns={
+                "timestamp": "Time (UTC)", "action": "Action", "predicted_rps": "Trigger RPS",
+                "reason": "Controller Reason", "status": "K8s Status",
+            })
+            show = [c for c in ["Time (UTC)", "Action", "Transition", "Trigger RPS", "Controller Reason", "K8s Status"] if c in df_a.columns]
+            st.dataframe(df_a[show].set_index("Time (UTC)"), use_container_width=True)
         else:
-            st.info("Belum ada tindakan penskalaan yang dieksekusi dalam buffer saat ini.")
+            st.info("No scaling actions recorded in the current buffer.")
 
-    # Execute fragment render
-    render_audit_view()
+    render_audit()
 
-# =============================================================================
-# TAB 1: Scaling Simulator
-# =============================================================================
+
+# =========================================================================
+# TAB: Scaling Simulator
+# =========================================================================
 with tab_sim:
-    st.markdown("### 🎮 Simulator Prediksi Beban & Rekomendasi Replika Pod")
+    st.markdown("### Workload Forecast & Pod Allocation Simulator")
     st.markdown(
         """
-        Uji respons inferensi model terhadap berbagai kondisi telemetri. Hover pada istilah bertanda 
-        <span class="tip-term" data-tooltip="Requests Per Second: Total permintaan HTTP masuk per detik yang diterima ingress.">RPS</span>, 
-        <span class="tip-term" data-tooltip="95th Percentile Latency: Ambang waktu di mana 95% request diselesaikan lebih cepat dari nilai ini.">P95 Latency</span>, atau 
-        <span class="tip-term" data-tooltip="Cold-Start: Waktu tunda inisialisasi pod dan runtime PHP sebelum siap menyerap trafik.">Cold-Start</span> 
-        untuk melihat penjelasan teknis.
+        Test the inference model against various telemetry conditions. Hover terms like
+        <span class="tt" data-tip="Requests Per Second — total incoming HTTP requests per second measured at the ingress.">RPS</span>,
+        <span class="tt" data-tip="95th percentile latency — 95% of requests complete faster than this value.">P95 Latency</span>, or
+        <span class="tt" data-tip="Cold-start delay — time for a new pod to initialize PHP-FPM before it can serve traffic.">Cold-Start</span>
+        for definitions.
         """,
         unsafe_allow_html=True,
     )
 
-    # Preset Scenario Buttons
-    col_p1, col_p2, col_p3, col_p4 = st.columns(4)
-    if col_p1.button("🌙 1. Jam Tenang (2 RPS)", use_container_width=True):
-        st.session_state["cur_rps"] = 2.0
-        st.session_state["cur_cpu"] = 0.08
-        st.session_state["cur_p95"] = 0.022
-        st.session_state["cur_mem"] = 95.0
-    if col_p2.button("🟢 2. Normal Siang (12 RPS)", use_container_width=True):
-        st.session_state["cur_rps"] = 12.5
-        st.session_state["cur_cpu"] = 0.32
-        st.session_state["cur_p95"] = 0.038
-        st.session_state["cur_mem"] = 130.0
-    if col_p3.button("🟡 3. Lonjakan Ramai (35 RPS)", use_container_width=True):
-        st.session_state["cur_rps"] = 35.0
-        st.session_state["cur_cpu"] = 0.85
-        st.session_state["cur_p95"] = 0.085
-        st.session_state["cur_mem"] = 165.0
-    if col_p4.button("🔴 4. Flash-Sale Spike (65 RPS)", use_container_width=True):
-        st.session_state["cur_rps"] = 65.0
-        st.session_state["cur_cpu"] = 1.45
-        st.session_state["cur_p95"] = 0.145
-        st.session_state["cur_mem"] = 210.0
+    p1, p2, p3, p4 = st.columns(4)
+    if p1.button("Quiet (2 RPS)", use_container_width=True):
+        st.session_state.update(cur_rps=2.0, cur_cpu=0.08, cur_p95=0.022, cur_mem=95.0)
+    if p2.button("Normal (12 RPS)", use_container_width=True):
+        st.session_state.update(cur_rps=12.5, cur_cpu=0.32, cur_p95=0.038, cur_mem=130.0)
+    if p3.button("Surge (35 RPS)", use_container_width=True):
+        st.session_state.update(cur_rps=35.0, cur_cpu=0.85, cur_p95=0.085, cur_mem=165.0)
+    if p4.button("Flash-Sale (65 RPS)", use_container_width=True):
+        st.session_state.update(cur_rps=65.0, cur_cpu=1.45, cur_p95=0.145, cur_mem=210.0)
 
-    st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-    col_in1, col_in2 = st.columns(2)
-    with col_in1:
-        sim_rps = st.slider(
-            "Laju Trafik Masuk / Request Rate (RPS)",
-            0.0,
-            90.0,
-            float(st.session_state.get("cur_rps", 12.5)),
-            step=1.0,
-            help="Jumlah request HTTP per detik (RPS) dari gerbang Caddy Ingress.",
-        )
-        sim_cpu = st.slider(
-            "Total Penggunaan CPU Laravel (Cores)",
-            0.0,
-            2.5,
-            float(st.session_state.get("cur_cpu", 0.32)),
-            step=0.05,
-            help="Total konsumsi core CPU seluruh worker PHP-FPM saat ini.",
-        )
-    with col_in2:
-        sim_p95 = st.slider(
-            "P95 Latency (Detik)",
-            0.010,
-            0.400,
-            float(st.session_state.get("cur_p95", 0.038)),
-            step=0.005,
-            help="Latensi P95 respons server (SLO target: < 0.100s / 100ms).",
-        )
-        sim_mem = st.slider(
-            "Footprint RAM PHP-FPM (MB)",
-            50.0,
-            500.0,
-            float(st.session_state.get("cur_mem", 130.0)),
-            step=10.0,
-            help="Total alokasi memori fisik worker PHP-FPM.",
-        )
+    ci1, ci2 = st.columns(2)
+    with ci1:
+        sim_rps = st.slider("Request Rate (RPS)", 0.0, 90.0, float(st.session_state.get("cur_rps", 12.5)), step=1.0,
+                             help="Incoming HTTP requests per second from Caddy Ingress.")
+        sim_cpu = st.slider("CPU Usage (cores)", 0.0, 2.5, float(st.session_state.get("cur_cpu", 0.32)), step=0.05,
+                            help="Total CPU consumption across PHP-FPM workers.")
+    with ci2:
+        sim_p95 = st.slider("P95 Latency (s)", 0.010, 0.400, float(st.session_state.get("cur_p95", 0.038)), step=0.005,
+                            help="Server P95 response latency. SLO target: < 0.100 s.")
+        sim_mem = st.slider("PHP-FPM Memory (MB)", 50.0, 500.0, float(st.session_state.get("cur_mem", 130.0)), step=10.0,
+                            help="Total physical memory allocated to PHP-FPM workers.")
 
-    btn_calc = st.button("⚡ Hitung Prediksi Beban t+60s & Skala Pod", type="primary", use_container_width=True)
+    btn_calc = st.button("Compute forecast (t+60 s) and pod recommendation", type="primary", use_container_width=True)
 
     if btn_calc or "sim_res" in st.session_state:
         if btn_calc:
             payload = {
-                "request_rate": sim_rps,
-                "php_cpu_cores": sim_cpu,
-                "p95_latency_seconds": sim_p95,
-                "php_memory_mb": sim_mem,
-                "rps_lag1": sim_rps * 0.95,
-                "rps_lag2": sim_rps * 0.90,
-                "cpu_lag1": sim_cpu * 0.95,
-                "cpu_lag2": sim_cpu * 0.90,
-                "rps_roll_mean_30s": sim_rps * 0.98,
-                "rps_roll_mean_60s": sim_rps * 0.95,
-                "rps_roll_std_60s": 1.2,
-                "rps_delta": 0.5,
-                "cpu_delta": 0.02,
-                "hour": datetime.now().hour,
-                "minute": datetime.now().minute,
+                "request_rate": sim_rps, "php_cpu_cores": sim_cpu,
+                "p95_latency_seconds": sim_p95, "php_memory_mb": sim_mem,
+                "rps_lag1": sim_rps * 0.95, "rps_lag2": sim_rps * 0.90,
+                "cpu_lag1": sim_cpu * 0.95, "cpu_lag2": sim_cpu * 0.90,
+                "rps_roll_mean_30s": sim_rps * 0.98, "rps_roll_mean_60s": sim_rps * 0.95,
+                "rps_roll_std_60s": 1.2, "rps_delta": 0.5, "cpu_delta": 0.02,
+                "hour": datetime.now().hour, "minute": datetime.now().minute,
                 "current_replicas": max(1, min(cfg_max_pods, math.ceil(sim_rps / cfg_target_rps))),
             }
             try:
@@ -964,7 +670,6 @@ with tab_sim:
                     st.session_state["sim_res"] = r.json()
                     st.session_state["sim_lat"] = t_lat
             except Exception:
-                # Local fallback mathematical calculation
                 pred_workload = max(0.5, sim_rps * 1.08 + (sim_cpu * 4.0))
                 rec_pods = max(cfg_min_pods, min(cfg_max_pods, math.ceil(pred_workload / cfg_target_rps)))
                 st.session_state["sim_res"] = {
@@ -977,228 +682,204 @@ with tab_sim:
                 st.session_state["sim_lat"] = 2.1
 
         res = st.session_state["sim_res"]
-        cur_rps_val = res["current_workload_rps"]
-        pred_rps_val = res["predicted_workload_rps_60s"]
-        target_pods_val = min(cfg_max_pods, max(cfg_min_pods, res["recommended_replicas"]))
+        cur_v = res["current_workload_rps"]
+        pred_v = res["predicted_workload_rps_60s"]
+        pods_v = min(cfg_max_pods, max(cfg_min_pods, res["recommended_replicas"]))
 
-        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-        col_r1, col_r2, col_r3, col_r4 = st.columns(4)
-        with col_r1:
-            st.metric(
-                "Forecast Workload (t+60s)",
-                f"{pred_rps_val:.1f} RPS",
-                delta=f"{pred_rps_val - cur_rps_val:+.1f} RPS Forecast",
-                help="Prediksi laju trafik 60 detik ke depan yang dihasilkan model Machine Learning.",
-            )
-        with col_r2:
-            st.metric(
-                "Recommended Replicas",
-                f"{target_pods_val} Pods",
-                delta=res.get("scaling_action", "MAINTAIN"),
-                help="Jumlah pod yang dihitung oleh Policy Controller: ceil(Predicted_RPS / 10).",
-            )
-        with col_r3:
-            st.metric(
-                "Cluster Capacity Ceiling",
-                f"{target_pods_val * cfg_target_rps:.0f} RPS",
-                delta=f"Headroom: +{(target_pods_val * cfg_target_rps) - pred_rps_val:.1f} RPS",
-                help="Total kapasitas aman klaster dengan jumlah pod yang direkomendasikan.",
-            )
-        with col_r4:
-            st.metric(
-                "Inference Latency",
-                f"{st.session_state.get('sim_lat', 3.5):.1f} ms",
-                delta="Zero Cold-Start",
-                help="Waktu eksekusi inferensi model machine learning di memori RAM.",
-            )
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        r1, r2, r3, r4 = st.columns(4)
+        with r1:
+            st.metric("Forecast (t+60 s)", f"{pred_v:.1f} RPS", delta=f"{pred_v - cur_v:+.1f} RPS",
+                      help="Predicted request rate 60 seconds from now.")
+        with r2:
+            st.metric("Recommended Pods", f"{pods_v}", delta=res.get("scaling_action", "MAINTAIN"),
+                      help="ceil(predicted_RPS / target_RPS_per_pod), clamped to bounds.")
+        with r3:
+            st.metric("Cluster Capacity", f"{pods_v * cfg_target_rps:.0f} RPS",
+                      delta=f"Headroom: +{(pods_v * cfg_target_rps) - pred_v:.1f} RPS",
+                      help="Total safe throughput at the recommended replica count.")
+        with r4:
+            st.metric("Inference Latency", f"{st.session_state.get('sim_lat', 3.5):.1f} ms", delta="In-memory",
+                      help="Time to execute the ML model prediction.")
 
-        # Kubernetes Pod Visualizer Rack (1 - 6 Pods)
-        st.markdown("#### ☸️ Alokasi Pod Kubernetes (`titipin/laravel-backend`)")
-        cols_rack = st.columns(cfg_max_pods)
-        for idx in range(cfg_max_pods):
-            with cols_rack[idx]:
-                if idx < target_pods_val:
+        # Pod visualizer
+        st.markdown("#### Pod Allocation — `titipin/laravel-backend`")
+        rack = st.columns(cfg_max_pods)
+        for i in range(cfg_max_pods):
+            with rack[i]:
+                if i < pods_v:
                     st.markdown(
-                        f"""
-                        <div class="pod-rack-box pod-rack-active">
-                            <div style="font-size: 18px;">🟢</div>
-                            <div class="pod-label">Pod {idx + 1}</div>
-                            <span class="badge-live">RUNNING</span>
-                            <div class="pod-sub" style="margin-top: 6px;">Kapasitas: {cfg_target_rps:.0f} RPS</div>
-                        </div>
-                        """,
+                        f'<div class="pod-box active">'
+                        f'<div style="width:8px;height:8px;border-radius:50%;background:#14B8A6;margin:0 auto 6px;"></div>'
+                        f'<div class="pod-name">Pod {i+1}</div>'
+                        f'<span class="pill pill-ok" style="font-size:9px;">RUNNING</span>'
+                        f'<div class="pod-detail" style="margin-top:4px;">{cfg_target_rps:.0f} RPS</div>'
+                        f'</div>',
                         unsafe_allow_html=True,
                     )
                 else:
                     st.markdown(
-                        f"""
-                        <div class="pod-rack-box">
-                            <div style="font-size: 18px;">⚪</div>
-                            <div class="pod-label" style="color: #64748B;">Pod {idx + 1}</div>
-                            <span style="font-size: 10px; color: #64748B; font-weight: 600;">STANDBY</span>
-                            <div class="pod-sub" style="margin-top: 6px;">Scaled Down</div>
-                        </div>
-                        """,
+                        f'<div class="pod-box">'
+                        f'<div style="width:8px;height:8px;border-radius:50%;background:#3F3F46;margin:0 auto 6px;"></div>'
+                        f'<div class="pod-name" style="color:#52525B;">Pod {i+1}</div>'
+                        f'<span style="font-size:9px;color:#52525B;font-weight:600;">STANDBY</span>'
+                        f'<div class="pod-detail" style="margin-top:4px;">Scaled down</div>'
+                        f'</div>',
                         unsafe_allow_html=True,
                     )
 
-# =============================================================================
-# TAB 2: Workload Injector (VM cp-bcc)
-# =============================================================================
+
+# =========================================================================
+# TAB: Workload Injector
+# =========================================================================
 with tab_injector:
-    st.markdown("### 🚀 Live Workload Injector (VM `cp-bcc`)")
+    st.markdown("### Live Workload Injector")
     st.markdown(
         """
-        Mengontrol generator beban sintetis k6 yang berjalan terus-menerus 24/7 di remote VM **`cp-bcc`** (`proxy.bccdev.id`).
-        Pemicuan profil di bawah akan langsung mengubah karakteristik trafik nyata di 
-        <span class="tip-term" data-tooltip="Grafana menyajikan kurva RPS, P95 latency, dan perubahan jumlah pod secara real-time.">Grafana</span> 
-        dalam hitungan detik tanpa membuka SSH terminal.
+        Controls the synthetic k6 load generator running 24/7 on remote VM `cp-bcc` (`proxy.bccdev.id`).
+        Selecting a profile below changes the real traffic pattern hitting the cluster within seconds,
+        visible on
+        <span class="tt" data-tip="Grafana renders live RPS, P95 latency, and pod count curves in real time.">Grafana</span>.
         """,
         unsafe_allow_html=True,
     )
 
-    col_tr1, col_tr2 = st.columns(2)
-    with col_tr1:
-        if st.button("🟢 1. Daytime Normal Steady (5-12 RPS)", use_container_width=True, help="Menjalankan 4-8 VUs k6. Beban stabil, klaster bertahan di 1 Pod."):
+    t1, t2 = st.columns(2)
+    with t1:
+        if st.button("Steady Normal — 5-12 RPS", use_container_width=True, help="4-8 k6 VUs. Stable load, cluster stays at 1 pod."):
             try:
                 requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "STEADY_NORMAL"}, timeout=3)
-                st.success("✅ Profil `STEADY_NORMAL` aktif! Trafik konstan ~8 RPS dikirim ke https://api.titipin.me.")
+                st.success("Profile `STEADY_NORMAL` activated. Constant ~8 RPS to api.titipin.me.")
             except Exception as e:
-                st.error(f"Gagal mengirim sinyal: {e}")
+                st.error(f"Failed: {e}")
 
-        if st.button("🟡 2. Rush-Hour Evening Surge (20-40 RPS)", use_container_width=True, help="Menjalankan 18-28 VUs k6. Mensimulasikan jam sibuk belanja/checkout."):
+        if st.button("Rush Hour — 20-40 RPS", use_container_width=True, help="18-28 k6 VUs. Simulates evening checkout rush."):
             try:
                 requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "BURST_BUSY"}, timeout=3)
-                st.warning("⚠️ Profil `BURST_BUSY` aktif! Beban naik ke ~30 RPS. Kontroler prediktif akan menambah pod.")
+                st.warning("Profile `BURST_BUSY` activated. Load rising to ~30 RPS. Scaler will add pods.")
             except Exception as e:
-                st.error(f"Gagal: {e}")
+                st.error(f"Failed: {e}")
 
-    with col_tr2:
-        if st.button("🔴 3. Flash-Sale Spike Anomaly (60-95 RPS)", type="primary", use_container_width=True, help="Lonjakan masif mendadak (50-75 VUs). Menguji penskalaan proaktif hingga 6 Pods!"):
+    with t2:
+        if st.button("Flash-Sale Spike — 60-95 RPS", type="primary", use_container_width=True, help="50-75 k6 VUs. Tests proactive scaling to 6 pods."):
             try:
                 requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "FLASH_ANOMALY"}, timeout=3)
-                st.error("🚨 Profil `FLASH_ANOMALY` aktif! 50-75 VUs k6 menembak trafik. Predictive scaler segera menambah 6 Pods!")
+                st.error("Profile `FLASH_ANOMALY` activated. 50-75 VUs firing. Scaler targets 6 pods.")
             except Exception as e:
-                st.error(f"Gagal: {e}")
+                st.error(f"Failed: {e}")
 
-        if st.button("🌙 4. Midnight Silent Idle (0-1 RPS)", use_container_width=True, help="Momen hening tanpa trafik. Grafana akan turun ke 0 RPS dan pod turun ke 1."):
+        if st.button("Idle — 0-1 RPS", use_container_width=True, help="Near-zero traffic. Pod count drops to 1."):
             try:
                 requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "IDLE_SILENT"}, timeout=3)
-                st.info("🌙 Profil `IDLE_SILENT` aktif! Trafik drop ke 0 RPS. Klaster berada pada moda hemat.")
+                st.info("Profile `IDLE_SILENT` activated. Traffic drops to 0 RPS.")
             except Exception as e:
-                st.error(f"Gagal: {e}")
+                st.error(f"Failed: {e}")
 
-    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
-    if st.button("🔄 Kembalikan ke Mode Acak Mandiri (24/7 Markov-Chain)", use_container_width=True):
+    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+    if st.button("Reset to autonomous Markov-chain mode", use_container_width=True):
         try:
             requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "STEADY_NORMAL"}, timeout=3)
-            st.success("🔄 Daemon VM `cp-bcc` kembali ke mode stokastik Markov-chain!")
+            st.success("VM `cp-bcc` daemon returned to stochastic Markov-chain mode.")
         except Exception as e:
-            st.error(f"Gagal: {e}")
+            st.error(f"Failed: {e}")
 
-    st.info(f"📊 **Buka Dashboard Observabilitas:** Kunjungi [{GRAFANA_URL}]({GRAFANA_URL}) untuk melihat grafik lonjakan RPS dan pod bertambah secara real-time.")
+    st.markdown(f"Open [{GRAFANA_URL}]({GRAFANA_URL}) to observe RPS and pod changes in real time.")
 
-# =============================================================================
-# TAB 3: FinOps & Sustainability (LK-13)
-# =============================================================================
+
+# =========================================================================
+# TAB: FinOps & Carbon
+# =========================================================================
 with tab_finops:
-    st.markdown("### 💰 FinOps & Green Computing: Efisiensi Biaya & Karbon (LK-13)")
+    st.markdown("### FinOps & Sustainable Computing")
     st.markdown(
         """
-        Penerapan tata kelola komputasi berkelanjutan (*Sustainable AI Governance*). 
-        Membandingkan alokasi statis 
-        <span class="tip-term" data-tooltip="Over-provisioning: Menjalankan kapasitas maksimal terus-menerus tanpa autoscaler untuk mencegah crash.">Over-Provisioning</span>, 
-        <span class="tip-term" data-tooltip="Reactive HPA: Horizontal Pod Autoscaler standar K8s yang lambat scale-down (cooldown 5 menit).">Reactive HPA</span>, 
-        dan **Predictive Autoscaling**.
+        Cost and carbon comparison across three allocation strategies:
+        <span class="tt" data-tip="Running maximum capacity at all times without autoscaling.">static over-provisioning</span>,
+        <span class="tt" data-tip="Standard Kubernetes HPA that reacts after CPU exceeds a threshold (5-minute cooldown).">reactive HPA</span>,
+        and **predictive autoscaling**.
         """,
         unsafe_allow_html=True,
     )
 
-    col_fo1, col_fo2, col_fo3 = st.columns(3)
-    with col_fo1:
-        f_days = st.slider("Periode Evaluasi (Hari)", 7, 60, 30, step=1)
-    with col_fo2:
-        f_rate = st.number_input("Biaya AWS vCPU ($/Jam)", value=0.0175, format="%.4f", help="Standar AWS EC2 t3 instance.")
-    with col_fo3:
-        f_kurs = st.number_input("Kurs Konversi IDR/USD", value=15800, step=100)
+    f1, f2, f3 = st.columns(3)
+    with f1:
+        f_days = st.slider("Evaluation period (days)", 7, 60, 30, step=1)
+    with f2:
+        f_rate = st.number_input("AWS vCPU cost ($/hr)", value=0.0175, format="%.4f", help="EC2 t3 instance rate.")
+    with f3:
+        f_kurs = st.number_input("IDR/USD exchange rate", value=15800, step=100)
 
     f_hours = f_days * 24.0
-    cpu_size = 0.175  # 175m vCPU
-    ram_size = 0.152  # 152 MiB RAM
+    cpu_sz = 0.175
+    ram_sz = 0.152
     ram_cost = 0.0022
-    carbon_rate = 0.0042  # kg CO2e per vCPU-hour
+    carbon = 0.0042
 
-    # Three strategies
-    cost_static = (6.0 * cpu_size * f_hours * f_rate) + (6.0 * ram_size * f_hours * ram_cost)
-    co2_static = 6.0 * cpu_size * f_hours * carbon_rate
+    cost_s = (6.0 * cpu_sz * f_hours * f_rate) + (6.0 * ram_sz * f_hours * ram_cost)
+    co2_s = 6.0 * cpu_sz * f_hours * carbon
+    cost_r = (2.8 * cpu_sz * f_hours * f_rate) + (2.8 * ram_sz * f_hours * ram_cost)
+    co2_r = 2.8 * cpu_sz * f_hours * carbon
+    cost_p = (1.6 * cpu_sz * f_hours * f_rate) + (1.6 * ram_sz * f_hours * ram_cost)
+    co2_p = 1.6 * cpu_sz * f_hours * carbon
 
-    cost_reactive = (2.8 * cpu_size * f_hours * f_rate) + (2.8 * ram_size * f_hours * ram_cost)
-    co2_reactive = 2.8 * cpu_size * f_hours * carbon_rate
+    saved = cost_s - cost_p
+    saved_pct = (saved / max(0.01, cost_s)) * 100.0
 
-    cost_pred = (1.6 * cpu_size * f_hours * f_rate) + (1.6 * ram_size * f_hours * ram_cost)
-    co2_pred = 1.6 * cpu_size * f_hours * carbon_rate
+    k1, k2, k3, k4 = st.columns(4)
+    with k1:
+        st.metric("Cost Saved", f"Rp {saved * f_kurs:,.0f}", delta=f"-{saved_pct:.1f}% vs static")
+    with k2:
+        st.metric("Actual Cloud Cost", f"${cost_p:.2f}", delta=f"-${saved:.2f}", delta_color="inverse")
+    with k3:
+        st.metric("Carbon Footprint", f"{co2_p:.2f} kg CO2e", delta=f"-{co2_s - co2_p:.2f} kg", delta_color="inverse")
+    with k4:
+        st.metric("Resource Efficiency", "94.2%", delta="Optimal")
 
-    saved_usd = cost_static - cost_pred
-    saved_pct = (saved_usd / max(0.01, cost_static)) * 100.0
-    saved_co2 = co2_static - co2_pred
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+    chart_df = pd.DataFrame({
+        "Strategy": ["Static 6 Pods", "Reactive HPA", "Predictive ML"],
+        "Monthly Cost (IDR)": [cost_s * f_kurs, cost_r * f_kurs, cost_p * f_kurs],
+        "Carbon (kg CO2e)": [co2_s, co2_r, co2_p],
+    }).set_index("Strategy")
 
-    col_fk1, col_fk2, col_fk3, col_fk4 = st.columns(4)
-    with col_fk1:
-        st.metric("Total Biaya Dihemat", f"Rp {saved_usd * f_kurs:,.0f}", delta=f"-{saved_pct:.1f}% vs Statis")
-    with col_fk2:
-        st.metric("Biaya Cloud Aktual (USD)", f"${cost_pred:.2f}", delta=f"-${saved_usd:.2f} Saved", delta_color="inverse")
-    with col_fk3:
-        st.metric("Jejak Karbon (CO₂e)", f"{co2_pred:.2f} kg", delta=f"-{saved_co2:.2f} kg Terhindar", delta_color="inverse")
-    with col_fk4:
-        st.metric("Resource Efficiency", "94.2%", delta="Optimal Green AI")
+    ch1, ch2 = st.columns(2)
+    with ch1:
+        st.bar_chart(chart_df["Monthly Cost (IDR)"], color="#A1A1AA")
+    with ch2:
+        st.bar_chart(chart_df["Carbon (kg CO2e)"], color="#14B8A6")
 
-    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-    f_chart_df = pd.DataFrame(
-        {
-            "Strategi": ["Static 6 Pods (Over-provision)", "Reactive HPA (Bawaan K8s)", "ML Predictive Autoscaling"],
-            "Biaya Bulanan (Rupiah)": [cost_static * f_kurs, cost_reactive * f_kurs, cost_pred * f_kurs],
-            "Emisi Karbon (kg CO2e)": [co2_static, co2_reactive, co2_pred],
-        }
-    ).set_index("Strategi")
 
-    col_fcp1, col_fcp2 = st.columns(2)
-    with col_fcp1:
-        st.bar_chart(f_chart_df["Biaya Bulanan (Rupiah)"], color="#38BDF8")
-    with col_fcp2:
-        st.bar_chart(f_chart_df["Emisi Karbon (kg CO2e)"], color="#10B981")
-
-# =============================================================================
-# TAB 4: Autonomous CT & Drift (LK-12)
-# =============================================================================
+# =========================================================================
+# TAB: Drift & Retraining
+# =========================================================================
 with tab_retrain:
-    st.markdown("### 🔄 Closed-Loop Autonomous Retraining & Drift Monitoring (LK-12)")
+    st.markdown("### Autonomous Drift Detection & Continuous Training")
     st.markdown(
         """
-        Sistem pemantauan distribusi data menggunakan algoritma 
-        <span class="tip-term" data-tooltip="Population Stability Index: Metrik statistik yang mengukur pergeseran distribusi data antara dataset referensi baseline dan telemetri produksi terkini.">PSI (Population Stability Index)</span>. 
-        Jika terdeteksi pergeseran mayor ($\text{PSI} > 0.25$), sistem secara otonom memicu Kubernetes Job retraining dan me-reload model baru secara zero-downtime.
+        Monitors production data distribution using
+        <span class="tt" data-tip="Population Stability Index — a statistical metric measuring distribution shift between the reference baseline and current production telemetry.">PSI</span>.
+        When major drift is detected (PSI > 0.25), the system triggers a Kubernetes retraining job
+        and hot-reloads the new model with zero downtime.
         """,
         unsafe_allow_html=True,
     )
 
-    col_dr1, col_dr2 = st.columns(2)
-    with col_dr1:
-        if st.button("🔍 Evaluasi Telemetry Drift (PSI Calculation)", use_container_width=True):
-            with st.spinner("Mengevaluasi distribusi fitur telemetri terhadap baseline DVC..."):
+    d1, d2 = st.columns(2)
+    with d1:
+        if st.button("Evaluate telemetry drift (PSI)", use_container_width=True):
+            with st.spinner("Computing feature distribution shift against DVC baseline..."):
                 time.sleep(1.0)
                 st.session_state["drift_eval"] = {
-                    "psi_score": 0.2840,
-                    "threshold": 0.2500,
+                    "psi_score": 0.2840, "threshold": 0.2500,
                     "status": "MAJOR_DRIFT_DETECTED",
                     "features": ["request_rate", "php_cpu_cores", "p95_latency_seconds"],
                     "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ"),
                 }
 
-    with col_dr2:
-        if st.button("⚡ Trigger Autonomous Retraining & Hot-Reload", use_container_width=True):
-            with st.spinner("Menjalankan Kubernetes Retraining Job & Hot-Reload Serving API..."):
+    with d2:
+        if st.button("Trigger retraining & hot-reload", use_container_width=True):
+            with st.spinner("Running Kubernetes retraining job and reloading serving API..."):
                 try:
-                    # Trigger hot reload directly
                     requests.post(f"{INFERENCE_API_URL}/model/reload", json={}, timeout=5)
                 except Exception:
                     pass
@@ -1212,197 +893,174 @@ with tab_retrain:
 
     if "drift_eval" in st.session_state:
         de = st.session_state["drift_eval"]
-        st.warning(f"🚨 **Data Drift Terdeteksi!** (PSI: `{de['psi_score']:.4f}` > Ambang Batas `{de['threshold']:.2f}`)")
-        st.markdown(f"- **Fitur Terdampak:** `{', '.join(de['features'])}`\n- **Rekomendasi Tindakan:** Memicu retraining otomatis multi-model.")
+        st.warning(f"**Data drift detected.** PSI: `{de['psi_score']:.4f}` exceeds threshold `{de['threshold']:.2f}`.")
+        st.markdown(f"- **Affected features:** `{', '.join(de['features'])}`\n- **Recommended action:** trigger autonomous multi-model retraining.")
 
     if "ct_eval" in st.session_state:
         cte = st.session_state["ct_eval"]
-        st.success(f"🎉 **Autonomous Retraining Berhasil!** Model teranyar `{cte['model_version']}` aktif di produksi.")
-        col_ctk1, col_ctk2, col_ctk3 = st.columns(3)
-        with col_ctk1:
-            st.metric("Model Champion", cte["model_version"], delta="MAE: 0.0210 RPS")
-        with col_ctk2:
-            st.metric("Evaluation Gate", "PASSED", delta="Beats Previous Baseline")
-        with col_ctk3:
-            st.metric("Serving Hot-Reload", cte["hot_reload"], delta="No Pod Restart")
+        st.success(f"**Retraining complete.** Model `{cte['model_version']}` is now serving in production.")
+        ck1, ck2, ck3 = st.columns(3)
+        with ck1:
+            st.metric("Champion Model", cte["model_version"], delta="MAE: 0.0210 RPS")
+        with ck2:
+            st.metric("Evaluation Gate", "PASSED", delta="Beats previous baseline")
+        with ck3:
+            st.metric("Hot-Reload", cte["hot_reload"], delta="No pod restart")
 
-# =============================================================================
-# TAB 5: A/B Benchmark (LK-10)
-# =============================================================================
+
+# =========================================================================
+# TAB: HPA vs Predictive Benchmark
+# =========================================================================
 with tab_benchmark:
-    st.markdown("### 📊 Head-to-Head Benchmark: Reactive HPA vs Predictive Scaler (LK-10)")
-    st.markdown(
-        """
-        Hasil pengujian komparatif empiris di bawah lonjakan trafik (*flash-sale spike*) 65 VUs yang sama persis:
-        """
-    )
+    st.markdown("### Reactive HPA vs Predictive Scaler — Benchmark Results")
+    st.markdown("Empirical comparison under identical 65-VU flash-sale traffic spike:")
 
-    bench_data = {
-        "Metrik Kinerja": [
-            "Mekanisme Pemicu Skala",
-            "Waktu Antisipasi / Reaksi",
-            "Puncak P95 Latency",
-            "Tingkat Kepatuhan SLO (<100ms)",
-            "Cold-Start PHP-FPM Delay",
-            "HTTP 5xx Error Rate",
+    bench = {
+        "Metric": [
+            "Scale trigger mechanism",
+            "Anticipation / reaction time",
+            "Peak P95 latency",
+            "SLO compliance (< 100 ms)",
+            "Cold-start delay",
+            "HTTP 5xx error rate",
         ],
-        "Reactive HPA (Bawaan K8s)": [
-            "Reaktif (Rata-rata CPU > 60%)",
-            "Terlambat 48.0 detik",
-            "185.4 ms (Terdegradasi)",
+        "Reactive HPA": [
+            "CPU threshold > 60%",
+            "48.0 s late",
+            "185.4 ms (degraded)",
             "78.4%",
-            "Ada antrean request",
-            "0.8% Dropped",
+            "Request queuing observed",
+            "0.8% dropped",
         ],
-        "Predictive Scaler (ML Champion)": [
-            "Proaktif (Forecast Workload t+60s)",
-            "Antisipasi +50.0 detik mendahului",
-            "34.2 ms (Stabil Rendah)",
+        "Predictive Scaler": [
+            "Workload forecast t+60 s",
+            "50.0 s ahead",
+            "34.2 ms (stable)",
             "99.2%",
-            "Tereliminasi Sepenuhnya",
-            "0.0% (Zero Errors)",
+            "Eliminated",
+            "0.0%",
         ],
-        "Keunggulan MLOps": [
-            "Mencegah bottleneck",
-            "+98.0 detik keuntungan waktu",
-            "Turun 81.5%",
-            "+20.8% Kepatuhan SLA",
-            "Pod Ready sebelum trafik tiba",
-            "100% Reliabilitas",
+        "Improvement": [
+            "Prevents bottleneck",
+            "+98 s advantage",
+            "-81.5%",
+            "+20.8 pp",
+            "Pods ready before traffic",
+            "Zero errors",
         ],
     }
-    st.dataframe(pd.DataFrame(bench_data).set_index("Metrik Kinerja"), use_container_width=True)
+    st.dataframe(pd.DataFrame(bench).set_index("Metric"), use_container_width=True)
 
-# =============================================================================
-# TAB 6: Model Registry (LK-07)
-# =============================================================================
+
+# =========================================================================
+# TAB: Model Registry
+# =========================================================================
 with tab_registry:
-    st.markdown("### 📦 MLflow Model Registry & Silsilah Data DVC")
-    st.markdown(
-        """
-        Manajemen siklus hidup model pembelajaran mesin terpusat di **MLflow Model Registry** dengan pelacakan silsilah dataset di **MinIO S3**:
-        """
-    )
+    st.markdown("### MLflow Model Registry & DVC Data Lineage")
+    st.markdown("Centralized model lifecycle management with dataset provenance tracking in MinIO S3.")
 
-    col_mr1, col_mr2 = st.columns(2)
-    with col_mr1:
+    mr1, mr2 = st.columns(2)
+    with mr1:
         st.markdown(
             """
-            <div style="background: #0F172A; border: 1.5px solid #10B981; border-radius: 8px; padding: 16px;">
-                <span class="badge-live">🏆 CHAMPION MODEL (PRODUCTION)</span>
-                <h4 style="margin: 8px 0 4px 0; color: #F8FAFC;">predictive-autoscaler (Version 10)</h4>
-                <p style="font-size: 12px; color: #94A3B8; margin-bottom: 12px;">Random Forest Regressor (n_estimators=100, max_depth=8)</p>
-                <ul style="font-size: 12px; color: #CBD5E1; line-height: 1.8; margin: 0; padding-left: 18px;">
-                    <li><b>Validation MAE:</b> <code style="color: #10B981;">0.0210 RPS</code> (Galat terendah)</li>
-                    <li><b>Dataset DVC:</b> <code>processed/metrics_flashsale_drifted.csv</code></li>
-                    <li><b>Status Serving:</b> Melayani kalkulasi penskalaan 1-6 pod aktif.</li>
+            <div class="card" style="border-left:3px solid #14B8A6;">
+                <span class="pill pill-ok">CHAMPION — PRODUCTION</span>
+                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v10</div>
+                <div style="font-size:12px;color:#71717A;margin-bottom:8px;">Random Forest Regressor (n_estimators=100, max_depth=8)</div>
+                <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
+                    <li><b>MAE:</b> <code style="color:#5EEAD4;">0.0210 RPS</code></li>
+                    <li><b>Dataset:</b> <code>processed/metrics_flashsale_drifted.csv</code></li>
+                    <li><b>Serving:</b> Active, scaling 1–6 pods</li>
                 </ul>
             </div>
             """,
             unsafe_allow_html=True,
         )
-    with col_mr2:
+    with mr2:
         st.markdown(
             """
-            <div style="background: #0F172A; border: 1.5px solid #38BDF8; border-radius: 8px; padding: 16px;">
-                <span style="background: rgba(56, 189, 248, 0.1); color: #38BDF8; border: 1px solid rgba(56,189,248,0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">🥈 CHALLENGER MODEL (STAGING)</span>
-                <h4 style="margin: 8px 0 4px 0; color: #F8FAFC;">predictive-autoscaler (Version 9)</h4>
-                <p style="font-size: 12px; color: #94A3B8; margin-bottom: 12px;">LightGBM Regressor (learning_rate=0.05, num_leaves=31)</p>
-                <ul style="font-size: 12px; color: #CBD5E1; line-height: 1.8; margin: 0; padding-left: 18px;">
-                    <li><b>Validation MAE:</b> <code>0.1246 RPS</code></li>
-                    <li><b>Latensi Inferensi:</b> <code>2.8 ms</code> (Ultra-cepat)</li>
-                    <li><b>Status Serving:</b> Kandidat evaluasi otomatis di Staging.</li>
+            <div class="card" style="border-left:3px solid #F59E0B;">
+                <span class="pill pill-warn">CHALLENGER — STAGING</span>
+                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v9</div>
+                <div style="font-size:12px;color:#71717A;margin-bottom:8px;">LightGBM Regressor (lr=0.05, num_leaves=31)</div>
+                <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
+                    <li><b>MAE:</b> <code>0.1246 RPS</code></li>
+                    <li><b>Inference:</b> <code>2.8 ms</code></li>
+                    <li><b>Status:</b> Staging evaluation candidate</li>
                 </ul>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
-    st.markdown("#### 🗄️ Mengapa di MinIO Berupa MD5 Hash? (Arsitektur DVC CAS)")
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+    st.markdown("#### DVC Content-Addressable Storage")
     st.markdown(
         """
-        Di MinIO Object Storage (`https://minio.titipin.me`), data tidak disimpan dengan nama file teks biasa melainkan berupa **MD5 Hash** 
-        (contoh: `6bb27924...` atau `b72a5376...`). Ini adalah **prinsip Content-Addressable Storage (CAS)** yang sama persis dengan cara kerja Git:
-        - **Git:** Hanya melacak berkas teks pointer kecil (`data/raw.dvc` dan `data/processed.dvc`).
-        - **MinIO S3 Remote:** Menyimpan blok data biner terenkripsi hash MD5 untuk menjamin **Data Integrity** (anti-tamper) dan **Deduplikasi**.
-        - **Workspace Lokal:** Berisi file `.csv` asli yang dapat dibaca manusia dan dimuat oleh pandas.
+        Objects in MinIO appear as MD5 hashes rather than filenames. This is DVC's **Content-Addressable Storage (CAS)** design,
+        analogous to Git's object model:
+        - **Git** tracks small pointer files (`data/raw.dvc`, `data/processed.dvc`).
+        - **MinIO S3** stores the actual binary data blobs keyed by MD5 for integrity and deduplication.
+        - **Local workspace** contains human-readable `.csv` files consumed by pandas.
         """
     )
 
-    st.markdown("#### 📑 Pemetaan Silsilah Data (Git Tag ↔ File CSV ↔ MD5 MinIO S3)")
-    dvc_lineage_data = {
-        "Versi / Git Tag": [
-            "v1.0-data",
-            "v1.0-data",
-            "v2.0-data (Aktif)",
-            "v2.0-data (Aktif)",
-            "v2.0-data (Aktif)",
+    st.markdown("#### Data Lineage — Git Tag / CSV / MD5")
+    lineage = {
+        "Git Tag": ["v1.0-data", "v1.0-data", "v2.0-data", "v2.0-data", "v2.0-data"],
+        "Type": ["Raw", "Processed", "Raw", "Processed", "Processed (Drift)"],
+        "CSV File": [
+            "metrics_gradual_20260924_001.csv", "metrics_processed_20260927_132354.csv",
+            "metrics_20260928_102236.csv", "metrics_demo_processed.csv", "metrics_flashsale_drifted.csv",
         ],
-        "Tipe": ["Raw", "Processed", "Raw", "Processed", "Processed (Drift)"],
-        "Nama File CSV": [
-            "metrics_gradual_20260924_001.csv",
-            "metrics_processed_20260927_132354.csv",
-            "metrics_20260928_102236.csv",
-            "metrics_demo_processed.csv",
-            "metrics_flashsale_drifted.csv",
-        ],
-        "Hash MD5 di MinIO S3": [
-            "b4d0a70e7115a4e4c370909ba364518b",
-            "4aec50d2130dd676189c7192eb66a078",
-            "b7dccb5bfc334d2647218067177aeb4e",
-            "5a8e0291dfbb38ac471029cba8d19321",
+        "MD5 (MinIO)": [
+            "b4d0a70e7115a4e4c370909ba364518b", "4aec50d2130dd676189c7192eb66a078",
+            "b7dccb5bfc334d2647218067177aeb4e", "5a8e0291dfbb38ac471029cba8d19321",
             "70caf5ea7e6f4e72243ecd8a15e8f4e5",
         ],
-        "Deskripsi Operasional": [
-            "Terkunci di Git Tag v1.0",
-            "Baseline data awal model v1-v6",
-            "Batch telemetri continual learning",
-            "Dataset latih model champion",
-            "Simulasi lonjakan beban flash-sale",
+        "Description": [
+            "Locked at Git tag v1.0", "Baseline for models v1-v6",
+            "Continual learning batch", "Champion training dataset",
+            "Flash-sale spike simulation",
         ],
     }
-    st.dataframe(pd.DataFrame(dvc_lineage_data).set_index("Versi / Git Tag"), use_container_width=True)
+    st.dataframe(pd.DataFrame(lineage).set_index("Git Tag"), use_container_width=True)
 
-    st.markdown("#### 🔍 Pratinjau Baris Data CSV Asli (`data/processed/metrics_flashsale_drifted.csv`)")
-    sample_csv_records = [
+    st.markdown("#### Sample Data — `metrics_flashsale_drifted.csv`")
+    samples = [
         {"timestamp": "2026-09-09 09:21:18", "request_rate": 64.46, "php_cpu_cores": 1.057, "p95_latency": 0.119, "php_mem_mb": 165.5, "replicas": 4, "target_rps_60s": 70.55},
         {"timestamp": "2026-09-09 09:21:33", "request_rate": 65.28, "php_cpu_cores": 1.083, "p95_latency": 0.119, "php_mem_mb": 165.6, "replicas": 4, "target_rps_60s": 69.27},
         {"timestamp": "2026-09-09 09:21:48", "request_rate": 67.41, "php_cpu_cores": 0.972, "p95_latency": 0.120, "php_mem_mb": 165.7, "replicas": 4, "target_rps_60s": 62.50},
         {"timestamp": "2026-09-09 09:22:03", "request_rate": 69.31, "php_cpu_cores": 0.872, "p95_latency": 0.115, "php_mem_mb": 165.2, "replicas": 4, "target_rps_60s": 47.00},
         {"timestamp": "2026-09-09 09:22:18", "request_rate": 73.20, "php_cpu_cores": 1.077, "p95_latency": 0.121, "php_mem_mb": 165.5, "replicas": 4, "target_rps_60s": 31.35},
     ]
-    st.dataframe(pd.DataFrame(sample_csv_records).set_index("timestamp"), use_container_width=True)
+    st.dataframe(pd.DataFrame(samples).set_index("timestamp"), use_container_width=True)
 
 
-# =============================================================================
-# TAB 7: Kubernetes Architecture
-# =============================================================================
+# =========================================================================
+# TAB: Cluster Architecture
+# =========================================================================
 with tab_k8s:
-    st.markdown("### ☸️ Arsitektur Klaster Kubernetes AWS K3s")
-    st.markdown(
-        """
-        Sistem beroperasi di atas klaster multi-node nyata dengan pemisahan peran (*Decoupled Architecture*):
-        """
-    )
+    st.markdown("### Kubernetes Cluster Architecture — AWS K3s")
+    st.markdown("The system runs on a multi-node cluster with decoupled namespace separation:")
     st.code(
         """
 +---------------------------------------------------------------------------------------------------+
 | AWS K3S MULTI-NODE CLUSTER (control-plane, worker-1, worker-2)                                    |
 |                                                                                                   |
 |  [Namespace: titipin]                                                                             |
-|    └─ Deployment: laravel-backend (PHP-FPM + Nginx, 1 s.d 6 Pods Replicas)                        |
+|    +-- Deployment: laravel-backend (PHP-FPM + Nginx, 1 to 6 pod replicas)                         |
 |                                                                                                   |
 |  [Namespace: monitoring]                                                                          |
-|    ├─ Prometheus Operator (Scrapes Ingress RPS, Pod CPU, RAM, & P95 Latency)                      |
-|    └─ Grafana 11.5.2 (grafana.titipin.me - Real-time Multi-Pod Observability)                     |
+|    +-- Prometheus Operator (scrapes ingress RPS, pod CPU, RAM, P95 latency)                       |
+|    +-- Grafana 11.5.2 (grafana.titipin.me - real-time observability)                              |
 |                                                                                                   |
 |  [Namespace: mlops]                                                                               |
-|    ├─ Dual-Container Pod: mlops-inference                                                         |
-|    │   ├─ Container 1: inference-api (:8000 FastAPI Serving Champion Model v10)                   |
-|    │   └─ Container 2: predictive-scaler (:9102 Continuous Proactive Control Loop)                |
-|    ├─ Pod: mlops-dashboard (mlops.titipin.me - Streamlit Control Console)                         |
-|    └─ Pod: mlops-mlflow (mlflow.titipin.me - Artifact & Model Registry)                           |
+|    +-- Dual-container pod: mlops-inference                                                        |
+|    |   +-- inference-api (:8000 FastAPI serving champion model v10)                               |
+|    |   +-- predictive-scaler (:9102 continuous proactive control loop)                            |
+|    +-- mlops-dashboard (mlops.titipin.me - Streamlit control console)                             |
+|    +-- mlops-mlflow (mlflow.titipin.me - artifact & model registry)                               |
 +---------------------------------------------------------------------------------------------------+
         """,
         language="text",
