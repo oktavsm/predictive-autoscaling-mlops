@@ -112,7 +112,7 @@ make k8s-logs
 
 ## 5. Ringkasan Hasil Pengujian Unit & Integrasi
 
-Seluruh pengujian otomatis telah tervalidasi pada branch `feat/lk10-k8s-deployment`:
+Seluruh pengujian otomatis telah tervalidasi pada branch `feat/k8s-deployment`:
 - **Total Test Cases:** 21 pengujian (`test_dataset.py`, `test_inference_api.py`, `test_model_registry.py`, `test_predictive_scaler.py`).
 - **Status Test:** 100% Passed.
 - **Code Hygiene:** 0 Lint error (Ruff check & formatting passed).
