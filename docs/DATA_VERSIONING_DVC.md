@@ -1,8 +1,6 @@
-# Data Versioning with DVC & MinIO S3 (LK-05)
-
-> **Modul:** LK-05 — Manajemen Data Versioning Menggunakan DVC  
-> **Remote Storage:** MinIO S3 (`https://storage.titipin.me/mlops-dvc`)  
-> **Status:** ✅ Selesai, Teruji & Terhubung ke Cluster AWS
+# Data Versioning with DVC & MinIO S3
+> **Storage Backend:** MinIO S3 Object Storage (`https://storage.titipin.me/mlops-dvc`)  
+> **Status:** Production-Ready & Connected to K3s Cluster  
 
 ---
 
@@ -76,7 +74,7 @@ Pipeline data telah melalui dua siklus versioning resmi:
 
 ### Versi 1: Baseline Dataset (`v1.0-data`)
 * **Waktu:** 30 September 2026
-* **Cakupan Data:** Data awal hasil workload sequence LK-03 & LK-04 (5 file mentah, 3 file processed).
+* **Cakupan Data:** Data awal hasil sequence telemetri beban kerja (5 file mentah, 3 file processed).
 * **Pointer Hash:**
   * `data/raw.dvc` ➔ `f5c7e0e74874eee2184e610e140f5084.dir` (49.7 KB)
   * `data/processed.dvc` ➔ `81228fb7720d0e37aa589d98fe4356e5.dir` (47.3 KB)
@@ -149,25 +147,25 @@ make dvc-status
 
 ---
 
-## 6. Panduan Screenshot untuk Lembar Kerja LK-05
+## 6. Operational Verification & Audit Commands
 
-Bagi mahasiswa, berikut adalah perintah terminal yang dapat dijalankan untuk mengambil screenshot bukti laporan ke dosen:
+The following commands can be executed to verify DVC and remote storage synchronization:
 
-1. **Screenshot 1 — Inisialisasi & Konfigurasi Remote DVC:**
+1. **Verify Remote Configuration:**
    ```bash
    dvc remote list
    cat .dvc/config
    ```
-   📸 *Menunjukkan remote default adalah `minio` dengan endpoint `https://storage.titipin.me`.*
+   *Displays configured default remote (`minio`) and endpoint `https://storage.titipin.me`.*
 
-2. **Screenshot 2 — Status Sinkronisasi DVC & MinIO:**
+2. **Check Data Synchronization Status:**
    ```bash
    make dvc-status
    ```
-   📸 *Menunjukkan seluruh dataset sinkron dengan cloud storage.*
+   *Confirms all tracked datasets are in sync with cloud storage.*
 
-3. **Screenshot 3 — Audit Continual Learning (`dvc diff`):**
+3. **Inspect Dataset Lineage Diffs (`dvc diff`):**
    ```bash
    make dvc-diff
    ```
-   📸 *Menunjukkan penambahan batch dataset baru tanpa membebani ukuran Git.*
+   *Inspects additions or modifications in dataset batches without inflating Git repository size.*

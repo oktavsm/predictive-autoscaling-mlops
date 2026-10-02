@@ -1,6 +1,7 @@
-# Otomatisasi Continuous Training (CT) Pipeline & Deteksi Data Drift (LK-12)
-## Repositori: `oktavsm/predictive-autoscaling-mlops`
-### Modul: Adaptabilitas Model, Deteksi Pergeseran Distribusi, & Siklus Retraining
+# Continuous Training (CT) Pipeline & Statistical Data Drift Detection
+> **Drift Engine:** Population Stability Index (PSI) & Kolmogorov-Smirnov (KS-Test)  
+> **Retraining Pipeline:** `src/pipeline/continuous_training.py`  
+> **Scheduling:** Kubernetes CronJob (`0 2 * * *` Daily Execution)  
 
 ---
 

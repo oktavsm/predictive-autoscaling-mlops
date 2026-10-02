@@ -1,6 +1,7 @@
-# Continuous Integration & Delivery Pipeline (LK-08)
-
-Dokumentasi implementasi **Lembar Kerja 08 (LK-08)** untuk proyek *Predictive Autoscaling MLOps*. Dokumen ini menjelaskan rancangan, konfigurasi, dan verifikasi pipeline otomatisasi CI/CD berbasis **GitHub Actions** yang beroperasi dengan pola *Code as Trigger*.
+# Continuous Integration & Delivery (CI/CD) Pipeline
+> **Automation Engine:** GitHub Actions (`.github/workflows/mlops-ci.yaml`)  
+> **Workflow Pattern:** Multi-Stage Directed Acyclic Graph (DAG)  
+> **Trigger Strategy:** Push and Pull Request (`main`, `feat/**`)  
 
 ---
 

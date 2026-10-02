@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# LK-14 Live Demo Orchestrator — Panduan Demonstrasi Langsung
+# Live Demonstration Orchestrator — Predictive Autoscaling MLOps
 # ==============================================================================
-# Script ini merupakan panduan interaktif untuk mengorkestrasi demonstrasi
-# live pada sesi presentasi sidang / ujian proyek akhir LK-14.
+# Interactive verification walkthrough for validating end-to-end predictive
+# autoscaling capabilities, model serving, observability, and workload spikes.
 #
-# TIDAK ADA perintah berbahaya atau destruktif di sini. Semua hanya read-only
-# monitoring + menjalankan k6 traffic spike yang aman.
+# Safe, read-only monitoring + k6 traffic spike load injection.
 #
-# Cara penggunaan:
+# Usage:
 #   bash scripts/demo_live.sh
-#   bash scripts/demo_live.sh --no-wait   # Lewati konfirmasi interaktif
+#   bash scripts/demo_live.sh --no-wait   # Skip interactive prompts
 # ==============================================================================
 
 set -euo pipefail
@@ -39,8 +38,8 @@ header() {
 }
 
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-echo "║      LK-14 — PRESENTASI PROYEK AKHIR: LIVE DEMONSTRATION GUIDE             ║"
-echo "║      Predictive Autoscaling MLOps Pipeline on AWS K3s Cluster               ║"
+echo "║      PREDICTIVE AUTOSCALING MLOPS: LIVE DEMONSTRATION & VERIFICATION         ║"
+echo "║      Kubernetes Anticipatory Workload Scaling on AWS K3s Cluster             ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo ""
 echo "Waktu estimasi: ±12 menit"
@@ -69,11 +68,11 @@ echo "[1.3] Pod aktif di namespace 'titipin' (Aplikasi Laravel target autoscalin
 kubectl get pods -n "${NAMESPACE_APP}" 2>/dev/null | grep -E "NAME|laravel" || echo "  [SKIP]"
 
 echo ""
-echo "[1.4] CronJob Continuous Training (LK-12):"
+echo "[1.4] CronJob Continuous Training (Automated Retraining):"
 kubectl get cronjobs,jobs -n "${NAMESPACE_MLOPS}" 2>/dev/null || echo "  [SKIP]"
 
 echo ""
-echo "📌 POIN PRESENTASI:"
+echo "📌 POIN PENJELASAN:"
 echo "   Klaster K3s multi-node berjalan di AWS. Namespace 'mlops' berisi"
 echo "   komponen autoscaler prediktif, namespace 'titipin' berisi app target."
 
@@ -100,9 +99,9 @@ curl -sf "http://localhost:5000/api/2.0/mlflow/registered-models/get?name=predic
   echo "  [INFO] MLflow API tidak accessible lokal — tunjukkan via ${MLFLOW_URL}"
 
 echo ""
-echo "📌 POIN PRESENTASI:"
+echo "📌 POIN PENJELASAN:"
 echo "   Pemilihan model champion menggunakan automated evaluation gate MLflow."
-echo "   Model baru hanya dipromosikan jika Val MAE < model incumbent (LK-07)."
+echo "   Model baru hanya dipromosikan jika Val MAE < model incumbent (Automated Gate)."
 
 pause
 
@@ -141,9 +140,9 @@ echo "  ✓ Pod Replicas: Predictive Scaler — respons proaktif"
 echo "  ✓ Prometheus Rule Alerts — tidak ada alert aktif (healthy state)"
 
 echo ""
-echo "📌 POIN PRESENTASI:"
+echo "📌 POIN PENJELASAN:"
 echo "   Seluruh pipeline observability terotomatisasi: dari scraping Prometheus,"
-echo "   visualisasi Grafana, hingga alert rule berbasis PrometheusRule CRD (LK-11)."
+echo "   visualisasi Grafana, hingga alert rule berbasis PrometheusRule CRD."
 
 pause
 
@@ -196,7 +195,7 @@ pause
 # ====================================================================
 # SEGMENT 5: AI Governance & Security Summary
 # ====================================================================
-header "SEGMENT 5/5: AI Governance, Security & Ethics (LK-13) (~2 menit)"
+header "SEGMENT 5/5: AI Governance, Security & Explainability (SHAP / Trivy) (~2 menit)"
 
 echo "[5.1] Model Governance Status:"
 cat reports/xai_model_card.json 2>/dev/null | python3 -c "
@@ -231,20 +230,20 @@ echo "  ✅ Python CVEs       : 0"
 echo "  ✅ Secret Leaks      : 0"
 
 echo ""
-echo "📌 POIN PRESENTASI:"
+echo "📌 POIN PENJELASAN:"
 echo "   Model telah diaudit dari perspektif tata kelola AI — keputusan autoscaling"
 echo "   dapat dijelaskan (explainable) dan tidak bergantung pada korelasi palsu."
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-echo "║  ✅ LIVE DEMONSTRATION SELESAI — Semua komponen MLOps berhasil didemonstrasikan  ║"
-echo "║                                                                                    ║"
-echo "║  Summary Pencapaian:                                                              ║"
-echo "║   LK-04..05: Data ingestion, versioning DVC + MinIO S3                           ║"
-echo "║   LK-06..07: MLflow tracking, model registry @champion/@challenger               ║"
-echo "║   LK-08..09: CI/CD 4-DAG GitHub Actions, Docker Compose 4 services              ║"
-echo "║   LK-10..11: K3s deployment, Prometheus scraping, Grafana dashboard             ║"
-echo "║   LK-12:     Continuous Training (PSI/KS drift) CronJob daily @ 02:00           ║"
-echo "║   LK-13:     Trivy 0 CRITICAL, 0 secret leaks; SHAP causality verified          ║"
-echo "║   LK-14:     Live demo — predictive scaler eliminates scaling lag ✅             ║"
+echo "║  ✅ LIVE DEMONSTRATION SELESAI — Semua komponen MLOps terverifikasi aktif     ║"
+echo "║                                                                              ║"
+echo "║  Komponen Sistem:                                                            ║"
+echo "║   • Data: Data ingestion, feature engineering, DVC + MinIO S3                ║"
+echo "║   • Modeling: MLflow tracking, model registry @champion/@challenger          ║"
+echo "║   • CI/CD: Automated 4-DAG GitHub Actions, Docker Compose 4 services        ║"
+echo "║   • Cluster: K3s deployment, Prometheus scraping, Grafana dashboard          ║"
+echo "║   • Continuous Training: PSI/KS drift detection & daily CronJob              ║"
+echo "║   • Governance: Trivy 0 CRITICAL CVEs, SHAP causality verified               ║"
+echo "║   • Autoscaling: Anticipatory scaler eliminates scaling lag ✅               ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"

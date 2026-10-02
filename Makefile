@@ -19,25 +19,25 @@ help:
 	@echo "  make test               Run Pytest automated quality gates"
 	@echo "  make check              Run both linting and quality gate tests"
 	@echo ""
-	@echo "Telemetry & Ingestion Pipeline (LK-04):"
+	@echo "Telemetry & Ingestion Pipeline:"
 	@echo "  make port-forward       Start background tunnel to Prometheus (9090)"
 	@echo "  make kill-pf            Stop the background Prometheus tunnel"
 	@echo "  make ingest             Run data ingestion (last 15 minutes)"
 	@echo "  make preprocess         Clean and feature-engineer latest raw data"
 	@echo "  make preview            Print structured preview of latest processed data"
 	@echo ""
-	@echo "Data Versioning with DVC & MinIO (LK-05):"
+	@echo "Data Versioning with DVC & MinIO S3:"
 	@echo "  make dvc-push           Push tracked datasets to MinIO S3 remote"
 	@echo "  make dvc-pull           Pull latest datasets from MinIO S3 remote"
 	@echo "  make dvc-status         Check DVC data status vs remote storage"
 	@echo "  make dvc-diff           Inspect dataset changes and lineage diffs"
 	@echo "  make minio-console      Tunnel MinIO Web UI to http://localhost:9001"
 	@echo ""
-	@echo "Experiment Tracking & Modeling (LK-06):"
+	@echo "Experiment Tracking & Modeling (MLflow):"
 	@echo "  make train              Train candidate forecasting models and log to MLflow"
 	@echo "  make mlflow-ui          Start MLflow Tracking UI on http://localhost:5000"
 	@echo ""
-	@echo "Workload Generation & Live Demo (k6 / LK-14):"
+	@echo "Workload Generation & Live Demonstration (k6):"
 	@echo "  make workload-spike     Run quick 6-minute spike scenario (HPA scale-up)"
 	@echo "  make workload-sequence  Run full multi-scenario sequence (~70m)"
 	@echo "  make demo-spike         Run live demo traffic spike with automated monitoring"
@@ -194,7 +194,7 @@ demo-spike:
 	@bash scripts/demo_traffic_spike.sh
 
 demo-live:
-	@echo ">>> Starting LK-14 Interactive Live Demonstration Guide..."
+	@echo ">>> Starting Interactive Live Demonstration Guide..."
 	@bash scripts/demo_live.sh
 
 clean:

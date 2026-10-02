@@ -1,14 +1,12 @@
-# Dokumentasi Teknis: Modul Ingestion & Preprocessing (LK-04)
-
-> **Modul:** `src/ingest_data.py` & `src/preprocess.py`  
-> **Status:** Production-Ready & Lolos Uji Quality Gate  
-> **Konteks:** Lembar Kerja 04 (LK-04) — Data Ingestion & Preprocessing Pipeline
+# Data Ingestion & Preprocessing Pipeline
+> **Components:** `src/ingest_data.py` & `src/preprocess.py`  
+> **Status:** Production-Ready & Verified via Automated Quality Gates  
 
 ---
 
-## 1. Ikhtisar Arsitektur Pipeline
+## 1. Pipeline Architecture Overview
 
-Pipeline data pada LK-04 bertugas mengubah telemetri mentah dari Prometheus menjadi dataset *time-series supervised learning* yang siap digunakan untuk melatih model peramalan beban kerja (*workload forecasting*) pada LK-06.
+The data pipeline collects operational telemetry from Prometheus and transforms raw metrics into a feature-engineered *time-series supervised learning* dataset ready for training anticipatory workload forecasting models.
 
 ```mermaid
 flowchart TD
