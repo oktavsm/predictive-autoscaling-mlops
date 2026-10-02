@@ -1,0 +1,19 @@
+[Unit]
+Description=Titipin Continuous Synthetic Traffic Generator (MLOps Workload Simulator)
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dev
+WorkingDirectory=/home/dev/titipin-traffic-generator
+ExecStart=/usr/bin/python3 /home/dev/titipin-traffic-generator/traffic_daemon.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+Environment=TARGET_URL=https://api.titipin.me
+
+[Install]
+WantedBy=multi-user.target
