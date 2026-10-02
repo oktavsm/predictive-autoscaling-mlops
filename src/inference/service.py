@@ -299,6 +299,17 @@ def predict_workload(payload: TelemetryFeatures):
     pred_val = float(raw_pred[0]) if hasattr(raw_pred, "__getitem__") else float(raw_pred)
     predicted_rps = max(0.0, round(pred_val, 2))
 
+    # MLOps Extrapolation & Safety Guard for Tree Ensemble Models:
+    # Tree models (Random Forest) cannot extrapolate above the max target seen in training data (~19.1 RPS).
+    # When active workload or positive trend spikes above the training envelope, blend with trend forecast
+    # to ensure real-time spike workloads (e.g. 35+ RPS) recommend 3 or 4 replicas to prevent degradation.
+    delta = float(payload.rps_delta if payload.rps_delta is not None else 0.0)
+    if req_rate > 15.0:
+        trend_forecast = req_rate * (1.0 + max(0.05, delta * 0.5))
+        predicted_rps = max(predicted_rps, round(trend_forecast, 2))
+    elif req_rate > 0.0 and predicted_rps < (req_rate * 0.5):
+        predicted_rps = max(predicted_rps, round(req_rate * 0.9, 2))
+
     # Calculate recommended replicas
     raw_replicas = math.ceil(predicted_rps / TARGET_RPS_PER_POD) if predicted_rps > 0 else 1
     recommended_replicas = max(MIN_REPLICAS, min(MAX_REPLICAS, raw_replicas))
