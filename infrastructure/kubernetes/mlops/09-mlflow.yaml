@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-mlflow
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: mlops-mlflow
+    app.kubernetes.io/component: model-registry
+    app.kubernetes.io/part-of: predictive-autoscaling-mlops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mlops-mlflow
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mlops-mlflow
+        app.kubernetes.io/component: model-registry
+        app.kubernetes.io/part-of: predictive-autoscaling-mlops
+    spec:
+      nodeName: control-plane
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/master"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: mlflow-server
+          image: docker.io/oktaavsm/predictive-autoscaler:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - "mlflow"
+            - "server"
+            - "--backend-store-uri"
+            - "sqlite:////app/mlflow.db"
+            - "--default-artifact-root"
+            - "/app/mlruns"
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "5000"
+            - "--allowed-hosts"
+            - "*"
+            - "--cors-allowed-origins"
+            - "*"
+            - "--gunicorn-opts"
+            - "-w 1 --threads 2"
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 200Mi
+            limits:
+              cpu: 1000m
+              memory: 1200Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlops-mlflow-svc
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: mlops-mlflow
+    app.kubernetes.io/component: model-registry
+    app.kubernetes.io/part-of: predictive-autoscaling-mlops
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: mlops-mlflow
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+      nodePort: 30500
+      protocol: TCP

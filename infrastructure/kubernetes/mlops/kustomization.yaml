@@ -10,3 +10,5 @@ resources:
   - 05-dashboard-deployment.yaml
   - 06-dashboard-service.yaml
   - 07-servicemonitor.yaml
+  - 08-continuous-training-cronjob.yaml
+  - 09-mlflow.yaml
