@@ -1,764 +1,268 @@
 apiVersion: v1
-data:
-  predictive-autoscaling-dashboard.json: |
-    {
-      "annotations": {
-        "list": [
-          {
-            "builtIn": 1,
-            "datasource": {
-              "type": "grafana",
-              "uid": "-- Grafana --"
-            },
-            "enable": true,
-            "hide": true,
-            "name": "Annotations & Alerts",
-            "type": "dashboard"
-          }
-        ]
-      },
-      "editable": true,
-      "fiscalYearStartMonth": 0,
-      "graphTooltip": 1,
-      "id": null,
-      "links": [],
-      "liveNow": false,
-      "panels": [
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 0
-          },
-          "id": 1,
-          "title": "System Overview & Predictive KPI Summary",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "orange",
-                    "value": 3
-                  },
-                  {
-                    "color": "red",
-                    "value": 4
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 4,
-            "w": 5,
-            "x": 0,
-            "y": 1
-          },
-          "id": 2,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "pluginVersion": "10.0.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "predictive_scaler_current_replicas or kube_deployment_status_replicas{namespace=\"titipin\", deployment=\"laravel-backend\"}",
-              "legendFormat": "Current Replicas",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Active Backend Replicas",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "blue",
-                    "value": null
-                  },
-                  {
-                    "color": "purple",
-                    "value": 3
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 4,
-            "w": 5,
-            "x": 5,
-            "y": 1
-          },
-          "id": 3,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "pluginVersion": "10.0.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "predictive_scaler_desired_replicas",
-              "legendFormat": "Desired Replicas",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Desired Replicas (ML Proactive)",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 20
-                  },
-                  {
-                    "color": "red",
-                    "value": 35
-                  }
-                ]
-              },
-              "unit": "reqps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 4,
-            "w": 5,
-            "x": 10,
-            "y": 1
-          },
-          "id": 4,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "pluginVersion": "10.0.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "predictive_scaler_predicted_workload_rps",
-              "legendFormat": "Forecast t+60s",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Predicted Workload (t+60s)",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "blue",
-                    "value": null
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 4,
-            "w": 4,
-            "x": 15,
-            "y": 1
-          },
-          "id": 5,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "pluginVersion": "10.0.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "predictive_scaler_cycles_total",
-              "legendFormat": "Evaluation Cycles",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Total Evaluation Cycles",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "orange",
-                    "value": 5
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 4,
-            "w": 5,
-            "x": 19,
-            "y": 1
-          },
-          "id": 6,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "pluginVersion": "10.0.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "sum(predictive_scaler_scale_events_total) or vector(0)",
-              "legendFormat": "Scale Events",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Total Scale Actions",
-          "type": "stat"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 5
-          },
-          "id": 7,
-          "title": "Traffic Telemetry: Actual Incoming Workload vs Predicted Horizon",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "Requests Per Second (RPS)",
-                "axisPlacement": "auto",
-                "fillOpacity": 20,
-                "gradientMode": "opacity",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "showPoints": "auto",
-                "spanNulls": true
-              },
-              "unit": "reqps"
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Predicted Workload (t+60s)"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "#73BF69",
-                      "mode": "fixed"
-                    }
-                  },
-                  {
-                    "id": "custom.lineStyle",
-                    "value": {
-                      "dash": [
-                        4,
-                        4
-                      ],
-                      "fill": "dash"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Actual Request Rate (Caddy/Nginx)"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "#5794F2",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 6
-          },
-          "id": 8,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max",
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.0.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(caddy_http_requests_total{host=~\"api.titipin.me.*\"}[1m])) or sum(rate(nginx_http_requests_total[1m])) or vector(0)",
-              "legendFormat": "Actual Request Rate (Caddy/Nginx)",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "predictive_scaler_predicted_workload_rps",
-              "legendFormat": "Predicted Workload (t+60s)",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "Incoming Workload (RPS): Actual vs Machine Learning Forecast",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 14
-          },
-          "id": 9,
-          "title": "Scaling Policy Dynamics: Predictive Autoscaler vs Reactive HPA",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "Pod Count",
-                "axisPlacement": "auto",
-                "fillOpacity": 15,
-                "gradientMode": "none",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "showPoints": "auto",
-                "spanNulls": true
-              },
-              "max": 5,
-              "min": 0,
-              "unit": "short"
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Current Pod Replicas (Active)"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "#3274D9",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Predictive Desired Replicas"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "#B877D9",
-                      "mode": "fixed"
-                    }
-                  },
-                  {
-                    "id": "custom.lineStyle",
-                    "value": {
-                      "dash": [
-                        3,
-                        3
-                      ],
-                      "fill": "dash"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Reactive HPA Desired Replicas"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "#E02F44",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 14,
-            "x": 0,
-            "y": 15
-          },
-          "id": 10,
-          "options": {
-            "legend": {
-              "calcs": [
-                "max",
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.0.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "predictive_scaler_current_replicas or kube_deployment_status_replicas{namespace=\"titipin\", deployment=\"laravel-backend\"}",
-              "legendFormat": "Current Pod Replicas (Active)",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "predictive_scaler_desired_replicas",
-              "legendFormat": "Predictive Desired Replicas",
-              "range": true,
-              "refId": "B"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "kube_hpa_status_desired_replicas{namespace=\"titipin\", horizontalpodautoscaler=\"laravel-backend\"} or vector(1)",
-              "legendFormat": "Reactive HPA Desired Replicas",
-              "range": true,
-              "refId": "C"
-            }
-          ],
-          "title": "Pod Replicas: Predictive Scaler vs Reactive Baseline",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "Latency (seconds)",
-                "axisPlacement": "auto",
-                "fillOpacity": 25,
-                "gradientMode": "opacity",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "showPoints": "auto",
-                "spanNulls": true
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 14,
-            "y": 15
-          },
-          "id": 11,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max",
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.0.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(caddy_http_request_duration_seconds_bucket{host=~\"api.titipin.me.*\"}[1m]))) or vector(0.025)",
-              "legendFormat": "P95 API Latency",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Target Workload P95 Latency",
-          "type": "timeseries"
-        }
-      ],
-      "refresh": "5s",
-      "schemaVersion": 38,
-      "style": "dark",
-      "tags": [
-        "mlops",
-        "kubernetes",
-        "autoscaling",
-        "predictive"
-      ],
-      "templating": {
-        "list": []
-      },
-      "time": {
-        "from": "now-15m",
-        "to": "now"
-      },
-      "timepicker": {
-        "refresh_intervals": [
-          "5s",
-          "10s",
-          "30s",
-          "1m",
-          "5m"
-        ]
-      },
-      "timezone": "browser",
-      "title": "Titipin MLOps - Predictive Autoscaling & Observability",
-      "uid": "titipin-mlops-predictive-autoscaler",
-      "version": 1,
-      "weekStart": ""
-    }
 kind: ConfigMap
 metadata:
   name: mlops-grafana-dashboard
   namespace: monitoring
   labels:
-    grafana_dashboard: "1"
+    grafana_dashboard: '1'
     app.kubernetes.io/part-of: predictive-autoscaling-mlops
-
+data:
+  predictive-autoscaling-dashboard.json: "{\n  \"annotations\": {\n    \"list\": [\n\
+    \      {\n        \"builtIn\": 1,\n        \"datasource\": {\n          \"type\"\
+    : \"grafana\",\n          \"uid\": \"-- Grafana --\"\n        },\n        \"enable\"\
+    : true,\n        \"hide\": true,\n        \"name\": \"Annotations & Alerts\",\n\
+    \        \"type\": \"dashboard\"\n      }\n    ]\n  },\n  \"editable\": true,\n\
+    \  \"fiscalYearStartMonth\": 0,\n  \"graphTooltip\": 1,\n  \"id\": null,\n  \"\
+    links\": [],\n  \"liveNow\": false,\n  \"panels\": [\n    {\n      \"collapsed\"\
+    : false,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n      \
+    \  \"x\": 0,\n        \"y\": 0\n      },\n      \"id\": 1,\n      \"title\": \"\
+    System Overview & Predictive KPI Summary\",\n      \"type\": \"row\"\n    },\n\
+    \    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"mappings\": [],\n          \"thresholds\": {\n            \"mode\"\
+    : \"absolute\",\n            \"steps\": [\n              {\n                \"\
+    color\": \"green\",\n                \"value\": null\n              },\n     \
+    \         {\n                \"color\": \"orange\",\n                \"value\"\
+    : 3\n              },\n              {\n                \"color\": \"red\",\n\
+    \                \"value\": 4\n              }\n            ]\n          }\n \
+    \       },\n        \"overrides\": []\n      },\n      \"gridPos\": {\n      \
+    \  \"h\": 4,\n        \"w\": 5,\n        \"x\": 0,\n        \"y\": 1\n      },\n\
+    \      \"id\": 2,\n      \"options\": {\n        \"colorMode\": \"value\",\n \
+    \       \"graphMode\": \"area\",\n        \"justifyMode\": \"auto\",\n       \
+    \ \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n\
+    \          \"values\": false\n        },\n        \"textMode\": \"auto\"\n   \
+    \   },\n      \"pluginVersion\": \"10.0.0\",\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"code\"\
+    ,\n          \"expr\": \"max(kube_deployment_status_replicas{namespace=\\\"titipin\\\
+    \", deployment=\\\"laravel-backend\\\"}) or max(predictive_scaler_current_replicas)\"\
+    ,\n          \"instant\": true,\n          \"range\": false,\n          \"legendFormat\"\
+    : \"Active Replicas\",\n          \"refId\": \"A\"\n        }\n      ],\n    \
+    \  \"title\": \"Active Backend Replicas\",\n      \"type\": \"stat\"\n    },\n\
+    \    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"mappings\": [],\n          \"thresholds\": {\n            \"mode\"\
+    : \"absolute\",\n            \"steps\": [\n              {\n                \"\
+    color\": \"blue\",\n                \"value\": null\n              },\n      \
+    \        {\n                \"color\": \"purple\",\n                \"value\"\
+    : 3\n              }\n            ]\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 5,\n \
+    \       \"x\": 5,\n        \"y\": 1\n      },\n      \"id\": 3,\n      \"options\"\
+    : {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n   \
+    \     \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n       \
+    \ \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n\
+    \          ],\n          \"fields\": \"\",\n          \"values\": false\n    \
+    \    },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    10.0.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"editorMode\": \"code\",\n          \"expr\": \"max(predictive_scaler_desired_replicas)\"\
+    ,\n          \"instant\": true,\n          \"range\": false,\n          \"legendFormat\"\
+    : \"Desired Replicas\",\n          \"refId\": \"A\"\n        }\n      ],\n   \
+    \   \"title\": \"Desired Replicas (ML Proactive)\",\n      \"type\": \"stat\"\n\
+    \    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n        \"\
+    defaults\": {\n          \"color\": {\n            \"mode\": \"thresholds\"\n\
+    \          },\n          \"mappings\": [],\n          \"thresholds\": {\n    \
+    \        \"mode\": \"absolute\",\n            \"steps\": [\n              {\n\
+    \                \"color\": \"green\",\n                \"value\": null\n    \
+    \          },\n              {\n                \"color\": \"yellow\",\n     \
+    \           \"value\": 20\n              },\n              {\n               \
+    \ \"color\": \"red\",\n                \"value\": 35\n              }\n      \
+    \      ]\n          },\n          \"unit\": \"reqps\"\n        },\n        \"\
+    overrides\": []\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"\
+    w\": 5,\n        \"x\": 10,\n        \"y\": 1\n      },\n      \"id\": 4,\n  \
+    \    \"options\": {\n        \"colorMode\": \"value\",\n        \"graphMode\"\
+    : \"area\",\n        \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\"\
+    ,\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    10.0.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"editorMode\": \"code\",\n          \"expr\": \"max(predictive_scaler_predicted_workload_rps)\"\
+    ,\n          \"instant\": true,\n          \"range\": false,\n          \"legendFormat\"\
+    : \"Forecast t+60s\",\n          \"refId\": \"A\"\n        }\n      ],\n     \
+    \ \"title\": \"Predicted Workload (t+60s)\",\n      \"type\": \"stat\"\n    },\n\
+    \    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"mappings\": [],\n          \"thresholds\": {\n            \"mode\"\
+    : \"absolute\",\n            \"steps\": [\n              {\n                \"\
+    color\": \"blue\",\n                \"value\": null\n              }\n       \
+    \     ]\n          }\n        },\n        \"overrides\": []\n      },\n      \"\
+    gridPos\": {\n        \"h\": 4,\n        \"w\": 4,\n        \"x\": 15,\n     \
+    \   \"y\": 1\n      },\n      \"id\": 5,\n      \"options\": {\n        \"colorMode\"\
+    : \"value\",\n        \"graphMode\": \"none\",\n        \"justifyMode\": \"auto\"\
+    ,\n        \"orientation\": \"auto\",\n        \"reduceOptions\": {\n        \
+    \  \"calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\"\
+    : \"\",\n          \"values\": false\n        },\n        \"textMode\": \"auto\"\
+    \n      },\n      \"pluginVersion\": \"10.0.0\",\n      \"targets\": [\n     \
+    \   {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n  \
+    \          \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"max(predictive_scaler_cycles_total)\",\n      \
+    \    \"instant\": true,\n          \"range\": false,\n          \"legendFormat\"\
+    : \"Evaluation Cycles\",\n          \"refId\": \"A\"\n        }\n      ],\n  \
+    \    \"title\": \"Total Evaluation Cycles\",\n      \"type\": \"stat\"\n    },\n\
+    \    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"mappings\": [],\n          \"thresholds\": {\n            \"mode\"\
+    : \"absolute\",\n            \"steps\": [\n              {\n                \"\
+    color\": \"green\",\n                \"value\": null\n              },\n     \
+    \         {\n                \"color\": \"orange\",\n                \"value\"\
+    : 5\n              }\n            ]\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 5,\n \
+    \       \"x\": 19,\n        \"y\": 1\n      },\n      \"id\": 6,\n      \"options\"\
+    : {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"none\",\n   \
+    \     \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n       \
+    \ \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n\
+    \          ],\n          \"fields\": \"\",\n          \"values\": false\n    \
+    \    },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    10.0.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"editorMode\": \"code\",\n          \"expr\": \"sum(predictive_scaler_scale_events_total)\
+    \ or vector(0)\",\n          \"instant\": true,\n          \"range\": false,\n\
+    \          \"legendFormat\": \"Scale Events\",\n          \"refId\": \"A\"\n \
+    \       }\n      ],\n      \"title\": \"Total Scale Actions\",\n      \"type\"\
+    : \"stat\"\n    },\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n\
+    \        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 5\n\
+    \      },\n      \"id\": 7,\n      \"title\": \"Traffic Telemetry: Actual Incoming\
+    \ Workload vs Predicted Horizon\",\n      \"type\": \"row\"\n    },\n    {\n \
+    \     \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"\
+    prometheus\"\n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n  \
+    \        \"color\": {\n            \"mode\": \"palette-classic\"\n          },\n\
+    \          \"custom\": {\n            \"axisBorderShow\": false,\n           \
+    \ \"axisCenteredZero\": false,\n            \"axisColorMode\": \"text\",\n   \
+    \         \"axisLabel\": \"Requests Per Second (RPS)\",\n            \"axisPlacement\"\
+    : \"auto\",\n            \"fillOpacity\": 20,\n            \"gradientMode\": \"\
+    opacity\",\n            \"lineWidth\": 2,\n            \"pointSize\": 5,\n   \
+    \         \"showPoints\": \"auto\",\n            \"spanNulls\": true\n       \
+    \   },\n          \"unit\": \"reqps\"\n        },\n        \"overrides\": [\n\
+    \          {\n            \"matcher\": {\n              \"id\": \"byName\",\n\
+    \              \"options\": \"Predicted Workload (t+60s)\"\n            },\n \
+    \           \"properties\": [\n              {\n                \"id\": \"color\"\
+    ,\n                \"value\": {\n                  \"fixedColor\": \"#73BF69\"\
+    ,\n                  \"mode\": \"fixed\"\n                }\n              },\n\
+    \              {\n                \"id\": \"custom.lineStyle\",\n            \
+    \    \"value\": {\n                  \"dash\": [\n                    4,\n   \
+    \                 4\n                  ],\n                  \"fill\": \"dash\"\
+    \n                }\n              }\n            ]\n          },\n          {\n\
+    \            \"matcher\": {\n              \"id\": \"byName\",\n             \
+    \ \"options\": \"Actual Request Rate (Caddy/Nginx)\"\n            },\n       \
+    \     \"properties\": [\n              {\n                \"id\": \"color\",\n\
+    \                \"value\": {\n                  \"fixedColor\": \"#5794F2\",\n\
+    \                  \"mode\": \"fixed\"\n                }\n              }\n \
+    \           ]\n          }\n        ]\n      },\n      \"gridPos\": {\n      \
+    \  \"h\": 8,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 6\n      },\n\
+    \      \"id\": 8,\n      \"options\": {\n        \"legend\": {\n          \"calcs\"\
+    : [\n            \"mean\",\n            \"max\",\n            \"lastNotNull\"\n\
+    \          ],\n          \"displayMode\": \"table\",\n          \"placement\"\
+    : \"bottom\",\n          \"showLegend\": true\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\",\n          \"sort\": \"none\"\n        }\n\
+    \      },\n      \"pluginVersion\": \"10.0.0\",\n      \"targets\": [\n      \
+    \  {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n   \
+    \         \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"sum(rate(caddy_http_requests_total{host=~\\\"api.titipin.me.*\\\
+    \"}[1m])) or vector(0)\",\n          \"legendFormat\": \"Actual Workload (Caddy\
+    \ RPS)\",\n          \"range\": true,\n          \"instant\": false,\n       \
+    \   \"refId\": \"A\"\n        },\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n   \
+    \       },\n          \"editorMode\": \"code\",\n          \"expr\": \"max(predictive_scaler_predicted_workload_rps)\"\
+    ,\n          \"legendFormat\": \"ML Predicted Horizon (t+60s RPS)\",\n       \
+    \   \"range\": true,\n          \"instant\": false,\n          \"refId\": \"B\"\
+    \n        }\n      ],\n      \"title\": \"Incoming Workload (RPS): Actual vs Machine\
+    \ Learning Forecast\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"\
+    collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n\
+    \        \"x\": 0,\n        \"y\": 14\n      },\n      \"id\": 9,\n      \"title\"\
+    : \"Scaling Policy Dynamics: Predictive Autoscaler vs Reactive HPA\",\n      \"\
+    type\": \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"\
+    prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    palette-classic\"\n          },\n          \"custom\": {\n            \"axisBorderShow\"\
+    : false,\n            \"axisCenteredZero\": false,\n            \"axisColorMode\"\
+    : \"text\",\n            \"axisLabel\": \"Pod Count\",\n            \"axisPlacement\"\
+    : \"auto\",\n            \"fillOpacity\": 15,\n            \"gradientMode\": \"\
+    none\",\n            \"lineWidth\": 2,\n            \"pointSize\": 5,\n      \
+    \      \"showPoints\": \"auto\",\n            \"spanNulls\": true\n          },\n\
+    \          \"max\": 5,\n          \"min\": 0,\n          \"unit\": \"short\"\n\
+    \        },\n        \"overrides\": [\n          {\n            \"matcher\": {\n\
+    \              \"id\": \"byName\",\n              \"options\": \"Current Pod Replicas\
+    \ (Active)\"\n            },\n            \"properties\": [\n              {\n\
+    \                \"id\": \"color\",\n                \"value\": {\n          \
+    \        \"fixedColor\": \"#3274D9\",\n                  \"mode\": \"fixed\"\n\
+    \                }\n              }\n            ]\n          },\n          {\n\
+    \            \"matcher\": {\n              \"id\": \"byName\",\n             \
+    \ \"options\": \"Predictive Desired Replicas\"\n            },\n            \"\
+    properties\": [\n              {\n                \"id\": \"color\",\n       \
+    \         \"value\": {\n                  \"fixedColor\": \"#B877D9\",\n     \
+    \             \"mode\": \"fixed\"\n                }\n              },\n     \
+    \         {\n                \"id\": \"custom.lineStyle\",\n                \"\
+    value\": {\n                  \"dash\": [\n                    3,\n          \
+    \          3\n                  ],\n                  \"fill\": \"dash\"\n   \
+    \             }\n              }\n            ]\n          },\n          {\n \
+    \           \"matcher\": {\n              \"id\": \"byName\",\n              \"\
+    options\": \"Reactive HPA Desired Replicas\"\n            },\n            \"properties\"\
+    : [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"#E02F44\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          }\n\
+    \        ]\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 14,\n        \"x\": 0,\n        \"y\": 15\n      },\n      \"id\": 10,\n   \
+    \   \"options\": {\n        \"legend\": {\n          \"calcs\": [\n          \
+    \  \"max\",\n            \"lastNotNull\"\n          ],\n          \"displayMode\"\
+    : \"table\",\n          \"placement\": \"bottom\",\n          \"showLegend\":\
+    \ true\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n \
+    \         \"sort\": \"none\"\n        }\n      },\n      \"pluginVersion\": \"\
+    10.0.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"editorMode\": \"code\",\n          \"expr\": \"max(kube_deployment_status_replicas{namespace=\\\
+    \"titipin\\\", deployment=\\\"laravel-backend\\\"})\",\n          \"legendFormat\"\
+    : \"Active Pods (Laravel Backend)\",\n          \"range\": true,\n          \"\
+    instant\": false,\n          \"refId\": \"A\"\n        },\n        {\n       \
+    \   \"datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\"\
+    : \"prometheus\"\n          },\n          \"editorMode\": \"code\",\n        \
+    \  \"expr\": \"max(predictive_scaler_desired_replicas)\",\n          \"legendFormat\"\
+    : \"Predictive Autoscaler (AI Recommendation)\",\n          \"range\": true,\n\
+    \          \"instant\": false,\n          \"refId\": \"B\"\n        },\n     \
+    \   {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n  \
+    \          \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"max(kube_hpa_status_desired_replicas{namespace=\\\
+    \"titipin\\\", horizontalpodautoscaler=\\\"laravel-backend\\\"}) or vector(1)\"\
+    ,\n          \"legendFormat\": \"Reactive HPA (CPU Recommendation)\",\n      \
+    \    \"range\": true,\n          \"instant\": false,\n          \"refId\": \"\
+    C\"\n        }\n      ],\n      \"title\": \"Pod Replicas: Predictive Scaler vs\
+    \ Reactive Baseline\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"\
+    datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"axisBorderShow\": false,\n            \"axisCenteredZero\"\
+    : false,\n            \"axisColorMode\": \"text\",\n            \"axisLabel\"\
+    : \"Latency (seconds)\",\n            \"axisPlacement\": \"auto\",\n         \
+    \   \"fillOpacity\": 25,\n            \"gradientMode\": \"opacity\",\n       \
+    \     \"lineWidth\": 2,\n            \"pointSize\": 5,\n            \"showPoints\"\
+    : \"auto\",\n            \"spanNulls\": true\n          },\n          \"unit\"\
+    : \"s\"\n        },\n        \"overrides\": []\n      },\n      \"gridPos\": {\n\
+    \        \"h\": 8,\n        \"w\": 10,\n        \"x\": 14,\n        \"y\": 15\n\
+    \      },\n      \"id\": 11,\n      \"options\": {\n        \"legend\": {\n  \
+    \        \"calcs\": [\n            \"mean\",\n            \"max\",\n         \
+    \   \"lastNotNull\"\n          ],\n          \"displayMode\": \"table\",\n   \
+    \       \"placement\": \"bottom\",\n          \"showLegend\": true\n        },\n\
+    \        \"tooltip\": {\n          \"mode\": \"single\",\n          \"sort\":\
+    \ \"none\"\n        }\n      },\n      \"pluginVersion\": \"10.0.0\",\n      \"\
+    targets\": [\n        {\n          \"datasource\": {\n            \"type\": \"\
+    prometheus\",\n            \"uid\": \"prometheus\"\n          },\n          \"\
+    editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.95, sum by\
+    \ (le) (rate(caddy_http_request_duration_seconds_bucket{host=~\\\"api.titipin.me.*\\\
+    \"}[1m]))) or vector(0.025)\",\n          \"legendFormat\": \"P95 API Latency\
+    \ (seconds)\",\n          \"range\": true,\n          \"instant\": false,\n  \
+    \        \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Target Workload\
+    \ P95 Latency\",\n      \"type\": \"timeseries\"\n    }\n  ],\n  \"refresh\":\
+    \ \"5s\",\n  \"schemaVersion\": 38,\n  \"style\": \"dark\",\n  \"tags\": [\n \
+    \   \"mlops\",\n    \"kubernetes\",\n    \"autoscaling\",\n    \"predictive\"\n\
+    \  ],\n  \"templating\": {\n    \"list\": []\n  },\n  \"time\": {\n    \"from\"\
+    : \"now-15m\",\n    \"to\": \"now\"\n  },\n  \"timepicker\": {\n    \"refresh_intervals\"\
+    : [\n      \"5s\",\n      \"10s\",\n      \"30s\",\n      \"1m\",\n      \"5m\"\
+    \n    ]\n  },\n  \"timezone\": \"browser\",\n  \"title\": \"Titipin MLOps - Predictive\
+    \ Autoscaling & Observability\",\n  \"uid\": \"titipin-mlops-predictive-autoscaler\"\
+    ,\n  \"version\": 1,\n  \"weekStart\": \"\"\n}"

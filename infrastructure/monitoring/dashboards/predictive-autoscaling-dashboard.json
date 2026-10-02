@@ -93,9 +93,10 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "predictive_scaler_current_replicas or kube_deployment_status_replicas{namespace=\"titipin\", deployment=\"laravel-backend\"}",
-          "legendFormat": "Current Replicas",
-          "range": true,
+          "expr": "max(kube_deployment_status_replicas{namespace=\"titipin\", deployment=\"laravel-backend\"}) or max(predictive_scaler_current_replicas)",
+          "instant": true,
+          "range": false,
+          "legendFormat": "Active Replicas",
           "refId": "A"
         }
       ],
@@ -158,9 +159,10 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "predictive_scaler_desired_replicas",
+          "expr": "max(predictive_scaler_desired_replicas)",
+          "instant": true,
+          "range": false,
           "legendFormat": "Desired Replicas",
-          "range": true,
           "refId": "A"
         }
       ],
@@ -228,9 +230,10 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "predictive_scaler_predicted_workload_rps",
+          "expr": "max(predictive_scaler_predicted_workload_rps)",
+          "instant": true,
+          "range": false,
           "legendFormat": "Forecast t+60s",
-          "range": true,
           "refId": "A"
         }
       ],
@@ -289,9 +292,10 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "predictive_scaler_cycles_total",
+          "expr": "max(predictive_scaler_cycles_total)",
+          "instant": true,
+          "range": false,
           "legendFormat": "Evaluation Cycles",
-          "range": true,
           "refId": "A"
         }
       ],
@@ -355,8 +359,9 @@
           },
           "editorMode": "code",
           "expr": "sum(predictive_scaler_scale_events_total) or vector(0)",
+          "instant": true,
+          "range": false,
           "legendFormat": "Scale Events",
-          "range": true,
           "refId": "A"
         }
       ],
@@ -474,9 +479,10 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(caddy_http_requests_total{host=~\"api.titipin.me.*\"}[1m])) or sum(rate(nginx_http_requests_total[1m])) or vector(0)",
-          "legendFormat": "Actual Request Rate (Caddy/Nginx)",
+          "expr": "sum(rate(caddy_http_requests_total{host=~\"api.titipin.me.*\"}[1m])) or vector(0)",
+          "legendFormat": "Actual Workload (Caddy RPS)",
           "range": true,
+          "instant": false,
           "refId": "A"
         },
         {
@@ -485,9 +491,10 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "predictive_scaler_predicted_workload_rps",
-          "legendFormat": "Predicted Workload (t+60s)",
+          "expr": "max(predictive_scaler_predicted_workload_rps)",
+          "legendFormat": "ML Predicted Horizon (t+60s RPS)",
           "range": true,
+          "instant": false,
           "refId": "B"
         }
       ],
@@ -621,9 +628,10 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "predictive_scaler_current_replicas or kube_deployment_status_replicas{namespace=\"titipin\", deployment=\"laravel-backend\"}",
-          "legendFormat": "Current Pod Replicas (Active)",
+          "expr": "max(kube_deployment_status_replicas{namespace=\"titipin\", deployment=\"laravel-backend\"})",
+          "legendFormat": "Active Pods (Laravel Backend)",
           "range": true,
+          "instant": false,
           "refId": "A"
         },
         {
@@ -632,9 +640,10 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "predictive_scaler_desired_replicas",
-          "legendFormat": "Predictive Desired Replicas",
+          "expr": "max(predictive_scaler_desired_replicas)",
+          "legendFormat": "Predictive Autoscaler (AI Recommendation)",
           "range": true,
+          "instant": false,
           "refId": "B"
         },
         {
@@ -643,9 +652,10 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "kube_hpa_status_desired_replicas{namespace=\"titipin\", horizontalpodautoscaler=\"laravel-backend\"} or vector(1)",
-          "legendFormat": "Reactive HPA Desired Replicas",
+          "expr": "max(kube_hpa_status_desired_replicas{namespace=\"titipin\", horizontalpodautoscaler=\"laravel-backend\"}) or vector(1)",
+          "legendFormat": "Reactive HPA (CPU Recommendation)",
           "range": true,
+          "instant": false,
           "refId": "C"
         }
       ],
@@ -711,8 +721,9 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum by (le) (rate(caddy_http_request_duration_seconds_bucket{host=~\"api.titipin.me.*\"}[1m]))) or vector(0.025)",
-          "legendFormat": "P95 API Latency",
+          "legendFormat": "P95 API Latency (seconds)",
           "range": true,
+          "instant": false,
           "refId": "A"
         }
       ],
