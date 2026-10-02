@@ -574,10 +574,19 @@ def main() -> None:
             "features": FEATURE_COLUMNS,
             "registered_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
+        MODELS_DIR.mkdir(parents=True, exist_ok=True)
         metadata_file = MODELS_DIR / "champion_model_metadata.json"
         with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
         log.info("Metadata model champion tersimpan di: %s", metadata_file)
+
+        # Simpan objek model langsung untuk fallback lokal
+        try:
+            import joblib
+            joblib.dump(best_candidate["model"], MODELS_DIR / "champion_model.joblib")
+            log.info("Objek model champion tersimpan di: %s", MODELS_DIR / "champion_model.joblib")
+        except Exception as e:
+            log.warning("Gagal menyimpan champion_model.joblib: %s", e)
 
     log.info("Pelatihan & Logging ke MLflow selesai dengan sempurna!")
 

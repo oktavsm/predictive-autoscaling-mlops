@@ -29,11 +29,24 @@ spec:
               image: docker.io/oktaavsm/predictive-autoscaler:latest
               imagePullPolicy: IfNotPresent
               command:
-                - "python"
-                - "src/pipeline/continuous_training.py"
+                - "/bin/sh"
+                - "-c"
+                - |
+                  mkdir -p /app/src/pipeline /app/src/monitoring /app/src/models /app/data/processed /app/reports /app/models && \
+                  cp /config/ct/continuous_training.py /app/src/pipeline/ && \
+                  cp /config/ct/drift_detector.py /app/src/monitoring/ && \
+                  cp /config/ct/train.py /app/src/models/ && \
+                  cp /config/ct/register_model.py /app/src/models/ && \
+                  cp /config/data/metrics_demo_processed.csv /app/data/processed/ && \
+                  exec python src/pipeline/continuous_training.py --force
               envFrom:
                 - configMapRef:
                     name: mlops-config
+              volumeMounts:
+                - name: ct-code
+                  mountPath: /config/ct
+                - name: ct-data
+                  mountPath: /config/data
               resources:
                 requests:
                   cpu: 250m
@@ -41,3 +54,10 @@ spec:
                 limits:
                   cpu: 1500m
                   memory: 2Gi
+          volumes:
+            - name: ct-code
+              configMap:
+                name: mlops-ct-code
+            - name: ct-data
+              configMap:
+                name: mlops-training-data

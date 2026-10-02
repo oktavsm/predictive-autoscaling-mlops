@@ -46,12 +46,14 @@ class ContinuousTrainingPipeline:
         reference_dataset: Optional[str] = None,
         drift_threshold: float = 0.20,
         model_name: str = "predictive-autoscaler",
-        tracking_uri: str = "sqlite:///mlflow.db",
+        tracking_uri: Optional[str] = None,
     ):
         self.ref_path = reference_dataset or find_default_reference()
         self.drift_threshold = drift_threshold
         self.model_name = model_name
-        self.tracking_uri = tracking_uri
+        self.tracking_uri = tracking_uri or os.getenv(
+            "MLFLOW_TRACKING_URI", "http://mlops-mlflow-svc.mlops.svc.cluster.local:5000"
+        )
 
     def run_drift_check(
         self, current_data: Optional[pd.DataFrame] = None
@@ -95,7 +97,7 @@ class ContinuousTrainingPipeline:
         logger.info(
             "Evaluating candidates in MLflow Model Registry (src/models/register_model.py)..."
         )
-        cmd = [sys.executable, "src/models/register_model.py"]
+        cmd = [sys.executable, "src/models/register_model.py", "--tracking-uri", self.tracking_uri]
         env = os.environ.copy()
         env["MLFLOW_TRACKING_URI"] = self.tracking_uri
 

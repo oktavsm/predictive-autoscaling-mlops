@@ -31,8 +31,8 @@ export const options = {
 export default function () {
   // Mix of different API endpoints to simulate realistic traffic
   const endpoints = [
-    `${TARGET_URL}/api/health`,
-    `${TARGET_URL}/api`,
+    `${TARGET_URL}/`,
+    `${TARGET_URL}/`,
     `${TARGET_URL}/`,
   ];
 

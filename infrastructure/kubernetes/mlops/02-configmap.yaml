@@ -19,4 +19,4 @@ data:
   SCALE_INTERVAL_SECONDS: "15"
   COOLDOWN_SECONDS: "60"
   EXPORTER_PORT: "9102"
-  MLFLOW_TRACKING_URI: "sqlite:////data/mlflow.db"
+  MLFLOW_TRACKING_URI: "http://mlops-mlflow-svc.mlops.svc.cluster.local:5000"
