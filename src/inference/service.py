@@ -387,3 +387,39 @@ def scaling_decision(payload: TelemetryFeatures) -> Dict[str, Any]:
         "desired_replicas": pred_res.recommended_replicas,
         "action": pred_res.scaling_action,
     }
+
+
+# ---------------------------------------------------------------------------
+# Workload Generator Coordination Endpoints (for VM cp-bcc & Dashboard)
+# ---------------------------------------------------------------------------
+workload_coordinator: Dict[str, Any] = {
+    "override_state": None,
+    "override_id": 0,
+    "updated_at": None,
+}
+
+
+@app.post("/workload/trigger")
+def trigger_workload_state(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Triggered from Streamlit Dashboard or CLI to set traffic state on VM cp-bcc."""
+    state = payload.get("state", "FLASH_ANOMALY").upper()
+    workload_coordinator["override_id"] += 1
+    workload_coordinator["override_state"] = state
+    workload_coordinator["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    return {
+        "status": "ok",
+        "override_state": state,
+        "override_id": workload_coordinator["override_id"],
+        "timestamp": workload_coordinator["updated_at"],
+    }
+
+
+@app.get("/workload/status")
+def get_workload_status() -> Dict[str, Any]:
+    """Polled by VM cp-bcc traffic daemon to receive state override commands."""
+    return {
+        "override_state": workload_coordinator["override_state"],
+        "override_id": workload_coordinator["override_id"],
+        "updated_at": workload_coordinator["updated_at"],
+    }
+

@@ -30,16 +30,27 @@ spec:
             severity: warning
             component: inference-serving
           annotations:
-            summary: "High P95 latency detected on workload API"
+            summary: "High P95 latency detected on workload API (> 200ms)"
             description: "Workload P95 latency is {{ $value }}s, exceeding 200ms threshold."
 
-        # 3. Alert if max replica saturation is reached for extended duration
+        # 3. Alert if max replica saturation (6 Pods) is reached for extended duration
         - alert: MLOpsMaxReplicaSaturation
-          expr: predictive_scaler_current_replicas >= 4
+          expr: max(kube_deployment_status_replicas{namespace="titipin", deployment="laravel-backend"}) >= 6
           for: 5m
           labels:
             severity: warning
             component: capacity-planning
           annotations:
-            summary: "Backend has reached maximum scaling capacity (4 Pods)"
-            description: "Workload has sustained maximum replica bounds for 5 minutes."
+            summary: "Backend has reached maximum scaling capacity (6 Pods)"
+            description: "Workload has sustained maximum replica bounds (6 pods) for 5 minutes."
+
+        # 4. Alert if HTTP 5xx error rate exceeds 1% of total incoming requests
+        - alert: MLOpsHighSLOViolationRate
+          expr: sum(rate(caddy_http_requests_total{status=~"5.."}[2m])) / sum(rate(caddy_http_requests_total[2m])) > 0.01
+          for: 1m
+          labels:
+            severity: critical
+            component: api-gateway
+          annotations:
+            summary: "SLO Breach: HTTP 5xx error rate exceeded 1%"
+            description: "Error rate is {{ $value | humanizePercentage }}, violating service SLA."

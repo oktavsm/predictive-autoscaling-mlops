@@ -21,4 +21,6 @@ docs/coursework/
 
 # Large binary artifacts
 docker/*-bin
+logs/
+
 
