@@ -1,9 +1,7 @@
-# Laporan Audit Tata Kelola, Keamanan Kontainer, dan Etika AI (XAI / SHAP)
-
-> **Dokumen Luaran Lembar Kerja (LK-13)**  
-> **Repository:** `github.com/college/predictive-autoscaling-mlops`  
-> **Komponen:** *Model Explainability (XAI)*, *Container Vulnerability Audit*, *AI Governance & Ethics*  
-> **Arsitektur:** Hybrid Reactive-Predictive Autoscaling pada Klaster Kubernetes K3s Multi-Node  
+# AI Governance, Container Security Audit, and Explainability (XAI / SHAP)
+> **Compliance Framework:** ISO/IEC 42001 & EU AI Act Risk Management Principles  
+> **Audited Image:** `oktaavsm/predictive-autoscaler:latest`  
+> **Key Verifications:** Aqua Security Trivy Scan, SHAP TreeExplainer, Standard AI Model Card  
 
 ---
 
@@ -168,7 +166,7 @@ Berkas manifes `reports/xai_model_card.json` dihasilkan secara otomatis oleh pip
   },
   "ethical_considerations": {
     "fairness_and_bias": "Dataset telemetri murni berisi metrik infrastruktur komputasi (RPS, CPU, Memori, Latensi) tanpa data sensitif atau Personally Identifiable Information (PII), meniadakan risiko bias demografis.",
-    "transparency": "Bobot kontribusi fitur dipublikasikan secara terbuka melalui metrik SHAP dan terdokumentasi pada laporan audit tata kelola LK-13.",
+    "transparency": "Bobot kontribusi fitur dipublikasikan secara terbuka melalui metrik SHAP dan terdokumentasi pada laporan audit tata kelola sistem.",
     "accountability": "Setiap transisi model dari Staging ke Production diwajibkan melewati automated gate MLflow dengan metrik Val MAE lebih baik daripada champion sebelumnya."
   },
   "container_security_compliance": {

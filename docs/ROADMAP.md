@@ -651,8 +651,7 @@ requirements as they are assigned.
 The general progression is:
 
 ``` text
-LK-01
-Project / architecture initiation
+Phase 1: Architecture Initiation
         ↓
 Data source and dynamic-data design
         ↓

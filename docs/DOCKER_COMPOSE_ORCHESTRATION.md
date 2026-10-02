@@ -1,6 +1,7 @@
-# Multi-Service MLOps Orchestration with Docker Compose (LK-09)
-
-Dokumentasi implementasi **Lembar Kerja 09 (LK-09)** untuk proyek *Predictive Autoscaling MLOps*. Dokumen ini merinci orkestrasi 4 layanan mikro terintegrasi menggunakan **Docker Compose**, konfigurasi jaringan internal, pengecekan kesehatan dependensi (*healthcheck-driven dependencies*), serta pengujian API inferensi dan dasbor analitik.
+# Multi-Service MLOps Orchestration with Docker Compose
+> **Stack Definition:** `docker-compose.yaml`  
+> **Microservices:** MinIO S3, MLflow Server, FastAPI Inference API, Streamlit Dashboard  
+> **Networking:** Isolated Bridge Network (`mlops-network`) with Healthcheck Dependencies  
 
 ---
 

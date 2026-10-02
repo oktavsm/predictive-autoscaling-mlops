@@ -1,6 +1,7 @@
-# Implementasi Observability, Prometheus Scraping, & Dashboard Grafana (LK-11)
-## Repositori: `oktavsm/predictive-autoscaling-mlops`
-### Modul: Pemantauan Real-Time & Deteksi Anomali Skalabilitas
+# Observability, Prometheus Scraping, and Grafana Telemetry
+> **Monitoring Ecosystem:** kube-prometheus-stack (Prometheus Operator, Grafana Sidecar)  
+> **Telemetry Ingestion:** FastAPI Exporter, Predictive Scaler Metrics, Node Exporter, Caddy Edge  
+> **Visualization:** Auto-provisioned Grafana Dashboard (`https://grafana.titipin.me`)  
 
 ---
 

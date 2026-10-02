@@ -1,8 +1,7 @@
 # CI/CD and Continuous Training (CT) Design in MLOps
 
 > **Document:** Engineering Design & Workflow Specification  
-> **Status:** Draft / Active Specification  
-> **Target Phases:** Phase 14 (Continuous Training) & Phase 15 (CI/CD) — Lab Modules LK-06/LK-07
+> **Target Architecture:** Multi-Stage CI/CD & Automated Continuous Training (CT) Pipeline
 
 ---
 
@@ -253,9 +252,9 @@ To maintain 100% reproducibility in case of incidents or audit rollbacks, every 
 
 ---
 
-## 6. Implementation Roadmap for CI/CD/CT in Coursework
+## 6. Implementation Lifecycle & Automated Triggers
 
-* **LK-04 (Current):** Standalone reproducible ingestion and preprocessing scripts in `src/`.
-* **LK-05:** Introduce DVC pipeline tracking connected to MinIO remote storage (`dvc.yaml`).
-* **LK-06:** Introduce MLflow tracking, experiment logging, and model candidate training.
-* **LK-07:** Implement Automated Model Promotion (`@champion`), GitHub Actions CI quality gates, and live Kubernetes deployment.
+* **Data Ingestion & Preprocessing:** Standalone reproducible ingestion and feature engineering in `src/`.
+* **Data Versioning:** DVC pipeline tracking connected to MinIO S3 remote storage (`dvc.yaml`).
+* **Experiment Tracking:** MLflow tracking, experiment metric logging, and candidate model training.
+* **Model Registry & Gate:** Automated Model Promotion (`@champion`), GitHub Actions CI quality gates, and live Kubernetes deployment.

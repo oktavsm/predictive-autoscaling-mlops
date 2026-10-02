@@ -1,6 +1,7 @@
-# Model Registry, Lifecycle Management, and Inference Readiness (LK-07)
-
-Dokumentasi implementasi **Lembar Kerja 07 (LK-07)** untuk proyek *Predictive Autoscaling MLOps*. Dokumen ini menjelaskan tata kelola registrasi model, manajemen siklus hidup (*champion vs challenger*), penelusuran silsilah data (*DVC data lineage*), serta pengujian kesiapan inferensi (*inference readiness verification*) sebelum penerapan ke lingkungan klaster Kubernetes k3s.
+# Model Registry, Lifecycle Management, and Inference Readiness
+> **Registry Backend:** MLflow Model Registry (`predictive-autoscaler`)  
+> **Deployment Strategy:** Champion/Challenger Model Governance  
+> **Target Environment:** Production Kubernetes Cluster (K3s)  
 
 ---
 

@@ -1,9 +1,7 @@
-# Experiment Tracking & Modeling with MLflow (LK-06)
-
-> **Modul Praktikum:** LK-06 — Manajemen Eksperimen dan Pelacakan Metrik Pemodelan dengan MLflow  
-> **Repositori:** `oktavsm/predictive-autoscaling-mlops`  
-> **Status:** ✅ Selesai, Teruji & Terintegrasi dengan MLflow Tracking  
-> **Champion Model:** `random-forest-default` (Val MAE: `0.0295` RPS)
+# Experiment Tracking & Modeling with MLflow
+> **System:** Predictive Autoscaling Workload Forecasting  
+> **Backend:** MLflow Tracking Server (`sqlite:///mlflow.db`)  
+> **Champion Model:** `random-forest-default` (Validation MAE: `0.0295` RPS)
 
 ---
 
@@ -48,7 +46,7 @@ flowchart TD
 
 ## 2. Dataset & Rekayasa Fitur Runtun Waktu
 
-Dataset diambil dari telemetri operasional Prometheus yang telah diproses pada LK-04 dan diverifikasi versioning-nya via DVC pada LK-05:
+Dataset diambil dari telemetri operasional Prometheus yang telah diproses dan diverifikasi versioning-nya via DVC:
 * **Total Sampel Bersih:** 227 baris observasi beresolusi 15 detik.
 * **Pemisahan Data Kronologis (Time-Series Split):**
   * **Data Latih (Train Set):** 192 baris (85%) urutan awal.
@@ -88,7 +86,7 @@ Empat variasi arsitektur model dilatih dan dievaluasi secara serentak menggunaka
 2. **Latensi vs. Akurasi:**  
    Meskipun Random Forest membutuhkan 42.38 ms untuk inferensi, angka ini masih jauh di bawah batas toleransi autoscaler (1.000 ms / 1 detik). Namun, untuk lingkungan klaster berdaya komputasi rendah, **LightGBM** (3.06 ms) menyediakan alternatif *production-ready* yang sangat efisien.
 3. **Pendaftaran Metadata Champion:**  
-   Model `random-forest-default` secara otomatis ditetapkan sebagai kandidat utama (*Champion*) dan metadatanya diekspor ke [models/champion_model_metadata.json](file:///home/oktaavsm/Code/github.com/college/predictive-autoscaling-mlops/models/champion_model_metadata.json) untuk didaftarkan ke MLflow Model Registry pada LK-07.
+   Model `random-forest-default` secara otomatis ditetapkan sebagai kandidat utama (*Champion*) dan metadatanya diekspor ke [models/champion_model_metadata.json](file:///home/oktaavsm/Code/github.com/college/predictive-autoscaling-mlops/models/champion_model_metadata.json) untuk didaftarkan ke MLflow Model Registry.
 
 ---
 

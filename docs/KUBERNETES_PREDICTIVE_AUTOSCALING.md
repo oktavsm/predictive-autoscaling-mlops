@@ -1,6 +1,7 @@
-# Deployment Kubernetes & Sistem Predictive Autoscaling Live (LK-10)
-## Repositori: `oktavsm/predictive-autoscaling-mlops`
-### Modul: Orkestrasi Klaster Produksi & Penskalaan Pod Proaktif
+# Kubernetes Deployment & Predictive Autoscaling Controller
+> **Cluster Engine:** Multi-Node K3s on AWS EC2 (`control-plane`, `worker-1`, `worker-2`)  
+> **Dedicated Namespace:** `mlops`  
+> **Key Capabilities:** Dual-Container Serving Engine, RBAC Controller, Proactive Scaling Algorithm  
 
 ---
 

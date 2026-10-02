@@ -1,10 +1,10 @@
-# Panduan Konfigurasi Domain Cloudflare & Reverse Proxy Caddy
-## Repositori: `oktavsm/predictive-autoscaling-mlops`
-### Target Demo Ujian / Sidang Praktikum (LK-05 s/d LK-14)
+# Cloudflare Domain Architecture & Caddy Reverse Proxy Setup
+> **Public Edge Domain:** `titipin.me`  
+> **Ingress Architecture:** Cloudflare DNS & TLS Edge ➔ Host Caddy Reverse Proxy ➔ Kubernetes NodePort Services  
 
 ---
 
-## 1. Arsitektur Domain & Routing Klaster AWS
+## 1. Domain Routing & Cluster Architecture
 
 Seluruh antarmuka grafis (*Web UI*) dan endpoint API diarahkan melalui **Caddy Reverse Proxy** yang berjalan di VM Control Plane klaster K3s AWS. Caddy secara otomatis mengelola sertifikat SSL/TLS (HTTPS) dari Let's Encrypt / ZeroSSL dan meneruskan trafik ke *NodePort Service* Kubernetes di jaringan internal.
 
@@ -19,7 +19,7 @@ flowchart TD
             SvcLaravel["api.titipin.me ➔ :30080 (Laravel API)"]
             SvcGrafana["grafana.titipin.me ➔ :30300 (Grafana)"]
             SvcMinioAPI["storage.titipin.me ➔ :30900 (MinIO S3 API)"]
-            SvcMinioUI["console.titipin.me ➔ :30901 (MinIO Web Console)"]
+            SvcMinioUI["minio.titipin.me ➔ :30901 (MinIO Web Console)"]
             SvcMLflow["mlflow.titipin.me ➔ :30500 (MLflow Server)"]
             SvcMLOps["mlops.titipin.me ➔ :30851 (Streamlit / Serving)"]
         end
@@ -36,18 +36,18 @@ flowchart TD
 
 ---
 
-## 2. Daftar DNS Record yang Perlu Didaftarkan di Cloudflare
+## 2. Daftar DNS Record pada Cloudflare
 
-Buka dashboard [Cloudflare](https://dash.cloudflare.com/) ➔ Pilih domain **`titipin.me`** ➔ Masuk menu **DNS** ➔ **Records** ➔ Tambahkan baris record berikut:
+Buka dashboard [Cloudflare](https://dash.cloudflare.com/) ➔ Pilih domain **`titipin.me`** ➔ Masuk menu **DNS** ➔ **Records** ➔ Konfigurasi baris record berikut:
 
-| Subdomain | Tipe | IPv4 Target | Proxy Status | Keterangan / Modul Demo |
+| Subdomain | Tipe | IPv4 Target | Proxy Status | Layanan & Deskripsi Sistem |
 |---|:---:|---|:---:|---|
-| **`api`** | `A` | `<CONTROL_PLANE_IP>` | Proxied (Orange Cloud) | ✅ *Sudah Aktif* (Laravel Backend API) |
-| **`grafana`** | `A` | `<CONTROL_PLANE_IP>` | Proxied (Orange Cloud) | ✅ *Sudah Aktif* (Observability Dashboard) |
-| **`storage`** | `A` | `<CONTROL_PLANE_IP>` | Proxied (Orange Cloud) | ✅ *Sudah Aktif* (MinIO S3 API / DVC Remote) |
-| **`console`** | `A` | `<CONTROL_PLANE_IP>` | **Proxied (Orange Cloud)** | 🌟 **Baru (LK-05 & LK-14):** MinIO Web Console UI |
-| **`mlflow`** | `A` | `<CONTROL_PLANE_IP>` | **Proxied (Orange Cloud)** | 🌟 **Baru (LK-06 & LK-07):** MLflow Tracking & Registry UI |
-| **`mlops`** | `A` | `<CONTROL_PLANE_IP>` | **Proxied (Orange Cloud)** | 🌟 **Baru (LK-09 s/d LK-14):** Streamlit MLOps Demo Dashboard |
+| **`api`** | `A` | `<CONTROL_PLANE_IP>` | DNS only / Proxied | Backend API Laravel E-Commerce |
+| **`grafana`** | `A` | `<CONTROL_PLANE_IP>` | DNS only / Proxied | Observability & Alerting Dashboard |
+| **`storage`** | `A` | `<CONTROL_PLANE_IP>` | DNS only / Proxied | MinIO S3 Object Storage API (DVC Remote) |
+| **`minio`** | `A` | `<CONTROL_PLANE_IP>` | DNS only / Proxied | MinIO Web Console UI (Bucket Browser) |
+| **`mlflow`** | `A` | `<CONTROL_PLANE_IP>` | DNS only / Proxied | MLflow Experiment Tracking & Registry UI |
+| **`mlops`** | `A` | `<CONTROL_PLANE_IP>` | DNS only / Proxied | Streamlit MLOps Predictive Control Dashboard |
 
 > [!NOTE]
 > Ganti `<CONTROL_PLANE_IP>` dengan alamat IP publik asli VM Control Plane Anda (lihat catatan privat di `.env.secrets` atau panduan VM).
@@ -71,27 +71,27 @@ api.titipin.me {
     reverse_proxy 127.0.0.1:30080
 }
 
-# 2. Prometheus & Grafana Observability Dashboard (LK-11 & LK-14)
+# 2. Prometheus & Grafana Observability Dashboard
 grafana.titipin.me {
     reverse_proxy 127.0.0.1:30300
 }
 
-# 3. MinIO S3 Object Storage API (DVC Remote LK-05)
+# 3. MinIO S3 Object Storage API (DVC Remote)
 storage.titipin.me {
     reverse_proxy 127.0.0.1:30900
 }
 
-# 4. MinIO Web Console UI (Manajemen Bucket Visual LK-05 & LK-14)
-console.titipin.me {
+# 4. MinIO Web Console UI (Bucket Browser)
+minio.titipin.me {
     reverse_proxy 127.0.0.1:30901
 }
 
-# 5. MLflow Tracking & Model Registry UI (LK-06 & LK-07)
+# 5. MLflow Tracking & Model Registry UI
 mlflow.titipin.me {
     reverse_proxy 127.0.0.1:30500
 }
 
-# 6. Streamlit MLOps Dashboard & Serving API (LK-09, LK-10, LK-14)
+# 6. Streamlit MLOps Dashboard & Serving API
 mlops.titipin.me {
     reverse_proxy 127.0.0.1:30851
 }
@@ -120,4 +120,4 @@ sudo systemctl reload caddy
 sudo systemctl status caddy
 ```
 
-Dengan langkah di atas, seluruh dashboard praktikum Anda dapat diakses secara publik dan aman via HTTPS untuk demonstrasi di hadapan dosen penguji pada saat presentasi akhir (LK-14).
+Dengan langkah di atas, seluruh dashboard dan endpoint inferensi dapat diakses secara publik dan aman via HTTPS untuk pemantauan operasional dan evaluasi performa sistem end-to-end.
