@@ -14,9 +14,14 @@ import requests
 import streamlit as st
 
 # Configuration
-INFERENCE_API_URL = os.getenv("INFERENCE_API_URL", "http://localhost:8000")
-MLFLOW_URL = os.getenv("MLFLOW_URL", "http://localhost:5000")
-MINIO_URL = os.getenv("MINIO_URL", "http://localhost:9001")
+INFERENCE_API_URL = (
+    os.getenv("INFERENCE_API_URL")
+    or os.getenv("INFERENCE_SERVICE_URL")
+    or os.getenv("INFERENCE_URL")
+    or "http://localhost:8000"
+)
+MLFLOW_URL = os.getenv("MLFLOW_URL", "https://mlflow.titipin.me")
+MINIO_URL = os.getenv("MINIO_URL", "https://minio.titipin.me")
 
 st.set_page_config(
     page_title="Predictive Autoscaler MLOps Dashboard",

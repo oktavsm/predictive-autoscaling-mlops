@@ -28,8 +28,14 @@ spec:
               containerPort: 8501
               protocol: TCP
           env:
+            - name: INFERENCE_API_URL
+              value: "http://mlops-inference-svc.mlops.svc.cluster.local:8000"
             - name: INFERENCE_SERVICE_URL
               value: "http://mlops-inference-svc.mlops.svc.cluster.local:8000"
+            - name: MLFLOW_URL
+              value: "https://mlflow.titipin.me"
+            - name: MINIO_URL
+              value: "https://minio.titipin.me"
             - name: STREAMLIT_SERVER_PORT
               value: "8501"
             - name: STREAMLIT_SERVER_ADDRESS
