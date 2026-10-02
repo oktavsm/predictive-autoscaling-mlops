@@ -25,7 +25,7 @@ INFERENCE_API_URL = (
     or os.getenv("INFERENCE_URL")
     or "http://localhost:8000"
 )
-PUBLIC_INFERENCE_DOCS = os.getenv("PUBLIC_INFERENCE_DOCS", "http://16.79.90.160:30800/docs")
+PUBLIC_INFERENCE_DOCS = os.getenv("PUBLIC_INFERENCE_DOCS", "https://model.titipin.me/docs")
 MLFLOW_URL = os.getenv("MLFLOW_URL", "https://mlflow.titipin.me")
 GRAFANA_URL = os.getenv("GRAFANA_URL", "https://grafana.titipin.me")
 MINIO_URL = os.getenv("MINIO_URL", "https://minio.titipin.me")
