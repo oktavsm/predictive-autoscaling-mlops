@@ -24,14 +24,14 @@ spec:
         # 1. FastAPI Model Serving Microservice
         - name: inference-api
           image: docker.io/oktaavsm/predictive-autoscaler:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command:
-            - "uvicorn"
-            - "src.inference.service:app"
-            - "--host"
-            - "0.0.0.0"
-            - "--port"
-            - "8000"
+            - "/bin/sh"
+            - "-c"
+            - |
+              mkdir -p /app/src/inference && \
+              cp /config/inference/service.py /app/src/inference/service.py && \
+              exec uvicorn src.inference.service:app --host 0.0.0.0 --port 8000
           ports:
             - name: http
               containerPort: 8000
@@ -39,6 +39,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: mlops-config
+          volumeMounts:
+            - name: inference-code
+              mountPath: /config/inference
           livenessProbe:
             httpGet:
               path: /health
@@ -66,10 +69,14 @@ spec:
         # 2. Predictive Autoscaler Control Loop & Exporter
         - name: predictive-scaler
           image: docker.io/oktaavsm/predictive-autoscaler:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command:
-            - "python"
-            - "src/scaling/predictive_scaler.py"
+            - "/bin/sh"
+            - "-c"
+            - |
+              mkdir -p /app/src/scaling && \
+              cp /config/inference/predictive_scaler.py /app/src/scaling/predictive_scaler.py && \
+              exec python src/scaling/predictive_scaler.py
           ports:
             - name: metrics
               containerPort: 9102
@@ -80,6 +87,9 @@ spec:
           env:
             - name: INFERENCE_URL
               value: "http://127.0.0.1:8000"
+          volumeMounts:
+            - name: inference-code
+              mountPath: /config/inference
           livenessProbe:
             httpGet:
               path: /healthz
@@ -101,3 +111,7 @@ spec:
             limits:
               cpu: 300m
               memory: 256Mi
+      volumes:
+        - name: inference-code
+          configMap:
+            name: mlops-inference-code

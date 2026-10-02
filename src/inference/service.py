@@ -198,6 +198,7 @@ class TelemetryFeatures(BaseModel):
     cpu_delta: Optional[float] = Field(default=None, description="CPU derivative delta")
     hour: Optional[int] = Field(default=None, description="Current hour (0-23)")
     minute: Optional[int] = Field(default=None, description="Current minute (0-59)")
+    current_replicas: Optional[int] = Field(default=1, description="Current replica count")
 
 
 class PredictionResponse(BaseModel):
@@ -230,6 +231,22 @@ def health_check() -> Dict[str, Any]:
         "load_time_ms": model_store.get("load_time_ms"),
         "target_rps_per_pod": TARGET_RPS_PER_POD,
         "replica_bounds": {"min": MIN_REPLICAS, "max": MAX_REPLICAS},
+    }
+
+
+@app.post("/model/reload")
+def reload_model_endpoint() -> Dict[str, Any]:
+    """Reloads the champion model dynamically from MLflow Model Registry."""
+    load_model_from_registry()
+    is_ready = model_store.get("model") is not None
+    return {
+        "status": "reloaded" if is_ready else "failed",
+        "model_ready": is_ready,
+        "model_name": MODEL_NAME,
+        "model_alias": MODEL_ALIAS,
+        "model_uri": model_store.get("model_uri"),
+        "loaded_at": model_store.get("loaded_at"),
+        "load_time_ms": model_store.get("load_time_ms"),
     }
 
 
@@ -345,15 +362,16 @@ def predict_workload(payload: TelemetryFeatures):
 def scaling_decision(payload: TelemetryFeatures) -> Dict[str, Any]:
     """Adapter endpoint tailored for Kubernetes Custom HPA Controller."""
     pred_res = predict_workload(payload)
+    current_reps = int(payload.current_replicas or math.ceil(payload.request_rate / TARGET_RPS_PER_POD) or 1)
     return {
         "kind": "AutoscalingDecision",
         "apiVersion": "autoscaling.titipin.me/v1alpha1",
         "metadata": {
-            "targetRef": {"kind": "Deployment", "name": "wordpress-fpm", "namespace": "titipin"},
+            "targetRef": {"kind": "Deployment", "name": "laravel-backend", "namespace": "titipin"},
             "timestamp": pred_res.timestamp,
         },
         "spec": {
-            "currentReplicas": math.ceil(payload.request_rate / TARGET_RPS_PER_POD) or 1,
+            "currentReplicas": current_reps,
             "desiredReplicas": pred_res.recommended_replicas,
             "predictedRPS": pred_res.predicted_workload_rps_60s,
             "scalingAction": pred_res.scaling_action,
@@ -363,4 +381,9 @@ def scaling_decision(payload: TelemetryFeatures) -> Dict[str, Any]:
                 "targetRPSPerPod": TARGET_RPS_PER_POD,
             },
         },
+        "predicted_workload_rps_60s": pred_res.predicted_workload_rps_60s,
+        "recommended_replicas": pred_res.recommended_replicas,
+        "target_replicas": pred_res.recommended_replicas,
+        "desired_replicas": pred_res.recommended_replicas,
+        "action": pred_res.scaling_action,
     }
