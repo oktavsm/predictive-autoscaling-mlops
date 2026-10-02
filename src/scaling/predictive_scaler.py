@@ -401,6 +401,25 @@ class PredictiveScalerController:
 
         self.metrics.last_decision_reason = decision
 
+        if scaled and not self.dry_run and current_reps != desired_reps:
+            try:
+                event_payload = json.dumps({
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "action": "SCALE_UP" if desired_reps > current_reps else "SCALE_DOWN",
+                    "from_replicas": current_reps,
+                    "to_replicas": desired_reps,
+                    "predicted_rps": round(pred_rps, 2),
+                    "reason": decision,
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    f"{self.inference_url}/scaling/action-record",
+                    data=event_payload,
+                    headers={"Content-Type": "application/json"},
+                )
+                urllib.request.urlopen(req, timeout=1.0)
+            except Exception:
+                pass
+
         log_payload = {
             "cycle": self.metrics.cycles_total,
             "target": f"{self.target_namespace}/{self.target_deployment}",
