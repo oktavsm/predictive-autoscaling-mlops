@@ -219,6 +219,14 @@ def run_autonomous_cycle(
             auto_retrain_triggered=True,
         )
 
+        # 1.5 Sync drift telemetry dataset to MinIO DVC storage
+        try:
+            from src.data.minio_sync import push_dataset_to_minio
+            push_dataset_to_minio(raw_path=curr_file, processed_path=curr_file)
+            logger.info("✓ Drift telemetry dataset synced to MinIO cloud remote: %s", curr_file)
+        except Exception as sync_e:
+            logger.warning("MinIO drift sync notice: %s", sync_e)
+
         # 2. Trigger Kubernetes Retraining Job
         success, job_name = trigger_k8s_retraining_job()
         cycle_result["retraining_triggered"] = success

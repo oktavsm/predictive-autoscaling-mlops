@@ -31,7 +31,7 @@ import requests
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-PROM_URL = os.getenv("PROM_URL", "http://127.0.0.1:9090")
+PROM_URL = os.getenv("PROM_URL") or os.getenv("PROMETHEUS_URL") or "http://127.0.0.1:9090"
 DEFAULT_STEP = 15  # resolusi data: 15 detik (sesuai interval HPA)
 MAX_RETRIES = 3  # maksimum retry per query sebelum menyerah
 RETRY_BACKOFF = 2.0  # faktor backoff eksponensial (detik)

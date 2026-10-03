@@ -32,13 +32,17 @@ spec:
                 - "/bin/sh"
                 - "-c"
                 - |
-                  mkdir -p /app/src/pipeline /app/src/monitoring /app/src/models /app/data/processed /app/reports /app/models && \
+                  pip install --no-cache-dir minio && \
+                  mkdir -p /app/src/pipeline /app/src/monitoring /app/src/models /app/src/data /app/data/raw /app/data/processed /app/reports /app/models && \
                   cp /config/ct/continuous_training.py /app/src/pipeline/ && \
                   cp /config/ct/drift_detector.py /app/src/monitoring/ && \
                   cp /config/ct/train.py /app/src/models/ && \
                   cp /config/ct/register_model.py /app/src/models/ && \
+                  cp /config/ct/minio_sync.py /app/src/data/ && \
+                  cp /config/ct/ingest_data.py /app/src/ && \
+                  cp /config/ct/preprocess.py /app/src/ && \
                   cp /config/data/metrics_demo_processed.csv /app/data/processed/ && \
-                  exec python src/pipeline/continuous_training.py --force
+                  exec python src/pipeline/continuous_training.py --force --minutes 1440
               envFrom:
                 - configMapRef:
                     name: mlops-config

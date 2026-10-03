@@ -1,4 +1,4 @@
-.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess auto-ingest auto-ingest-24h preview minio-console train mlflow-ui security-scan xai-audit demo-spike demo-live clean
+.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess auto-ingest auto-ingest-24h preview dvc-push dvc-pull dvc-status sync-data minio-console train mlflow-ui security-scan xai-audit demo-spike demo-live clean
 
 PYTHON ?= python3
 VENV ?= .venv
@@ -103,14 +103,19 @@ preview: venv
 
 dvc-push: venv
 	@echo ">>> Pushing tracked datasets to MinIO S3 (storage.titipin.me/mlops-dvc)..."
-	@AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required $(BIN)/dvc push
+	@$(BIN)/python src/data/minio_sync.py --push-latest
+	@AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required $(BIN)/dvc push 2>/dev/null || true
 
 dvc-pull: venv
 	@echo ">>> Pulling datasets from MinIO S3 (storage.titipin.me/mlops-dvc)..."
-	@AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required $(BIN)/dvc pull
+	@$(BIN)/python src/data/minio_sync.py --pull
+	@AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required $(BIN)/dvc pull 2>/dev/null || true
+
+sync-data: dvc-pull
 
 dvc-status: venv
-	@AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required $(BIN)/dvc status
+	@$(BIN)/python src/data/minio_sync.py --status
+	@AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required $(BIN)/dvc status 2>/dev/null || true
 
 dvc-diff: venv
 	@$(BIN)/dvc diff
