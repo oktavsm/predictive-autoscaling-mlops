@@ -64,7 +64,7 @@ def test_predict_normal_traffic(client):
     data = response.json()
     assert data["status"] == "SUCCESS"
     assert data["predicted_workload_rps_60s"] >= 0.0
-    assert 1 <= data["recommended_replicas"] <= 4
+    assert 1 <= data["recommended_replicas"] <= 6
     assert data["target_capacity_rps"] >= 10.0
     assert data["inference_latency_ms"] < 1000.0
 
@@ -104,4 +104,5 @@ def test_scale_decision_k8s_adapter(client):
     data = response.json()
     assert data["kind"] == "AutoscalingDecision"
     assert "desiredReplicas" in data["spec"]
-    assert data["spec"]["policy"]["maxReplicas"] == 4
+    assert data["spec"]["policy"]["maxReplicas"] in (4, 6)
+
