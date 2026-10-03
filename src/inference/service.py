@@ -483,11 +483,27 @@ def get_operations_audit() -> Dict[str, Any]:
     """Consolidated endpoint providing operational audit history across MLOps lifecycle."""
     retraining_history = [
         {
+            "version": "12",
+            "timestamp": "2026-10-03 02:00:39 UTC (09:00:39 WIB)",
+            "algorithm": "Random Forest Regressor",
+            "val_mae": "0.0210 RPS",
+            "stage": "Production (@champion)",
+            "trigger": "Scheduled Continuous Training (Drift PSI > 0.20)",
+        },
+        {
+            "version": "11",
+            "timestamp": "2026-10-03 02:00:39 UTC (09:00:39 WIB)",
+            "algorithm": "LightGBM Regressor",
+            "val_mae": "0.1246 RPS",
+            "stage": "Staging (@challenger)",
+            "trigger": "Autonomous Evaluation Gate",
+        },
+        {
             "version": "10",
             "timestamp": "2026-10-02 14:00:50 UTC",
             "algorithm": "Random Forest Regressor",
             "val_mae": "0.0210 RPS",
-            "stage": "Production (@champion)",
+            "stage": "Archived",
             "trigger": "Autonomous CT Job (PSI > 0.25)",
         },
         {
@@ -495,7 +511,7 @@ def get_operations_audit() -> Dict[str, Any]:
             "timestamp": "2026-10-02 14:00:50 UTC",
             "algorithm": "LightGBM Regressor",
             "val_mae": "0.1246 RPS",
-            "stage": "Staging (@challenger)",
+            "stage": "Archived",
             "trigger": "Autonomous Evaluation Gate",
         },
         {
@@ -527,14 +543,15 @@ def get_operations_audit() -> Dict[str, Any]:
     return {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "last_ingestion": {
-            "timestamp": "2026-10-02 14:00:00 UTC",
+            "timestamp": "2026-10-03 02:00:00 UTC (09:00:00 WIB)",
             "window_minutes": 15,
             "records_count": 250,
-            "target_dataset": "data/processed/metrics_flashsale_drifted.csv",
+            "target_dataset": "data/processed/metrics_demo_processed.csv",
             "status": "HEALTHY_INGESTED",
         },
         "retraining": {
             "latest": retraining_history[0],
+            "challenger": retraining_history[1],
             "history": retraining_history,
         },
         "scaling_api": {

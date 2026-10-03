@@ -298,7 +298,7 @@ st.markdown(
             <div class="hdr-title">Titipin MLOps &mdash; Predictive Autoscaling Console</div>
             <div class="hdr-sub">Closed-loop telemetry ingestion, workload forecasting (t+60 s), and proactive Kubernetes pod allocation.</div>
         </div>
-        <div><span class="pill pill-ok">MODEL @champion v10</span></div>
+        <div><span class="pill pill-ok">MODEL @champion v12</span></div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -310,7 +310,7 @@ with c1:
     st.metric("Serving Engine", "HEALTHY" if is_healthy else "OFFLINE", delta="Sub-15 ms latency",
               help="FastAPI inference container status in namespace mlops.")
 with c2:
-    st.metric("Active Model", "v10 Random Forest", delta="@champion",
+    st.metric("Active Model", "v12 Random Forest", delta="@champion",
               help="Currently serving model trained on post-drift flash-sale dataset.")
 with c3:
     st.metric("Replica Range", f"{cfg_min_pods}–{cfg_max_pods} pods", delta=f"Target: {cfg_target_rps:.0f} RPS/pod",
@@ -504,6 +504,7 @@ with tab_audit:
         )
 
         cr1, cr2 = st.columns(2)
+        challenger = ret.get("challenger", {})
         with cr1:
             st.markdown(
                 f"""
@@ -512,10 +513,10 @@ with tab_audit:
                         <span class="pill pill-ok">CHAMPION — PRODUCTION</span>
                         <span style="font-size:11px;color:#5EEAD4;font-family:monospace;">@champion</span>
                     </div>
-                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {latest.get('version','10')} — {latest.get('algorithm','Random Forest Regressor')}</div>
+                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {latest.get('version','12')} — {latest.get('algorithm','Random Forest Regressor')}</div>
                     <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">
-                        <li><b>Trained:</b> <code>{latest.get('timestamp','2026-10-02 14:00:50 UTC')}</code></li>
-                        <li><b>Trigger:</b> {latest.get('trigger','Autonomous CT Job (PSI > 0.25)')}</li>
+                        <li><b>Trained:</b> <code>{latest.get('timestamp','2026-10-03 02:00:39 UTC (09:00:39 WIB)')}</code></li>
+                        <li><b>Trigger:</b> {latest.get('trigger','Scheduled Continuous Training (Drift PSI > 0.20)')}</li>
                         <li><b>Validation MAE:</b> <b>{latest.get('val_mae','0.0210 RPS')}</b></li>
                         <li><b>Deployment:</b> Hot-reloaded, zero restarts</li>
                     </ul>
@@ -525,17 +526,17 @@ with tab_audit:
             )
         with cr2:
             st.markdown(
-                """
+                f"""
                 <div class="card" style="border-left:3px solid #F59E0B;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                         <span class="pill pill-warn">CHALLENGER — STAGING</span>
                         <span style="font-size:11px;color:#FCD34D;font-family:monospace;">@challenger</span>
                     </div>
-                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version 9 — LightGBM Regressor</div>
+                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {challenger.get('version','11')} — {challenger.get('algorithm','LightGBM Regressor')}</div>
                     <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">
-                        <li><b>Trained:</b> <code>2026-10-02 14:00:50 UTC</code></li>
-                        <li><b>Trigger:</b> Multi-model evaluation job</li>
-                        <li><b>Validation MAE:</b> 0.1246 RPS (inference: 2.8 ms)</li>
+                        <li><b>Trained:</b> <code>{challenger.get('timestamp','2026-10-03 02:00:39 UTC (09:00:39 WIB)')}</code></li>
+                        <li><b>Trigger:</b> {challenger.get('trigger','Autonomous Evaluation Gate')}</li>
+                        <li><b>Validation MAE:</b> {challenger.get('val_mae','0.1246 RPS')} (inference: 2.8 ms)</li>
                         <li><b>Result:</b> Retained as staging candidate</li>
                     </ul>
                 </div>
@@ -965,11 +966,11 @@ with tab_registry:
             """
             <div class="card" style="border-left:3px solid #14B8A6;">
                 <span class="pill pill-ok">CHAMPION — PRODUCTION</span>
-                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v10</div>
+                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v12</div>
                 <div style="font-size:12px;color:#71717A;margin-bottom:8px;">Random Forest Regressor (n_estimators=100, max_depth=8)</div>
                 <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
                     <li><b>MAE:</b> <code style="color:#5EEAD4;">0.0210 RPS</code></li>
-                    <li><b>Dataset:</b> <code>processed/metrics_flashsale_drifted.csv</code></li>
+                    <li><b>Dataset:</b> <code>processed/metrics_demo_processed.csv</code></li>
                     <li><b>Serving:</b> Active, scaling 1–6 pods</li>
                 </ul>
             </div>
@@ -981,7 +982,7 @@ with tab_registry:
             """
             <div class="card" style="border-left:3px solid #F59E0B;">
                 <span class="pill pill-warn">CHALLENGER — STAGING</span>
-                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v9</div>
+                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v11</div>
                 <div style="font-size:12px;color:#71717A;margin-bottom:8px;">LightGBM Regressor (lr=0.05, num_leaves=31)</div>
                 <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
                     <li><b>MAE:</b> <code>0.1246 RPS</code></li>

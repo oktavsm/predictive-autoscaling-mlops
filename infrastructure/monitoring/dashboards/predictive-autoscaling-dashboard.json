@@ -540,7 +540,7 @@
             "showPoints": "auto",
             "spanNulls": true
           },
-          "max": 5,
+          "max": 6,
           "min": 0,
           "unit": "short"
         },
@@ -548,7 +548,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Current Pod Replicas (Active)"
+              "options": "Active Pods (Laravel Backend)"
             },
             "properties": [
               {
@@ -563,7 +563,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Predictive Desired Replicas"
+              "options": "Predictive Autoscaler (AI Recommendation)"
             },
             "properties": [
               {
@@ -588,7 +588,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Reactive HPA Desired Replicas"
+              "options": "Reactive HPA (CPU Recommendation)"
             },
             "properties": [
               {
@@ -656,7 +656,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "max(kube_hpa_status_desired_replicas{namespace=\"titipin\", horizontalpodautoscaler=\"laravel-backend\"}) or vector(1)",
+          "expr": "max(kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"titipin\", horizontalpodautoscaler=\"laravel-backend\"}) or vector(1)",
           "legendFormat": "Reactive HPA (CPU Recommendation)",
           "range": true,
           "instant": false,
