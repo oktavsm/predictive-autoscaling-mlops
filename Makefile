@@ -1,4 +1,4 @@
-.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess preview minio-console train mlflow-ui security-scan xai-audit demo-spike demo-live clean
+.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess auto-ingest auto-ingest-24h preview minio-console train mlflow-ui security-scan xai-audit demo-spike demo-live clean
 
 PYTHON ?= python3
 VENV ?= .venv
@@ -24,6 +24,8 @@ help:
 	@echo "  make kill-pf            Stop the background Prometheus tunnel"
 	@echo "  make ingest             Run data ingestion (last 15 minutes)"
 	@echo "  make preprocess         Clean and feature-engineer latest raw data"
+	@echo "  make auto-ingest        End-to-End: Ingest (60m), preprocess, and push to MinIO DVC"
+	@echo "  make auto-ingest-24h    End-to-End: Ingest (24h), preprocess, and push to MinIO DVC"
 	@echo "  make preview            Print structured preview of latest processed data"
 	@echo ""
 	@echo "Data Versioning with DVC & MinIO S3:"
@@ -89,6 +91,12 @@ ingest: venv
 
 preprocess: venv
 	$(BIN)/python src/preprocess.py
+
+auto-ingest: venv
+	@$(BIN)/python src/pipeline/auto_ingest_and_version.py --minutes 60
+
+auto-ingest-24h: venv
+	@$(BIN)/python src/pipeline/auto_ingest_and_version.py --minutes 1440
 
 preview: venv
 	@$(BIN)/python -c "import pandas as pd, pathlib as p; files = list(p.Path('data/processed').glob('*.csv')); f = max(files, key=lambda x: x.stat().st_mtime) if files else None; df = pd.read_csv(f, index_col='timestamp') if f else None; print(f'=== DATASET PROCESSED: {f.name} ===\nDimensi: {len(df)} baris x {len(df.columns)} kolom\n' + df[['request_rate', 'php_cpu_cores', 'replicas', 'rps_lag1', 'rps_roll_mean_60s', 'target_rps_60s']].tail(8).to_string()) if df is not None else print('Belum ada file di data/processed/.')"
