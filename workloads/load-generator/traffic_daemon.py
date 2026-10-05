@@ -64,6 +64,12 @@ STATES = {
         "think_time": ("0.1", "0.3"),
         "desc": "ANOMALY: Flash-sale massive spike (60-95 RPS, scales to 6 pods)",
     },
+    "DRIFT_ANOMALY": {
+        "vus_range": (35, 55),
+        "duration_range": (240, 600),
+        "think_time": ("0.05", "0.15"),
+        "desc": "DATA DRIFT: Heavy anomalous distribution shift (35-50 RPS, high latency variance, triggers model drift & retraining)",
+    },
     "COOLING_DOWN": {
         "vus_range": (8, 14),
         "duration_range": (300, 600),
@@ -87,6 +93,9 @@ TRANSITIONS = {
         ("STEADY_NORMAL", 0.20),
     ],
     "FLASH_ANOMALY": [
+        ("COOLING_DOWN", 1.00),
+    ],
+    "DRIFT_ANOMALY": [
         ("COOLING_DOWN", 1.00),
     ],
     "COOLING_DOWN": [
@@ -156,6 +165,8 @@ def check_override() -> Optional[str]:
                 return "STEADY_NORMAL"
             if val in ("BURST", "BUSY", "PEAK"):
                 return "BURST_BUSY"
+            if val in ("DRIFT", "DRIFT_ANOMALY", "DRIFT_EXPERIMENT"):
+                return "DRIFT_ANOMALY"
         except Exception:
             pass
 
@@ -183,6 +194,8 @@ def check_override() -> Optional[str]:
                         return "STEADY_NORMAL"
                     if ov_state in ("BURST", "BUSY", "PEAK"):
                         return "BURST_BUSY"
+                    if ov_state in ("DRIFT", "DRIFT_ANOMALY", "DRIFT_EXPERIMENT"):
+                        return "DRIFT_ANOMALY"
     except Exception:
         pass
 

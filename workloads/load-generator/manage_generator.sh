@@ -58,6 +58,10 @@ case "$ACTION" in
                 echo "BURST_BUSY" > "$OVERRIDE_FILE"
                 echo "Triggered immediate BURST_BUSY state."
                 ;;
+            drift|drift_anomaly)
+                echo "DRIFT_ANOMALY" > "$OVERRIDE_FILE"
+                echo "Triggered immediate DRIFT_ANOMALY data drift state."
+                ;;
             *)
                 echo "Unknown trigger state: $STATE. Use: spike, idle, steady, burst"
                 exit 1
