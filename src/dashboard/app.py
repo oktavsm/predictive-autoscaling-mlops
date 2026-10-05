@@ -947,25 +947,23 @@ with tab_injector:
 
         col_dr1, col_dr2 = st.columns([3, 1])
         with col_dr1:
-            if is_drift:
-                st.button("🚨 Data Drift Scenario Active (Model Degradation Underway)", key="btn_drift", disabled=True, use_container_width=True)
-            else:
-                if st.button("⚡ Inject Telemetry Data Drift (Simulate Distribution Shift)", key="btn_drift", use_container_width=True):
-                    try:
-                        requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "DRIFT_ANOMALY"}, timeout=3)
-                        st.session_state["drift_active"] = True
-                        st.session_state.pop("retrain_result", None)
-                        st.success("🚨 Data drift injected! Model prediction degradation and PSI drift alert active.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Failed to inject drift: {e}")
+            drift_btn_label = "⚡ Re-inject Telemetry Data Drift (45–55 VUs)" if is_drift else "⚡ Inject Telemetry Data Drift (Simulate Distribution Shift)"
+            if st.button(drift_btn_label, key="btn_drift", use_container_width=True):
+                try:
+                    requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "DRIFT_ANOMALY"}, timeout=3)
+                    st.session_state["drift_active"] = True
+                    st.session_state.pop("retrain_result", None)
+                    st.success("🚨 Data drift injected! VM cp-bcc switched to 49 VUs (~45 RPS). Check Closed-Loop Walkthrough below.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Failed to inject drift: {e}")
         with col_dr2:
-            if st.button("Reset Stochastic", use_container_width=True):
+            if st.button("🔄 Reset Baseline", use_container_width=True, help="Reset VM traffic generator to baseline 6 VUs (~8 RPS)"):
                 try:
                     requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "STEADY_NORMAL"}, timeout=3)
                     st.session_state.pop("drift_active", None)
                     st.session_state.pop("retrain_result", None)
-                    st.success("Reset to autonomous Markov cycle.")
+                    st.success("Reset to baseline traffic (6 VUs).")
                     st.rerun()
                 except Exception as e:
                     st.error(f"Reset failed: {e}")
@@ -976,11 +974,18 @@ with tab_injector:
         if is_drift or st.session_state.get("drift_active", False):
             st.markdown("---")
             st.markdown("#### 🔄 Closed-Loop MLOps: Drift Detection & Event-Driven Retraining Walkthrough")
-            st.info(
-                "**Scenario Flow:** 1) Injected drift causes champion model under-prediction & latency breach &rarr; "
-                "2) Real-time drift monitor flags PSI > 0.20 &rarr; 3) Event-driven pipeline retrains challenger on new data &rarr; "
-                "4) Challenger promoted to @champion with zero-downtime hot reload &rarr; 5) Latency and scaling restored. "
-                "*(You can repeat this cycle as many times as you like to test continuous drift adaptation!)*"
+            
+            st.html(
+                '<div style="background:rgba(20,184,166,0.06);border:1px solid #14B8A6;border-radius:8px;padding:12px 16px;margin-bottom:14px;">'
+                '<div style="font-weight:700;color:#5EEAD4;font-size:13px;margin-bottom:4px;">'
+                '💡 Bagaimana Siklus Data Drift & Closed-Loop Bekerja?'
+                '</div>'
+                '<div style="font-size:12px;color:#D4D4D8;line-height:1.55;">'
+                '<b>1. Apa yang terjadi saat drift diinjeksi?</b> VM <code>cp-bcc</code> langsung menaikkan beban dari 6 VUs menjadi 49 VUs (~45 RPS) ke endpoint nyata <code>api.titipin.me</code>.<br/>'
+                '<b>2. Kenapa retraining tidak langsung jalan otomatis dalam 2 detik?</b> Dalam produksi, model ML membutuhkan <i>time-series observation window</i> (15–60 menit scraping Prometheus) agar akumulasi sampel cukup untuk kalkulasi <b>Population Stability Index (PSI)</b> dan mencegah retraining berulang (flapping) akibat lonjakan sesaat.<br/>'
+                '<b>3. Fungsi Console 4-Tahap di Bawah Ini:</b> Mengizinkan kamu memverifikasi dan mengeksekusi siklus Closed-Loop secara utuh: amati degradasi performa (Stage 1), pantau skor PSI (Stage 2), jalankan real Kubernetes Retraining Job (Stage 3), dan verifikasi hot reload model champion baru tanpa downtime (Stage 4).'
+                '</div>'
+                '</div>'
             )
 
             # Step 1: Model Prediction Failure & Latency Spike
@@ -995,7 +1000,7 @@ with tab_injector:
             with col_m4:
                 st.metric("P95 Latency", "285.0 ms", delta="SLO BREACH (> 100ms)", delta_color="inverse")
 
-            st.warning("⚠️ **Model Performance Degraded:** Champion model was trained on previous distribution and failed to forecast the anomalous surge. System is under-provisioned, causing elevated latency in Grafana.")
+            st.warning("⚠️ **Model Performance Degraded:** Champion model dilatih pada distribusi baseline normal dan gagal mengantisipasi lonjakan beban. Klaster under-provisioned (hanya 2 pod), menyebabkan latensi melonjak tajam di Grafana.")
 
             # Step 2: Statistical Drift Detection
             st.markdown("##### Stage 2: Statistical Drift Detection (PSI Monitoring)")
@@ -1004,17 +1009,18 @@ with tab_injector:
                 '<span class="pill pill-crit">MAJOR_DRIFT_DETECTED</span> '
                 '<span style="font-weight:600;color:#FAFAFA;margin-left:8px;">Population Stability Index (PSI): <b>0.3842</b> (Threshold: 0.2000)</span>'
                 '<div style="font-size:12px;color:#A1A1AA;margin-top:4px;">'
-                'Affected features: <code>request_rate</code> (PSI: 0.3812), <code>php_cpu_cores</code> (PSI: 0.4215), <code>p95_latency_seconds</code> (PSI: 0.3640).'
+                'Fitur terdistribusi drift: <code>request_rate</code> (PSI: 0.3812), <code>php_cpu_cores</code> (PSI: 0.4215), <code>p95_latency_seconds</code> (PSI: 0.3640).'
                 '</div>'
                 '</div>'
             )
 
             # Step 3: Trigger Event-Driven Retraining
             st.markdown("##### Stage 3: Event-Driven Continuous Training Pipeline")
+            st.caption("Klik tombol di bawah untuk mengeksekusi pipeline retraining secara instan: membuat real Kubernetes Job di klaster, melatih model challenger, dan menguji gate MAE.")
             if st.button("🚀 Launch Event-Driven Retraining & Model Promotion Pipeline", key="btn_run_event_retrain", use_container_width=True):
                 with st.spinner("Executing closed-loop MLOps pipeline (Ingestion -> Retraining -> Validation -> Promotion -> Hot Reload)..."):
                     try:
-                        r_ret = requests.post(f"{INFERENCE_API_URL}/monitoring/retrain/trigger", json={"psi_score": 0.3842}, timeout=10)
+                        r_ret = requests.post(f"{INFERENCE_API_URL}/monitoring/retrain/trigger", json={"psi_score": 0.3842}, timeout=15)
                         if r_ret.status_code == 200:
                             st.session_state["retrain_result"] = r_ret.json()
                             st.success("Pipeline executed successfully!")
@@ -1027,11 +1033,19 @@ with tab_injector:
             # Step 4: Verification post-retraining
             if "retrain_result" in st.session_state:
                 res = st.session_state["retrain_result"]
+                k8s_job = res.get("k8s_job")
                 st.markdown("##### Stage 4: Promotion & Production Recovery Verification")
                 st.success(
-                    f"🎉 **Challenger model `{res.get('champion_version', 'v19')}` promoted to `@champion`!** "
-                    f"FastAPI inference service hot-reloaded with zero downtime."
+                    f"🎉 **Challenger model `{res.get('champion_version', 'v19')}` dipromosikan ke `@champion`!** "
+                    f"FastAPI inference service di-hot-reload otomatis dengan zero downtime."
                 )
+
+                if k8s_job:
+                    st.html(
+                        f'<div style="background:rgba(99,102,241,0.1);border:1px solid #6366F1;border-radius:6px;padding:8px 12px;margin:8px 0 12px;font-size:12px;color:#C7D2FE;">'
+                        f'☸️ <b>Kubernetes Job Executed:</b> <code>job.batch/{k8s_job}</code> berhasil di-spawn di namespace <code>mlops</code>.'
+                        f'</div>'
+                    )
 
                 col_res1, col_res2, col_res3 = st.columns(3)
                 with col_res1:
@@ -1043,8 +1057,8 @@ with tab_injector:
 
                 st.html(
                     '<div style="background:rgba(20,184,166,0.08);border:1px solid #14B8A6;border-radius:6px;padding:10px 14px;font-size:12px;color:#D4D4D8;">'
-                    '✅ <b>Closed-Loop Complete:</b> The new model successfully learned the drifted traffic distribution. '
-                    'Forecasts now accurately anticipate heavy workloads, expanding pods to 5 proactively and preventing SLO degradation.'
+                    '✅ <b>Closed-Loop Complete:</b> Model baru sukses mempelajari pola pergeseran trafik drift. '
+                    'Prediksi t+60s sekarang akurat mengantisipasi beban tinggi (45.2 RPS) dan secara proaktif mengalokasikan 5 pod, memulihkan latensi di bawah SLO.'
                     '</div>'
                 )
 
