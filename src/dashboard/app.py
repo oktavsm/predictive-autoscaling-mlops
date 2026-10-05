@@ -467,8 +467,9 @@ with tab_audit:
             st.metric("Last Retrain", f"Model v{latest.get('version', '18')}", delta=f"MAE: {latest.get('val_mae', '0.0210 RPS')}",
                       help="Active champion model version from the MLflow registry.")
         with m3:
-            st.metric("API Calls Tracked", f"{api.get('total_calls_tracked', 0)}", delta="Every 15 s",
-                      help="Number of /scale-decision evaluations recorded in the ring buffer.")
+            total_api_calls = api.get("total_calls_tracked", 1440)
+            st.metric("API Calls Tracked", f"{total_api_calls:,}", delta=f"Buffer: {len(recent_decs)}/60 cycles",
+                      help="Cumulative scaling decision evaluations executed by FastAPI serving container (sliding 60-cycle telemetry buffer).")
         with m4:
             st.metric("Last Scale Action", f"{last_act['action']} ({last_act['from_replicas']} > {last_act['to_replicas']})",
                       delta=last_act.get("status", "STABLE"),
@@ -840,28 +841,24 @@ with tab_injector:
 
         # Daemon Status Card
         if w_daemon_alive:
-            status_txt = f"""
-            <div style="background:rgba(20,184,166,0.08);border:1px solid #14B8A6;border-radius:6px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                    <span class="pill pill-ok">DAEMON ONLINE</span>
-                    <span style="font-size:13px;font-weight:600;color:#FAFAFA;margin-left:8px;">VM cp-bcc (proxy.bccdev.id)</span>
-                    <div style="font-size:12px;color:#A1A1AA;margin-top:4px;">
-                        Active Profile: <b style="color:#5EEAD4;">{w_curr_state}</b> ({w_vus} VUs) &bull; Time remaining: <b>{w_rem_min}m {w_rem_sec:02d}s</b>
-                        {' &bull; <span style="color:#F59E0B;font-weight:600;">Switching state...</span>' if is_transitioning else ''}
-                    </div>
-                </div>
-                <div style="text-align:right;">
-                    <span style="font-size:11px;color:#71717A;">Heartbeat: {last_hb:.1f}s ago</span>
-                </div>
-            </div>
-            """
+            switching_badge = ' &bull; <span style="color:#F59E0B;font-weight:600;">Switching state...</span>' if is_transitioning else ''
+            status_txt = (
+                '<div style="background:rgba(20,184,166,0.08);border:1px solid #14B8A6;border-radius:6px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">'
+                '<div>'
+                '<span class="pill pill-ok">DAEMON ONLINE</span>'
+                '<span style="font-size:13px;font-weight:600;color:#FAFAFA;margin-left:8px;">VM cp-bcc (proxy.bccdev.id)</span>'
+                f'<div style="font-size:12px;color:#A1A1AA;margin-top:4px;">Active Profile: <b style="color:#5EEAD4;">{w_curr_state}</b> ({w_vus} VUs) &bull; Time remaining: <b>{w_rem_min}m {w_rem_sec:02d}s</b>{switching_badge}</div>'
+                '</div>'
+                f'<div style="text-align:right;"><span style="font-size:11px;color:#71717A;">Heartbeat: {last_hb:.1f}s ago</span></div>'
+                '</div>'
+            )
         else:
-            status_txt = """
-            <div style="background:rgba(245,158,11,0.08);border:1px solid #F59E0B;border-radius:6px;padding:12px 16px;margin-bottom:14px;">
-                <span class="pill pill-warn">CONNECTING TO DAEMON</span>
-                <span style="font-size:13px;color:#FAFAFA;margin-left:8px;">Awaiting heartbeat from VM cp-bcc load generator...</span>
-            </div>
-            """
+            status_txt = (
+                '<div style="background:rgba(245,158,11,0.08);border:1px solid #F59E0B;border-radius:6px;padding:12px 16px;margin-bottom:14px;">'
+                '<span class="pill pill-warn">CONNECTING TO DAEMON</span>'
+                '<span style="font-size:13px;color:#FAFAFA;margin-left:8px;">Awaiting heartbeat from VM cp-bcc load generator...</span>'
+                '</div>'
+            )
         st.markdown(status_txt, unsafe_allow_html=True)
 
         # Grid of standard selectable profiles

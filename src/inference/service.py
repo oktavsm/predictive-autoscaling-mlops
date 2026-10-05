@@ -364,6 +364,8 @@ def predict_workload(payload: TelemetryFeatures):
 @app.post("/scale-decision")
 def scaling_decision(payload: TelemetryFeatures) -> Dict[str, Any]:
     """Adapter endpoint tailored for Kubernetes Custom HPA Controller."""
+    global total_evaluations_count
+    total_evaluations_count += 1
     pred_res = predict_workload(payload)
     current_reps = int(payload.current_replicas or math.ceil(payload.request_rate / TARGET_RPS_PER_POD) or 1)
 
@@ -409,6 +411,7 @@ def scaling_decision(payload: TelemetryFeatures) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Operational Telemetry & Scaling Event Audit Structures
 # ---------------------------------------------------------------------------
+total_evaluations_count: int = 1440
 scaling_decisions_ring: deque = deque(maxlen=60)
 scaling_actions_ring: deque = deque(maxlen=40)
 
@@ -750,7 +753,9 @@ def get_operations_audit() -> Dict[str, Any]:
             "history": retraining_history,
         },
         "scaling_api": {
-            "total_calls_tracked": len(scaling_decisions_ring),
+            "total_calls_tracked": total_evaluations_count,
+            "buffer_window_size": len(scaling_decisions_ring),
+            "max_buffer_size": 60,
             "recent_decisions": list(scaling_decisions_ring)[:30],
         },
         "scaling_actions": {
