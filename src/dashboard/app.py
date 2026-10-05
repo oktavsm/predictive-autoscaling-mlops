@@ -974,6 +974,7 @@ with tab_injector:
                     try:
                         requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "DRIFT_ANOMALY"}, timeout=3)
                         st.session_state["drift_active"] = True
+                        st.session_state.pop("retrain_result", None)
                         st.success("🚨 Data drift injected! Model prediction degradation and PSI drift alert active.")
                         st.rerun()
                     except Exception as e:
@@ -998,7 +999,8 @@ with tab_injector:
             st.info(
                 "**Scenario Flow:** 1) Injected drift causes champion model under-prediction & latency breach &rarr; "
                 "2) Real-time drift monitor flags PSI > 0.20 &rarr; 3) Event-driven pipeline retrains challenger on new data &rarr; "
-                "4) Challenger promoted to @champion with zero-downtime hot reload &rarr; 5) Latency and scaling restored."
+                "4) Challenger promoted to @champion with zero-downtime hot reload &rarr; 5) Latency and scaling restored. "
+                "*(You can repeat this cycle as many times as you like to test continuous drift adaptation!)*"
             )
 
             # Step 1: Model Prediction Failure & Latency Spike
@@ -1013,7 +1015,7 @@ with tab_injector:
             with col_m4:
                 st.metric("P95 Latency", "285.0 ms", delta="SLO BREACH (> 100ms)", delta_color="inverse")
 
-            st.warning("⚠️ **Model Performance Degraded:** Champion model was trained on balanced baseline data and failed to forecast the anomalous surge. System is under-provisioned, causing elevated latency in Grafana.")
+            st.warning("⚠️ **Model Performance Degraded:** Champion model was trained on previous distribution and failed to forecast the anomalous surge. System is under-provisioned, causing elevated latency in Grafana.")
 
             # Step 2: Statistical Drift Detection
             st.markdown("##### Stage 2: Statistical Drift Detection (PSI Monitoring)")
@@ -1067,6 +1069,17 @@ with tab_injector:
                     '</div>',
                     unsafe_allow_html=True,
                 )
+
+                st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+                if st.button("🔄 Inject Next Data Drift Cycle (Continuous Drift Testing)", key="btn_next_drift", use_container_width=True):
+                    try:
+                        requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "DRIFT_ANOMALY"}, timeout=3)
+                        st.session_state.pop("retrain_result", None)
+                        st.session_state["drift_active"] = True
+                        st.success("🚨 Next data drift cycle injected! Model under-prediction active.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Failed to inject next drift cycle: {e}")
 
         st.markdown(
             f"""
