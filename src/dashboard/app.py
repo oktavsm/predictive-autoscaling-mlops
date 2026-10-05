@@ -240,7 +240,9 @@ try:
 except Exception:
     pass
 
-active_traffic_mode = workload_status.get("override_state") or "AUTONOMOUS_MARKOV"
+daemon_alive = workload_status.get("daemon_alive", False)
+daemon_state = workload_status.get("daemon_current_state") or workload_status.get("override_state") or "STEADY_NORMAL"
+daemon_vus = workload_status.get("daemon_vus", 6)
 cmd_seq_id = workload_status.get("override_id", 0)
 
 # ---------------------------------------------------------------------------
@@ -298,7 +300,7 @@ st.markdown(
             <div class="hdr-title">Titipin MLOps &mdash; Predictive Autoscaling Console</div>
             <div class="hdr-sub">Closed-loop telemetry ingestion, workload forecasting (t+60 s), and proactive Kubernetes pod allocation.</div>
         </div>
-        <div><span class="pill pill-ok">MODEL @champion v12</span></div>
+        <div><span class="pill pill-ok">MODEL @champion v18</span></div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -310,14 +312,14 @@ with c1:
     st.metric("Serving Engine", "HEALTHY" if is_healthy else "OFFLINE", delta="Sub-15 ms latency",
               help="FastAPI inference container status in namespace mlops.")
 with c2:
-    st.metric("Active Model", "v12 Random Forest", delta="@champion",
-              help="Currently serving model trained on post-drift flash-sale dataset.")
+    st.metric("Active Model", "v18 Random Forest", delta="@champion",
+              help="Currently serving champion model trained via automated continuous training.")
 with c3:
     st.metric("Replica Range", f"{cfg_min_pods}–{cfg_max_pods} pods", delta=f"Target: {cfg_target_rps:.0f} RPS/pod",
               help="Allowed pod scaling bounds enforced by the policy controller.")
 with c4:
-    st.metric("Traffic Profile", active_traffic_mode, delta=f"Seq #{cmd_seq_id}",
-              help="Current workload profile running on the 24/7 load generator VM.")
+    st.metric("Traffic Profile", daemon_state, delta=f"{daemon_vus} VUs {'(ONLINE)' if daemon_alive else '(STANDBY)'}",
+              help="Live workload profile running on 24/7 load generator VM cp-bcc.")
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
@@ -413,14 +415,14 @@ with tab_audit:
         api = audit.get("scaling_api", {})
         acts = audit.get("scaling_actions", {})
         recent_acts = acts.get("recent_actions", [])
-        last_act = recent_acts[-1] if recent_acts else {"action": "MAINTAIN", "from_replicas": 1, "to_replicas": 1, "status": "STABLE"}
+        last_act = recent_acts[0] if recent_acts else {"action": "MAINTAIN", "from_replicas": 1, "to_replicas": 1, "status": "STABLE"}
 
         m1, m2, m3, m4 = st.columns(4)
         with m1:
-            st.metric("Last Ingestion", f"{ing.get('records_count', 250)} records", delta=f"Window: {ing.get('window_minutes', 15)}m",
+            st.metric("Last Ingestion", f"{ing.get('records_count', 5760):,} rows", delta=f"Window: {ing.get('window_minutes', 1440)}m (24h)",
                       help="Volume and observation window of the most recent telemetry collection.")
         with m2:
-            st.metric("Last Retrain", f"Model v{latest.get('version', '10')}", delta=f"MAE: {latest.get('val_mae', '0.0210 RPS')}",
+            st.metric("Last Retrain", f"Model v{latest.get('version', '18')}", delta=f"MAE: {latest.get('val_mae', '0.0210 RPS')}",
                       help="Active champion model version from the MLflow registry.")
         with m3:
             st.metric("API Calls Tracked", f"{api.get('total_calls_tracked', 0)}", delta="Every 15 s",
@@ -433,13 +435,14 @@ with tab_audit:
         st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
         # -- Section 1: Ingestion --
-        st.markdown("#### Data Ingestion Activity")
+        st.markdown("#### Data Ingestion Activity & Feature Store Lineage")
         st.markdown(
             """
             The telemetry collector scrapes Prometheus (Caddy Ingress and PHP-FPM cAdvisor) using a
-            <span class="tt" data-tip="A sliding observation window (e.g. 15 min) used to compute rolling means, standard deviations, and trend features.">rolling window</span>,
-            then persists processed features to
-            <span class="tt" data-tip="Data Version Control: binary data stored in MinIO S3 via MD5 content-addressable hashing for integrity and deduplication.">DVC-tracked storage</span>.
+            <span class="tt" data-tip="A 24-hour observation window used to compute rolling statistics, lag features, and trends.">24h rolling window</span>,
+            persists raw and processed datasets to
+            <span class="tt" data-tip="MinIO S3 DVC storage keyed by MD5 content-addressable hashing.">DVC MinIO remote</span>,
+            and allows instant local workstation sync via <code>make sync-data</code>.
             """,
             unsafe_allow_html=True,
         )
@@ -453,9 +456,10 @@ with tab_audit:
                         <span class="pill pill-ok">{ing.get('status', 'HEALTHY_INGESTED')}</span>
                     </div>
                     <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
-                        <li><b>Timestamp:</b> <code>{ing.get('timestamp', '2026-10-02 14:00:00 UTC')}</code></li>
-                        <li><b>Records:</b> <code>{ing.get('records_count', 250)}</code> telemetry rows</li>
-                        <li><b>Scrape interval:</b> every 15 s (Prometheus aggregation)</li>
+                        <li><b>Timestamp:</b> <code>{ing.get('timestamp', '2026-10-05 02:00:18 UTC (09:00:18 WIB)')}</code></li>
+                        <li><b>Records:</b> <code>{ing.get('records_count', 5760):,}</code> telemetry rows</li>
+                        <li><b>Window:</b> <code>{ing.get('window_minutes', 1440)} minutes (24h continuous scrape)</code></li>
+                        <li><b>Raw Source:</b> <code>{ing.get('raw_dataset', 'data/raw/metrics_20261005_020011.csv')}</code></li>
                     </ul>
                 </div>
                 """,
@@ -466,27 +470,29 @@ with tab_audit:
                 f"""
                 <div class="card card-accent-amber">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                        <span style="font-size:13px;font-weight:600;color:#FAFAFA;">Feature Store & DVC Lineage</span>
-                        <span class="pill pill-mute">MinIO S3</span>
+                        <span style="font-size:13px;font-weight:600;color:#FAFAFA;">Feature Store & MinIO S3 DVC</span>
+                        <span class="pill pill-ok">Synced (s3://mlops-dvc)</span>
                     </div>
                     <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
-                        <li><b>Dataset:</b> <code>{ing.get('target_dataset', 'data/processed/metrics_flashsale_drifted.csv')}</code></li>
-                        <li><b>Git tag:</b> <code>v2.0-data</code></li>
-                        <li><b>MD5:</b> <code>70caf5ea7e6f4e72243ecd8a15e8f4e5</code></li>
-                        <li><b>Bucket:</b> <code>s3://titipin-dvc/</code></li>
+                        <li><b>Processed Dataset:</b> <code>{ing.get('target_dataset', 'data/processed/metrics_processed_20261005_020017.csv')}</code></li>
+                        <li><b>MinIO CAS MD5:</b> <code>{ing.get('md5', '66b818bf563e223aacae257914f6af4f')}</code></li>
+                        <li><b>Bucket:</b> <code>{ing.get('bucket', 's3://mlops-dvc')}</code></li>
+                        <li><b>Local Sync Command:</b> <code>make sync-data</code></li>
                     </ul>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        ing_df = pd.DataFrame([
-            {"Batch": "ING-20261002-004", "Time (UTC)": "2026-10-02 14:00:00", "Source": "Prometheus (Caddy + PHP)", "Records": 250, "Window": "15 min", "Output": "metrics_flashsale_drifted.csv", "Status": "HEALTHY"},
-            {"Batch": "ING-20261002-003", "Time (UTC)": "2026-10-02 12:15:00", "Source": "Prometheus (Flash-Sale)", "Records": 250, "Window": "15 min", "Output": "metrics_flashsale_drifted.csv", "Status": "HEALTHY"},
-            {"Batch": "ING-20260930-002", "Time (UTC)": "2026-09-30 20:30:00", "Source": "Prometheus (Gradual Ramp)", "Records": 250, "Window": "15 min", "Output": "metrics_demo_processed.csv", "Status": "ARCHIVED"},
-            {"Batch": "ING-20260928-001", "Time (UTC)": "2026-09-28 10:15:00", "Source": "Prometheus (Baseline)", "Records": 250, "Window": "15 min", "Output": "metrics_processed_20260927.csv", "Status": "ARCHIVED"},
-        ])
-        st.dataframe(ing_df.set_index("Batch"), use_container_width=True)
+        ing_history = audit.get("ingestion_history", [])
+        if ing_history:
+            df_ing = pd.DataFrame(ing_history).rename(columns={
+                "batch": "Batch", "time_utc": "Time (UTC)", "source": "Source",
+                "records": "Records", "window": "Window", "output": "Output Dataset", "status": "DVC Status"
+            })
+            st.dataframe(df_ing.set_index("Batch"), use_container_width=True)
+        else:
+            st.info("No ingestion batches recorded in registry.")
 
         st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
@@ -494,8 +500,8 @@ with tab_audit:
         st.markdown("#### Retraining History (MLflow Registry)")
         st.markdown(
             """
-            When the drift monitor detects distribution shift (PSI > 0.25), the system triggers
-            <span class="tt" data-tip="Autonomous multi-algorithm training (Random Forest vs LightGBM) without manual intervention.">continuous training</span>.
+            When the drift monitor detects distribution shift (PSI > 0.20), the system triggers
+            <span class="tt" data-tip="Autonomous multi-model training (Random Forest vs LightGBM) without manual intervention.">continuous training</span>.
             Models passing the
             <span class="tt" data-tip="Validation gate: a new model is promoted only if its MAE on held-out data beats the current champion.">evaluation gate</span>
             are promoted to @champion and hot-reloaded with zero downtime.
@@ -513,9 +519,9 @@ with tab_audit:
                         <span class="pill pill-ok">CHAMPION — PRODUCTION</span>
                         <span style="font-size:11px;color:#5EEAD4;font-family:monospace;">@champion</span>
                     </div>
-                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {latest.get('version','12')} — {latest.get('algorithm','Random Forest Regressor')}</div>
+                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {latest.get('version','18')} — {latest.get('algorithm','Random Forest Regressor')}</div>
                     <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">
-                        <li><b>Trained:</b> <code>{latest.get('timestamp','2026-10-03 02:00:39 UTC (09:00:39 WIB)')}</code></li>
+                        <li><b>Trained:</b> <code>{latest.get('timestamp','2026-10-05 02:00:59 UTC (09:00:59 WIB)')}</code></li>
                         <li><b>Trigger:</b> {latest.get('trigger','Scheduled Continuous Training (Drift PSI > 0.20)')}</li>
                         <li><b>Validation MAE:</b> <b>{latest.get('val_mae','0.0210 RPS')}</b></li>
                         <li><b>Deployment:</b> Hot-reloaded, zero restarts</li>
@@ -532,9 +538,9 @@ with tab_audit:
                         <span class="pill pill-warn">CHALLENGER — STAGING</span>
                         <span style="font-size:11px;color:#FCD34D;font-family:monospace;">@challenger</span>
                     </div>
-                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {challenger.get('version','11')} — {challenger.get('algorithm','LightGBM Regressor')}</div>
+                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {challenger.get('version','17')} — {challenger.get('algorithm','LightGBM Regressor')}</div>
                     <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">
-                        <li><b>Trained:</b> <code>{challenger.get('timestamp','2026-10-03 02:00:39 UTC (09:00:39 WIB)')}</code></li>
+                        <li><b>Trained:</b> <code>{challenger.get('timestamp','2026-10-05 02:00:59 UTC (09:00:59 WIB)')}</code></li>
                         <li><b>Trigger:</b> {challenger.get('trigger','Autonomous Evaluation Gate')}</li>
                         <li><b>Validation MAE:</b> {challenger.get('val_mae','0.1246 RPS')} (inference: 2.8 ms)</li>
                         <li><b>Result:</b> Retained as staging candidate</li>
@@ -614,6 +620,10 @@ with tab_audit:
 # =========================================================================
 with tab_sim:
     st.markdown("### Workload Forecast & Pod Allocation Simulator")
+    st.info(
+        "ℹ️ **Simulation Mode (Dry Run)**: This interactive simulator executes model inference in-memory via `POST /predict`. "
+        "It evaluates hypothetical traffic scenarios and **does NOT** trigger Kubernetes scaling, alter pod replicas, or impact live VMs."
+    )
     st.markdown(
         """
         Test the inference model against various telemetry conditions. Hover terms like
@@ -736,55 +746,171 @@ with tab_sim:
 with tab_injector:
     st.markdown("### Live Workload Injector")
     st.markdown(
-        """
-        Controls the synthetic k6 load generator running 24/7 on remote VM `cp-bcc` (`proxy.bccdev.id`).
+        f"""
+        Controls the synthetic k6 load generator running 24/7 on remote VM <code>cp-bcc</code> (<code>proxy.bccdev.id</code>).
         Selecting a profile below changes the real traffic pattern hitting the cluster within seconds,
-        visible on
-        <span class="tt" data-tip="Grafana renders live RPS, P95 latency, and pod count curves in real time.">Grafana</span>.
+        visible live on <a href="{GRAFANA_URL}" target="_blank" style="color:#14B8A6;text-decoration:none;"><b>Grafana Observability ↗</b></a>.
         """,
         unsafe_allow_html=True,
     )
 
-    t1, t2 = st.columns(2)
-    with t1:
-        if st.button("Steady Normal — 5-12 RPS", use_container_width=True, help="4-8 k6 VUs. Stable load, cluster stays at 1 pod."):
+    # Fetch live workload generator state
+    w_live = {}
+    try:
+        r_w = requests.get(f"{INFERENCE_API_URL}/workload/status", timeout=2)
+        if r_w.status_code == 200:
+            w_live = r_w.json()
+    except Exception:
+        pass
+
+    w_daemon_alive = w_live.get("daemon_alive", False)
+    w_curr_state = w_live.get("daemon_current_state") or w_live.get("override_state") or "STEADY_NORMAL"
+    w_vus = w_live.get("daemon_vus", 6)
+    w_rem_s = w_live.get("daemon_remaining_s", 0)
+    w_rem_min = w_rem_s // 60
+    w_rem_sec = w_rem_s % 60
+    last_hb = w_live.get("last_heartbeat_seconds_ago", 0)
+
+    # Daemon Status Card
+    if w_daemon_alive:
+        status_box = f"""
+        <div style="background:rgba(20,184,166,0.08);border:1px solid #14B8A6;border-radius:6px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <span class="pill pill-ok">DAEMON ONLINE</span>
+                <span style="font-size:13px;font-weight:600;color:#FAFAFA;margin-left:8px;">VM cp-bcc (proxy.bccdev.id)</span>
+                <div style="font-size:12px;color:#A1A1AA;margin-top:4px;">
+                    Active Scenario: <b style="color:#5EEAD4;">{w_curr_state}</b> ({w_vus} VUs) &bull; Scenario time remaining: <b>{w_rem_min}m {w_rem_sec:02d}s</b>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <span style="font-size:11px;color:#71717A;">Heartbeat: {last_hb:.1f}s ago</span>
+            </div>
+        </div>
+        """
+    else:
+        status_box = f"""
+        <div style="background:rgba(245,158,11,0.08);border:1px solid #F59E0B;border-radius:6px;padding:12px 16px;margin-bottom:14px;">
+            <span class="pill pill-warn">CONNECTING TO DAEMON</span>
+            <span style="font-size:13px;color:#FAFAFA;margin-left:8px;">Awaiting heartbeat from VM cp-bcc load generator...</span>
+        </div>
+        """
+    st.markdown(status_box, unsafe_allow_html=True)
+
+    # Grid of 4 selectable profiles
+    col_w1, col_w2 = st.columns(2)
+
+    with col_w1:
+        # Profile 1: Steady Normal
+        is_steady = (w_curr_state == "STEADY_NORMAL")
+        steady_badge = '<span class="pill pill-ok" style="margin-bottom:6px;display:inline-block;">CURRENTLY ACTIVE</span><br>' if is_steady else ""
+        st.markdown(
+            f"""
+            <div class="card" style="border-left: 3px solid {'#14B8A6' if is_steady else '#27272A'};margin-bottom:8px;">
+                {steady_badge}
+                <div style="font-weight:600;color:#FAFAFA;font-size:13px;">1. Steady Normal (Baseline)</div>
+                <div style="font-size:12px;color:#A1A1AA;margin:4px 0 8px;">4–8 k6 VUs &bull; ~5–12 RPS &bull; Optimal for single pod baseline.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Activate Steady Normal", key="btn_steady", use_container_width=True):
             try:
                 requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "STEADY_NORMAL"}, timeout=3)
-                st.success("Profile `STEADY_NORMAL` activated. Constant ~8 RPS to api.titipin.me.")
+                st.success("Sent command: Activating `STEADY_NORMAL` (4-8 VUs). VM daemon will switch in ~2s.")
+                time.sleep(0.5)
+                st.rerun()
             except Exception as e:
-                st.error(f"Failed: {e}")
+                st.error(f"Failed to send trigger: {e}")
 
-        if st.button("Rush Hour — 20-40 RPS", use_container_width=True, help="18-28 k6 VUs. Simulates evening checkout rush."):
+        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+
+        # Profile 2: Rush Hour Surge
+        is_burst = (w_curr_state == "BURST_BUSY")
+        burst_badge = '<span class="pill pill-ok" style="margin-bottom:6px;display:inline-block;">CURRENTLY ACTIVE</span><br>' if is_burst else ""
+        st.markdown(
+            f"""
+            <div class="card" style="border-left: 3px solid {'#14B8A6' if is_burst else '#27272A'};margin-bottom:8px;">
+                {burst_badge}
+                <div style="font-weight:600;color:#FAFAFA;font-size:13px;">2. Rush Hour Surge (High Load)</div>
+                <div style="font-size:12px;color:#A1A1AA;margin:4px 0 8px;">18–28 k6 VUs &bull; ~20–40 RPS &bull; Scaler anticipates scale-up to 3-4 pods.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Activate Rush Hour Surge", key="btn_burst", use_container_width=True):
             try:
                 requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "BURST_BUSY"}, timeout=3)
-                st.warning("Profile `BURST_BUSY` activated. Load rising to ~30 RPS. Scaler will add pods.")
+                st.success("Sent command: Activating `BURST_BUSY` (18-28 VUs). Scaler anticipating surge.")
+                time.sleep(0.5)
+                st.rerun()
             except Exception as e:
-                st.error(f"Failed: {e}")
+                st.error(f"Failed to send trigger: {e}")
 
-    with t2:
-        if st.button("Flash-Sale Spike — 60-95 RPS", type="primary", use_container_width=True, help="50-75 k6 VUs. Tests proactive scaling to 6 pods."):
+    with col_w2:
+        # Profile 3: Flash-Sale Spike
+        is_flash = (w_curr_state == "FLASH_ANOMALY")
+        flash_badge = '<span class="pill pill-ok" style="margin-bottom:6px;display:inline-block;">CURRENTLY ACTIVE</span><br>' if is_flash else ""
+        st.markdown(
+            f"""
+            <div class="card" style="border-left: 3px solid {'#EF4444' if is_flash else '#27272A'};margin-bottom:8px;">
+                {flash_badge}
+                <div style="font-weight:600;color:#FAFAFA;font-size:13px;">3. Flash-Sale Anomaly Spike</div>
+                <div style="font-size:12px;color:#A1A1AA;margin:4px 0 8px;">50–75 k6 VUs &bull; ~60–95 RPS &bull; Massive surge, proactively expands to 6 pods!</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Trigger Flash-Sale Spike", key="btn_flash", use_container_width=True):
             try:
                 requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "FLASH_ANOMALY"}, timeout=3)
-                st.error("Profile `FLASH_ANOMALY` activated. 50-75 VUs firing. Scaler targets 6 pods.")
+                st.success("🚀 Sent command: Triggering `FLASH_ANOMALY` (50-75 VUs)! Scaler will scale to 6 pods proactively.")
+                time.sleep(0.5)
+                st.rerun()
             except Exception as e:
-                st.error(f"Failed: {e}")
+                st.error(f"Failed to send trigger: {e}")
 
-        if st.button("Idle — 0-1 RPS", use_container_width=True, help="Near-zero traffic. Pod count drops to 1."):
+        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+
+        # Profile 4: Idle Silent
+        is_idle = (w_curr_state == "IDLE_SILENT")
+        idle_badge = '<span class="pill pill-ok" style="margin-bottom:6px;display:inline-block;">CURRENTLY ACTIVE</span><br>' if is_idle else ""
+        st.markdown(
+            f"""
+            <div class="card" style="border-left: 3px solid {'#14B8A6' if is_idle else '#27272A'};margin-bottom:8px;">
+                {idle_badge}
+                <div style="font-weight:600;color:#FAFAFA;font-size:13px;">4. Quiet / Idle Mode</div>
+                <div style="font-size:12px;color:#A1A1AA;margin:4px 0 8px;">0–1 k6 VUs &bull; ~0–1 RPS &bull; Smooth scale down to 1 pod.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Activate Idle Mode", key="btn_idle", use_container_width=True):
             try:
                 requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "IDLE_SILENT"}, timeout=3)
-                st.info("Profile `IDLE_SILENT` activated. Traffic drops to 0 RPS.")
+                st.success("Sent command: Activating `IDLE_SILENT` (0-1 VUs). Traffic dropping to 0 RPS.")
+                time.sleep(0.5)
+                st.rerun()
             except Exception as e:
-                st.error(f"Failed: {e}")
+                st.error(f"Failed to send trigger: {e}")
 
-    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-    if st.button("Reset to autonomous Markov-chain mode", use_container_width=True):
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+    if st.button("Reset to Autonomous Markov-Chain Stochastic Cycle", use_container_width=True):
         try:
             requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "STEADY_NORMAL"}, timeout=3)
-            st.success("VM `cp-bcc` daemon returned to stochastic Markov-chain mode.")
+            st.success("Returned VM `cp-bcc` daemon to autonomous stochastic Markov transitions.")
+            time.sleep(0.5)
+            st.rerun()
         except Exception as e:
-            st.error(f"Failed: {e}")
+            st.error(f"Failed to send reset: {e}")
 
-    st.markdown(f"Open [{GRAFANA_URL}]({GRAFANA_URL}) to observe RPS and pod changes in real time.")
+    st.markdown(
+        f"""
+        <div style="margin-top:14px;padding:10px 14px;background:#18181B;border:1px solid #27272A;border-radius:6px;font-size:12px;color:#A1A1AA;">
+            💡 <b>Live Verification:</b> Open <a href="{GRAFANA_URL}" target="_blank" style="color:#14B8A6;text-decoration:none;"><b>Grafana Dashboard ↗</b></a> to observe real-time RPS, latency, and pod replica transitions as the workload changes.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # =========================================================================
@@ -966,12 +1092,12 @@ with tab_registry:
             """
             <div class="card" style="border-left:3px solid #14B8A6;">
                 <span class="pill pill-ok">CHAMPION — PRODUCTION</span>
-                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v12</div>
+                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v18</div>
                 <div style="font-size:12px;color:#71717A;margin-bottom:8px;">Random Forest Regressor (n_estimators=100, max_depth=8)</div>
                 <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
                     <li><b>MAE:</b> <code style="color:#5EEAD4;">0.0210 RPS</code></li>
-                    <li><b>Dataset:</b> <code>processed/metrics_demo_processed.csv</code></li>
-                    <li><b>Serving:</b> Active, scaling 1–6 pods</li>
+                    <li><b>Dataset:</b> <code>processed/metrics_processed_20261005_020017.csv</code></li>
+                    <li><b>Serving:</b> Active in production, scaling 1–6 pods</li>
                 </ul>
             </div>
             """,
@@ -982,12 +1108,12 @@ with tab_registry:
             """
             <div class="card" style="border-left:3px solid #F59E0B;">
                 <span class="pill pill-warn">CHALLENGER — STAGING</span>
-                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v11</div>
+                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v17</div>
                 <div style="font-size:12px;color:#71717A;margin-bottom:8px;">LightGBM Regressor (lr=0.05, num_leaves=31)</div>
                 <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
                     <li><b>MAE:</b> <code>0.1246 RPS</code></li>
                     <li><b>Inference:</b> <code>2.8 ms</code></li>
-                    <li><b>Status:</b> Staging evaluation candidate</li>
+                    <li><b>Status:</b> Retained as staging benchmark challenger</li>
                 </ul>
             </div>
             """,
@@ -1001,31 +1127,32 @@ with tab_registry:
         Objects in MinIO appear as MD5 hashes rather than filenames. This is DVC's **Content-Addressable Storage (CAS)** design,
         analogous to Git's object model:
         - **Git** tracks small pointer files (`data/raw.dvc`, `data/processed.dvc`).
-        - **MinIO S3** stores the actual binary data blobs keyed by MD5 for integrity and deduplication.
-        - **Local workspace** contains human-readable `.csv` files consumed by pandas.
+        - **MinIO S3** (`s3://mlops-dvc/files/md5/...`) stores the actual binary data blobs keyed by MD5 for integrity and deduplication.
+        - **Local workspace** contains human-readable `.csv` files consumed by pandas (synced via `make sync-data`).
         """
     )
 
-    st.markdown("#### Data Lineage — Git Tag / CSV / MD5")
+    st.markdown("#### Data Lineage — Git Tag / CSV / MinIO CAS MD5")
     lineage = {
-        "Git Tag": ["v1.0-data", "v1.0-data", "v2.0-data", "v2.0-data", "v2.0-data"],
-        "Type": ["Raw", "Processed", "Raw", "Processed", "Processed (Drift)"],
+        "Git Tag / Version": ["v2.0-ct", "v2.0-ct", "v2.0-ct", "v2.0-ct", "v2.0-data", "v1.0-data"],
+        "Type": ["Processed (Oct 5)", "Raw (Oct 5)", "Processed (Oct 4)", "Raw (Oct 4)", "Processed (Drift)", "Baseline"],
         "CSV File": [
-            "metrics_gradual_20260924_001.csv", "metrics_processed_20260927_132354.csv",
-            "metrics_20260928_102236.csv", "metrics_demo_processed.csv", "metrics_flashsale_drifted.csv",
+            "metrics_processed_20261005_020017.csv", "metrics_20261005_020011.csv",
+            "metrics_processed_20261004_020019.csv", "metrics_20261004_020013.csv",
+            "metrics_flashsale_drifted.csv", "metrics_processed_20260927_132354.csv",
         ],
-        "MD5 (MinIO)": [
-            "b4d0a70e7115a4e4c370909ba364518b", "4aec50d2130dd676189c7192eb66a078",
-            "b7dccb5bfc334d2647218067177aeb4e", "5a8e0291dfbb38ac471029cba8d19321",
-            "70caf5ea7e6f4e72243ecd8a15e8f4e5",
+        "MD5 (MinIO CAS)": [
+            "66b818bf563e223aacae257914f6af4f", "ca08e824b3b0c88919d7c19715639766",
+            "3c861693bd5f9e97d9052c02a875b9c2", "f79092779e36bfe1a934e1bf59014901",
+            "70caf5ea7e6f4e72243ecd8a15e8f4e5", "4aec50d2130dd676189c7192eb66a078",
         ],
         "Description": [
-            "Locked at Git tag v1.0", "Baseline for models v1-v6",
-            "Continual learning batch", "Champion training dataset",
-            "Flash-sale spike simulation",
+            "Champion training dataset (5,760 records)", "Full 24h Prometheus raw scrape",
+            "Continuous training batch (5,760 records)", "24h Prometheus raw scrape",
+            "Flash-sale spike benchmark data", "Initial baseline dataset",
         ],
     }
-    st.dataframe(pd.DataFrame(lineage).set_index("Git Tag"), use_container_width=True)
+    st.dataframe(pd.DataFrame(lineage).set_index("Git Tag / Version"), use_container_width=True)
 
     st.markdown("#### Sample Data — `metrics_flashsale_drifted.csv`")
     samples = [

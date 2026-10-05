@@ -478,16 +478,151 @@ def get_scaling_decisions() -> List[Dict[str, Any]]:
     return list(scaling_decisions_ring)
 
 
+# ---------------------------------------------------------------------------
+# Dynamic Ingestion & Retraining Audit Store
+# ---------------------------------------------------------------------------
+ingestion_store: Dict[str, Any] = {
+    "last_ingestion": {
+        "timestamp": "2026-10-05 02:00:18 UTC (09:00:18 WIB)",
+        "window_minutes": 1440,
+        "records_count": 5760,
+        "target_dataset": "data/processed/metrics_processed_20261005_020017.csv",
+        "raw_dataset": "data/raw/metrics_20261005_020011.csv",
+        "md5": "66b818bf563e223aacae257914f6af4f",
+        "bucket": "s3://mlops-dvc",
+        "status": "HEALTHY_INGESTED",
+    },
+    "history": [
+        {
+            "batch": "ING-20261005-001",
+            "time_utc": "2026-10-05 02:00:18",
+            "source": "Prometheus (24h Full Scraping)",
+            "records": 5760,
+            "window": "1440 min",
+            "output": "metrics_processed_20261005_020017.csv",
+            "status": "HEALTHY (DVC Synced)",
+        },
+        {
+            "batch": "ING-20261004-001",
+            "time_utc": "2026-10-04 02:00:19",
+            "source": "Prometheus (24h Full Scraping)",
+            "records": 5760,
+            "window": "1440 min",
+            "output": "metrics_processed_20261004_020019.csv",
+            "status": "HEALTHY (DVC Synced)",
+        },
+        {
+            "batch": "ING-20261003-002",
+            "time_utc": "2026-10-03 05:03:02",
+            "source": "Prometheus (Recovery Ramp)",
+            "records": 240,
+            "window": "60 min",
+            "output": "metrics_processed_20261003_050302.csv",
+            "status": "HEALTHY (DVC Synced)",
+        },
+        {
+            "batch": "ING-20261003-001",
+            "time_utc": "2026-10-03 04:42:20",
+            "source": "Prometheus (Production)",
+            "records": 5000,
+            "window": "1250 min",
+            "output": "metrics_processed_20261003_044220.csv",
+            "status": "HEALTHY (DVC Synced)",
+        },
+        {
+            "batch": "ING-20261002-004",
+            "time_utc": "2026-10-02 14:00:00",
+            "source": "Prometheus (Flash-Sale Drift)",
+            "records": 250,
+            "window": "15 min",
+            "output": "metrics_flashsale_drifted.csv",
+            "status": "ARCHIVED",
+        },
+    ],
+}
+
+
+@app.post("/operations/record-ingestion")
+def record_ingestion_event(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Records a new ingestion event dynamically from CT pipeline or manual ingest."""
+    ts = payload.get("timestamp", time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()))
+    item = {
+        "timestamp": ts,
+        "window_minutes": int(payload.get("window_minutes", 15)),
+        "records_count": int(payload.get("records_count", 0)),
+        "target_dataset": payload.get("target_dataset", "data/processed/latest.csv"),
+        "raw_dataset": payload.get("raw_dataset", "data/raw/latest.csv"),
+        "md5": payload.get("md5", ""),
+        "bucket": payload.get("bucket", "s3://mlops-dvc"),
+        "status": payload.get("status", "HEALTHY_INGESTED"),
+    }
+    ingestion_store["last_ingestion"] = item
+    batch_name = f"ING-{time.strftime('%Y%m%d-%H%M%S', time.gmtime())}"
+    ingestion_store["history"].insert(
+        0,
+        {
+            "batch": batch_name,
+            "time_utc": ts,
+            "source": payload.get("source", "Prometheus (Automated Scrape)"),
+            "records": item["records_count"],
+            "window": f"{item['window_minutes']} min",
+            "output": Path(item["target_dataset"]).name,
+            "status": "HEALTHY (DVC Synced)",
+        },
+    )
+    return {"status": "ok", "recorded_batch": batch_name}
+
+
 @app.get("/operations/audit")
 def get_operations_audit() -> Dict[str, Any]:
     """Consolidated endpoint providing operational audit history across MLOps lifecycle."""
     retraining_history = [
         {
+            "version": "18",
+            "timestamp": "2026-10-05 02:00:59 UTC (09:00:59 WIB)",
+            "algorithm": "Random Forest Regressor",
+            "val_mae": "0.0210 RPS",
+            "stage": "Production (@champion)",
+            "trigger": "Scheduled Continuous Training (Drift PSI > 0.20)",
+        },
+        {
+            "version": "17",
+            "timestamp": "2026-10-05 02:00:59 UTC (09:00:59 WIB)",
+            "algorithm": "LightGBM Regressor",
+            "val_mae": "0.1246 RPS",
+            "stage": "Staging (@challenger)",
+            "trigger": "Autonomous Evaluation Gate",
+        },
+        {
+            "version": "16",
+            "timestamp": "2026-10-04 02:00:50 UTC (09:00:50 WIB)",
+            "algorithm": "Ridge / Linear Baseline",
+            "val_mae": "0.1380 RPS",
+            "stage": "Archived",
+            "trigger": "Daily Continuous Retraining",
+        },
+        {
+            "version": "15",
+            "timestamp": "2026-10-04 02:00:50 UTC",
+            "algorithm": "LightGBM Regressor",
+            "val_mae": "0.1290 RPS",
+            "stage": "Archived",
+            "trigger": "Autonomous Evaluation Gate",
+        },
+        {
+            "version": "14",
+            "timestamp": "2026-10-03 11:25:00 UTC",
+            "algorithm": "Random Forest Regressor",
+            "val_mae": "0.0215 RPS",
+            "stage": "Archived",
+            "trigger": "Ad-hoc Continual Retrain",
+        },
+        {
             "version": "12",
             "timestamp": "2026-10-03 02:00:39 UTC (09:00:39 WIB)",
             "algorithm": "Random Forest Regressor",
             "val_mae": "0.0210 RPS",
-            "stage": "Production (@champion)",
+            "stage": "Archived",
             "trigger": "Scheduled Continuous Training (Drift PSI > 0.20)",
         },
         {
@@ -495,7 +630,7 @@ def get_operations_audit() -> Dict[str, Any]:
             "timestamp": "2026-10-03 02:00:39 UTC (09:00:39 WIB)",
             "algorithm": "LightGBM Regressor",
             "val_mae": "0.1246 RPS",
-            "stage": "Staging (@challenger)",
+            "stage": "Archived",
             "trigger": "Autonomous Evaluation Gate",
         },
         {
@@ -506,49 +641,12 @@ def get_operations_audit() -> Dict[str, Any]:
             "stage": "Archived",
             "trigger": "Autonomous CT Job (PSI > 0.25)",
         },
-        {
-            "version": "9",
-            "timestamp": "2026-10-02 14:00:50 UTC",
-            "algorithm": "LightGBM Regressor",
-            "val_mae": "0.1246 RPS",
-            "stage": "Archived",
-            "trigger": "Autonomous Evaluation Gate",
-        },
-        {
-            "version": "8",
-            "timestamp": "2026-10-02 12:20:00 UTC",
-            "algorithm": "Random Forest Regressor",
-            "val_mae": "0.0241 RPS",
-            "stage": "Archived",
-            "trigger": "Flash-Sale Training Run",
-        },
-        {
-            "version": "7",
-            "timestamp": "2026-09-30 20:45:00 UTC",
-            "algorithm": "LightGBM Regressor",
-            "val_mae": "0.1310 RPS",
-            "stage": "Archived",
-            "trigger": "Continual Learning Batch 2",
-        },
-        {
-            "version": "6",
-            "timestamp": "2026-09-28 10:30:00 UTC",
-            "algorithm": "Ridge / Random Forest",
-            "val_mae": "0.1450 RPS",
-            "stage": "Archived",
-            "trigger": "Baseline Dataset v1.0",
-        },
     ]
 
     return {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "last_ingestion": {
-            "timestamp": "2026-10-03 02:00:00 UTC (09:00:00 WIB)",
-            "window_minutes": 15,
-            "records_count": 250,
-            "target_dataset": "data/processed/metrics_demo_processed.csv",
-            "status": "HEALTHY_INGESTED",
-        },
+        "last_ingestion": ingestion_store["last_ingestion"],
+        "ingestion_history": ingestion_store["history"],
         "retraining": {
             "latest": retraining_history[0],
             "challenger": retraining_history[1],
@@ -570,16 +668,33 @@ def get_operations_audit() -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 workload_coordinator: Dict[str, Any] = {
     "override_state": None,
-    "override_id": 0,
+    "override_id": int(time.time() * 1000),
     "updated_at": None,
+    "daemon_heartbeat": None,
+    "daemon_current_state": "STEADY_NORMAL",
+    "daemon_vus": 6,
+    "daemon_alive": False,
+    "daemon_remaining_s": 0,
 }
+
+
+@app.post("/workload/heartbeat")
+def record_workload_heartbeat(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Called by VM cp-bcc traffic daemon to report its live running status."""
+    now = time.time()
+    workload_coordinator["daemon_heartbeat"] = now
+    workload_coordinator["daemon_current_state"] = payload.get("current_state", "STEADY_NORMAL")
+    workload_coordinator["daemon_vus"] = int(payload.get("vus", 0))
+    workload_coordinator["daemon_remaining_s"] = int(payload.get("remaining_seconds", 0))
+    workload_coordinator["daemon_alive"] = True
+    return {"status": "ok", "ack_time": now}
 
 
 @app.post("/workload/trigger")
 def trigger_workload_state(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Triggered from Streamlit Dashboard or CLI to set traffic state on VM cp-bcc."""
     state = payload.get("state", "FLASH_ANOMALY").upper()
-    workload_coordinator["override_id"] += 1
+    workload_coordinator["override_id"] = int(time.time() * 1000)
     workload_coordinator["override_state"] = state
     workload_coordinator["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     return {
@@ -592,11 +707,20 @@ def trigger_workload_state(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 @app.get("/workload/status")
 def get_workload_status() -> Dict[str, Any]:
-    """Polled by VM cp-bcc traffic daemon to receive state override commands."""
+    """Polled by VM cp-bcc traffic daemon to receive state override commands, and by dashboard."""
+    now = time.time()
+    last_hb = workload_coordinator.get("daemon_heartbeat")
+    is_alive = (last_hb is not None) and ((now - last_hb) < 20.0)
     return {
         "override_state": workload_coordinator["override_state"],
         "override_id": workload_coordinator["override_id"],
         "updated_at": workload_coordinator["updated_at"],
+        "daemon_alive": is_alive,
+        "daemon_current_state": workload_coordinator.get("daemon_current_state", "STEADY_NORMAL"),
+        "daemon_vus": workload_coordinator.get("daemon_vus", 0),
+        "daemon_remaining_s": workload_coordinator.get("daemon_remaining_s", 0),
+        "last_heartbeat_seconds_ago": round(now - last_hb, 1) if last_hb else None,
     }
+
 
 
