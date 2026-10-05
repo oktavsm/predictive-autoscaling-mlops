@@ -45,7 +45,7 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 # Theme: Neutral dark palette — zinc/gray base, restrained accent colors
 # ---------------------------------------------------------------------------
-st.markdown(
+st.html(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -211,8 +211,7 @@ st.markdown(
         font-family: 'JetBrains Mono', monospace;
     }
     </style>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 # ---------------------------------------------------------------------------
@@ -228,6 +227,10 @@ except Exception:
 
 model_name = health_data.get("model_name", "predictive-autoscaler")
 model_alias = health_data.get("model_alias", "champion")
+active_model_ver = str(health_data.get("model_version", "v18"))
+if not active_model_ver.startswith("v"):
+    active_model_ver = f"v{active_model_ver}"
+active_algo = str(health_data.get("model_algorithm", "LightGBM / Random Forest"))
 is_healthy = health_data.get("status") == "healthy"
 replica_bounds = health_data.get("replica_bounds", {"min": 1, "max": 6})
 target_rps_cfg = health_data.get("target_rps_per_pod", 10.0)
@@ -250,22 +253,18 @@ cmd_seq_id = workload_status.get("override_id", 0)
 # ---------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("### Control Console")
-    st.markdown(
+    st.html(
         '<div style="margin-bottom:10px;"><span class="pill pill-ok">LIVE</span> '
-        '<span style="font-size:11px;color:#71717A;margin-left:6px;">AWS K3s — 3 nodes</span></div>',
-        unsafe_allow_html=True,
+        '<span style="font-size:11px;color:#71717A;margin-left:6px;">AWS K3s — 3 nodes</span></div>'
     )
 
     st.markdown("#### Services")
-    st.markdown(
-        f"""
-        <a class="slink" href="{GRAFANA_URL}" target="_blank"><span>Grafana Observability</span><span style="color:#52525B;">&#8599;</span></a>
-        <a class="slink" href="{MLFLOW_URL}" target="_blank"><span>MLflow Model Registry</span><span style="color:#52525B;">&#8599;</span></a>
-        <a class="slink" href="{MINIO_URL}" target="_blank"><span>MinIO S3 / DVC Storage</span><span style="color:#52525B;">&#8599;</span></a>
-        <a class="slink" href="{PUBLIC_INFERENCE_DOCS}" target="_blank"><span>Inference API Docs</span><span style="color:#52525B;">&#8599;</span></a>
-        <a class="slink" href="{API_URL}" target="_blank"><span>Laravel Target API</span><span style="color:#52525B;">&#8599;</span></a>
-        """,
-        unsafe_allow_html=True,
+    st.html(
+        f'<a class="slink" href="{GRAFANA_URL}" target="_blank"><span>Grafana Observability</span><span style="color:#52525B;">&#8599;</span></a>'
+        f'<a class="slink" href="{MLFLOW_URL}" target="_blank"><span>MLflow Model Registry</span><span style="color:#52525B;">&#8599;</span></a>'
+        f'<a class="slink" href="{MINIO_URL}" target="_blank"><span>MinIO S3 / DVC Storage</span><span style="color:#52525B;">&#8599;</span></a>'
+        f'<a class="slink" href="{PUBLIC_INFERENCE_DOCS}" target="_blank"><span>Inference API Docs</span><span style="color:#52525B;">&#8599;</span></a>'
+        f'<a class="slink" href="{API_URL}" target="_blank"><span>Laravel Target API</span><span style="color:#52525B;">&#8599;</span></a>'
     )
     st.divider()
 
@@ -293,18 +292,16 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 # Header
 # ---------------------------------------------------------------------------
-st.markdown(
-    """
-    <div class="hdr">
-        <div>
-            <div class="hdr-title">Titipin MLOps &mdash; Predictive Autoscaling Console</div>
-            <div class="hdr-sub">Closed-loop telemetry ingestion, workload forecasting (t+60 s), and proactive Kubernetes pod allocation.</div>
-        </div>
-        <div><span class="pill pill-ok">MODEL @champion v18</span></div>
-    </div>
-    """,
-    unsafe_allow_html=True,
+header_html = (
+    '<div class="hdr">'
+    '<div>'
+    '<div class="hdr-title">Titipin MLOps &mdash; Predictive Autoscaling Console</div>'
+    '<div class="hdr-sub">Closed-loop telemetry ingestion, workload forecasting (t+60 s), and proactive Kubernetes pod allocation.</div>'
+    '</div>'
+    f'<div><span class="pill pill-ok">MODEL @champion {active_model_ver}</span></div>'
+    '</div>'
 )
+st.html(header_html)
 
 # Status strip
 c1, c2, c3, c4 = st.columns(4)
@@ -312,8 +309,8 @@ with c1:
     st.metric("Serving Engine", "HEALTHY" if is_healthy else "OFFLINE", delta="Sub-15 ms latency",
               help="FastAPI inference container status in namespace mlops.")
 with c2:
-    st.metric("Active Model", "v18 Random Forest", delta="@champion",
-              help="Currently serving champion model trained via automated continuous training.")
+    st.metric("Active Model", f"{active_model_ver} ({active_algo.split()[0]})", delta=f"@{model_alias}",
+              help="Currently serving champion model loaded into inference service memory.")
 with c3:
     st.metric("Replica Range", f"{cfg_min_pods}–{cfg_max_pods} pods", delta=f"Target: {cfg_target_rps:.0f} RPS/pod",
               help="Allowed pod scaling bounds enforced by the policy controller.")
@@ -321,7 +318,7 @@ with c4:
     st.metric("Traffic Profile", daemon_state, delta=f"{daemon_vus} VUs {'(ONLINE)' if daemon_alive else '(STANDBY)'}",
               help="Live workload profile running on 24/7 load generator VM cp-bcc.")
 
-st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+st.html("<div style='height:6px'></div>")
 
 # ---------------------------------------------------------------------------
 # Tabs
@@ -439,12 +436,11 @@ with tab_audit:
         with cb1:
             pill_cls = "pill-info" if auto_refresh else "pill-mute"
             pill_txt = f"AUTO-REFRESH {refresh_rate}s" if auto_refresh else "MANUAL"
-            st.markdown(
+            st.html(
                 f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
                 f'<span class="pill {pill_cls}">{pill_txt}</span>'
                 f'<span style="font-size:12px;color:#71717A;">Last sync: <b style="color:#A1A1AA;">{now_wib}</b></span>'
-                f'</div>',
-                unsafe_allow_html=True,
+                f'</div>'
             )
         with cb2:
             if st.button("Refresh now", use_container_width=True):
@@ -455,6 +451,7 @@ with tab_audit:
         ret = audit.get("retraining", {})
         latest = ret.get("latest", {})
         api = audit.get("scaling_api", {})
+        recent_decs = api.get("recent_decisions", [])
         acts = audit.get("scaling_actions", {})
         recent_acts = acts.get("recent_actions", [])
         last_act = recent_acts[0] if recent_acts else {"action": "MAINTAIN", "from_replicas": 1, "to_replicas": 1, "status": "STABLE"}
@@ -468,14 +465,14 @@ with tab_audit:
                       help="Active champion model version from the MLflow registry.")
         with m3:
             total_api_calls = api.get("total_calls_tracked", 1440)
-            st.metric("API Calls Tracked", f"{total_api_calls:,}", delta=f"Buffer: {len(recent_decs)}/60 cycles",
+            st.metric("API Calls Tracked", f"{total_api_calls:,}", delta=f"Buffer: {len(recent_decs)}/60 cycles (15m window)",
                       help="Cumulative scaling decision evaluations executed by FastAPI serving container (sliding 60-cycle telemetry buffer).")
         with m4:
             st.metric("Last Scale Action", f"{last_act['action']} ({last_act['from_replicas']} > {last_act['to_replicas']})",
                       delta=last_act.get("status", "STABLE"),
                       help="Most recent Kubernetes replica change by the predictive scaler.")
 
-        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+        st.html("<div style='height:10px'></div>")
 
         # -- Section 1: Ingestion --
         st.markdown("#### Data Ingestion Activity & Feature Store Lineage")
@@ -491,40 +488,34 @@ with tab_audit:
         )
         ci1, ci2 = st.columns(2)
         with ci1:
-            st.markdown(
-                f"""
-                <div class="card card-accent-l">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                        <span style="font-size:13px;font-weight:600;color:#FAFAFA;">Ingestion Status</span>
-                        <span class="pill pill-ok">{ing.get('status', 'HEALTHY_INGESTED')}</span>
-                    </div>
-                    <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
-                        <li><b>Timestamp:</b> <code>{ing.get('timestamp', '2026-10-05 02:00:18 UTC (09:00:18 WIB)')}</code></li>
-                        <li><b>Records:</b> <code>{ing.get('records_count', 5760):,}</code> telemetry rows</li>
-                        <li><b>Window:</b> <code>{ing.get('window_minutes', 1440)} minutes (24h continuous scrape)</code></li>
-                        <li><b>Raw Source:</b> <code>{ing.get('raw_dataset', 'data/raw/metrics_20261005_020011.csv')}</code></li>
-                    </ul>
-                </div>
-                """,
-                unsafe_allow_html=True,
+            st.html(
+                f'<div class="card card-accent-l">'
+                f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+                f'<span style="font-size:13px;font-weight:600;color:#FAFAFA;">Ingestion Status</span>'
+                f'<span class="pill pill-ok">{ing.get("status", "HEALTHY_INGESTED")}</span>'
+                f'</div>'
+                f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">'
+                f'<li><b>Timestamp:</b> <code>{ing.get("timestamp", "2026-10-05 02:00:18 UTC (09:00:18 WIB)")}</code></li>'
+                f'<li><b>Records:</b> <code>{ing.get("records_count", 5760):,}</code> telemetry rows</li>'
+                f'<li><b>Window:</b> <code>{ing.get("window_minutes", 1440)} minutes (24h continuous scrape)</code></li>'
+                f'<li><b>Raw Source:</b> <code>{ing.get("raw_dataset", "data/raw/metrics_20261005_020011.csv")}</code></li>'
+                f'</ul>'
+                f'</div>'
             )
         with ci2:
-            st.markdown(
-                f"""
-                <div class="card card-accent-amber">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                        <span style="font-size:13px;font-weight:600;color:#FAFAFA;">Feature Store & MinIO S3 DVC</span>
-                        <span class="pill pill-ok">Synced (s3://mlops-dvc)</span>
-                    </div>
-                    <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
-                        <li><b>Processed Dataset:</b> <code>{ing.get('target_dataset', 'data/processed/metrics_processed_20261005_020017.csv')}</code></li>
-                        <li><b>MinIO CAS MD5:</b> <code>{ing.get('md5', '66b818bf563e223aacae257914f6af4f')}</code></li>
-                        <li><b>Bucket:</b> <code>{ing.get('bucket', 's3://mlops-dvc')}</code></li>
-                        <li><b>Local Sync Command:</b> <code>make sync-data</code></li>
-                    </ul>
-                </div>
-                """,
-                unsafe_allow_html=True,
+            st.html(
+                f'<div class="card card-accent-amber">'
+                f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+                f'<span style="font-size:13px;font-weight:600;color:#FAFAFA;">Feature Store & MinIO S3 DVC</span>'
+                f'<span class="pill pill-ok">Synced (s3://mlops-dvc)</span>'
+                f'</div>'
+                f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">'
+                f'<li><b>Processed Dataset:</b> <code>{ing.get("target_dataset", "data/processed/metrics_processed_20261005_020017.csv")}</code></li>'
+                f'<li><b>MinIO CAS MD5:</b> <code>{ing.get("md5", "66b818bf563e223aacae257914f6af4f")}</code></li>'
+                f'<li><b>Bucket:</b> <code>{ing.get("bucket", "s3://mlops-dvc")}</code></li>'
+                f'<li><b>Local Sync Command:</b> <code>make sync-data</code></li>'
+                f'</ul>'
+                f'</div>'
             )
 
         ing_history = audit.get("ingestion_history", [])
@@ -537,7 +528,7 @@ with tab_audit:
         else:
             st.info("No ingestion batches recorded in registry.")
 
-        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+        st.html("<div style='height:10px'></div>")
 
         # -- Section 2: Retraining --
         st.markdown("#### Retraining History (MLflow Registry)")
@@ -555,42 +546,36 @@ with tab_audit:
         cr1, cr2 = st.columns(2)
         challenger = ret.get("challenger", {})
         with cr1:
-            st.markdown(
-                f"""
-                <div class="card" style="border-left:3px solid #14B8A6;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                        <span class="pill pill-ok">CHAMPION — PRODUCTION</span>
-                        <span style="font-size:11px;color:#5EEAD4;font-family:monospace;">@champion</span>
-                    </div>
-                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {latest.get('version','18')} — {latest.get('algorithm','Random Forest Regressor')}</div>
-                    <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">
-                        <li><b>Trained:</b> <code>{latest.get('timestamp','2026-10-05 02:00:59 UTC (09:00:59 WIB)')}</code></li>
-                        <li><b>Trigger:</b> {latest.get('trigger','Scheduled Continuous Training (Drift PSI > 0.20)')}</li>
-                        <li><b>Validation MAE:</b> <b>{latest.get('val_mae','0.0210 RPS')}</b></li>
-                        <li><b>Deployment:</b> Hot-reloaded, zero restarts</li>
-                    </ul>
-                </div>
-                """,
-                unsafe_allow_html=True,
+            st.html(
+                f'<div class="card" style="border-left:3px solid #14B8A6;">'
+                f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+                f'<span class="pill pill-ok">CHAMPION — PRODUCTION</span>'
+                f'<span style="font-size:11px;color:#5EEAD4;font-family:monospace;">@champion</span>'
+                f'</div>'
+                f'<div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {latest.get("version","18")} — {latest.get("algorithm","Random Forest Regressor")}</div>'
+                f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">'
+                f'<li><b>Trained:</b> <code>{latest.get("timestamp","2026-10-05 02:00:59 UTC (09:00:59 WIB)")}</code></li>'
+                f'<li><b>Trigger:</b> {latest.get("trigger","Scheduled Continuous Training (Drift PSI > 0.20)")}</li>'
+                f'<li><b>Validation MAE:</b> <b>{latest.get("val_mae","0.0210 RPS")}</b></li>'
+                f'<li><b>Deployment:</b> Hot-reloaded, zero restarts</li>'
+                f'</ul>'
+                f'</div>'
             )
         with cr2:
-            st.markdown(
-                f"""
-                <div class="card" style="border-left:3px solid #F59E0B;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                        <span class="pill pill-warn">CHALLENGER — STAGING</span>
-                        <span style="font-size:11px;color:#FCD34D;font-family:monospace;">@challenger</span>
-                    </div>
-                    <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {challenger.get('version','17')} — {challenger.get('algorithm','LightGBM Regressor')}</div>
-                    <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">
-                        <li><b>Trained:</b> <code>{challenger.get('timestamp','2026-10-05 02:00:59 UTC (09:00:59 WIB)')}</code></li>
-                        <li><b>Trigger:</b> {challenger.get('trigger','Autonomous Evaluation Gate')}</li>
-                        <li><b>Validation MAE:</b> {challenger.get('val_mae','0.1246 RPS')} (inference: 2.8 ms)</li>
-                        <li><b>Result:</b> Retained as staging candidate</li>
-                    </ul>
-                </div>
-                """,
-                unsafe_allow_html=True,
+            st.html(
+                f'<div class="card" style="border-left:3px solid #F59E0B;">'
+                f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+                f'<span class="pill pill-warn">CHALLENGER — STAGING</span>'
+                f'<span style="font-size:11px;color:#FCD34D;font-family:monospace;">@challenger</span>'
+                f'</div>'
+                f'<div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {challenger.get("version","17")} — {challenger.get("algorithm","LightGBM Regressor")}</div>'
+                f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">'
+                f'<li><b>Trained:</b> <code>{challenger.get("timestamp","2026-10-05 02:00:59 UTC (09:00:59 WIB)")}</code></li>'
+                f'<li><b>Trigger:</b> {challenger.get("trigger","Autonomous Evaluation Gate")}</li>'
+                f'<li><b>Validation MAE:</b> {challenger.get("val_mae","0.1246 RPS")} (inference: 2.8 ms)</li>'
+                f'<li><b>Result:</b> Retained as staging candidate</li>'
+                f'</ul>'
+                f'</div>'
             )
 
         history = ret.get("history", [])
@@ -602,7 +587,7 @@ with tab_audit:
             })
             st.dataframe(df_h.set_index("Version"), use_container_width=True)
 
-        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+        st.html("<div style='height:10px'></div>")
 
         # -- Section 3: API calls --
         st.markdown("#### Scaling API Call Log")
@@ -627,7 +612,7 @@ with tab_audit:
         else:
             st.info("No API calls recorded in the current ring buffer.")
 
-        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+        st.html("<div style='height:10px'></div>")
 
         # -- Section 4: Scale actions --
         st.markdown("#### Pod Scaling Execution Log")
@@ -688,7 +673,7 @@ with tab_sim:
     if p4.button("Flash-Sale (65 RPS)", use_container_width=True):
         st.session_state.update(cur_rps=65.0, cur_cpu=1.45, cur_p95=0.145, cur_mem=210.0)
 
-    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+    st.html("<div style='height:4px'></div>")
 
     ci1, ci2 = st.columns(2)
     with ci1:
@@ -740,7 +725,7 @@ with tab_sim:
         pred_v = res["predicted_workload_rps_60s"]
         pods_v = min(cfg_max_pods, max(cfg_min_pods, res["recommended_replicas"]))
 
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        st.html("<div style='height:8px'></div>")
         r1, r2, r3, r4 = st.columns(4)
         with r1:
             st.metric("Forecast (t+60 s)", f"{pred_v:.1f} RPS", delta=f"{pred_v - cur_v:+.1f} RPS",
@@ -762,24 +747,22 @@ with tab_sim:
         for i in range(cfg_max_pods):
             with rack[i]:
                 if i < pods_v:
-                    st.markdown(
+                    st.html(
                         f'<div class="pod-box active">'
                         f'<div style="width:8px;height:8px;border-radius:50%;background:#14B8A6;margin:0 auto 6px;"></div>'
                         f'<div class="pod-name">Pod {i+1}</div>'
                         f'<span class="pill pill-ok" style="font-size:9px;">RUNNING</span>'
                         f'<div class="pod-detail" style="margin-top:4px;">{cfg_target_rps:.0f} RPS</div>'
-                        f'</div>',
-                        unsafe_allow_html=True,
+                        f'</div>'
                     )
                 else:
-                    st.markdown(
+                    st.html(
                         f'<div class="pod-box">'
                         f'<div style="width:8px;height:8px;border-radius:50%;background:#3F3F46;margin:0 auto 6px;"></div>'
                         f'<div class="pod-name" style="color:#52525B;">Pod {i+1}</div>'
                         f'<span style="font-size:9px;color:#52525B;font-weight:600;">STANDBY</span>'
                         f'<div class="pod-detail" style="margin-top:4px;">Scaled down</div>'
-                        f'</div>',
-                        unsafe_allow_html=True,
+                        f'</div>'
                     )
 
 
@@ -837,7 +820,7 @@ with tab_injector:
                 f'<div style="font-size:12px;color:#A1A1AA;margin:3px 0 6px;">{subtitle}</div>'
                 f'</div>'
             )
-            st.markdown(card_html, unsafe_allow_html=True)
+            st.html(card_html)
 
         # Daemon Status Card
         if w_daemon_alive:
@@ -859,7 +842,7 @@ with tab_injector:
                 '<span style="font-size:13px;color:#FAFAFA;margin-left:8px;">Awaiting heartbeat from VM cp-bcc load generator...</span>'
                 '</div>'
             )
-        st.markdown(status_txt, unsafe_allow_html=True)
+        st.html(status_txt)
 
         # Grid of standard selectable profiles
         col_w1, col_w2 = st.columns(2)
@@ -885,7 +868,7 @@ with tab_injector:
                     except Exception as e:
                         st.error(f"Failed to send trigger: {e}")
 
-            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+            st.html("<div style='height:8px;'></div>")
 
             # Profile 2: Rush Hour Surge
             is_burst = (w_curr_state == "BURST_BUSY")
@@ -928,7 +911,7 @@ with tab_injector:
                     except Exception as e:
                         st.error(f"Failed to send trigger: {e}")
 
-            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+            st.html("<div style='height:8px;'></div>")
 
             # Profile 4: Idle Silent
             is_idle = (w_curr_state == "IDLE_SILENT")
@@ -951,7 +934,7 @@ with tab_injector:
                         st.error(f"Failed to send trigger: {e}")
 
         # Profile 5: Dedicated Data Drift & Model Degradation Scenario Card
-        st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+        st.html("<div style='height:12px'></div>")
         is_drift = (w_curr_state == "DRIFT_ANOMALY")
 
         render_injector_card(
@@ -1016,15 +999,14 @@ with tab_injector:
 
             # Step 2: Statistical Drift Detection
             st.markdown("##### Stage 2: Statistical Drift Detection (PSI Monitoring)")
-            st.markdown(
+            st.html(
                 '<div style="background:#18181B;border:1px solid #EF4444;border-radius:6px;padding:12px 14px;margin-bottom:10px;">'
                 '<span class="pill pill-crit">MAJOR_DRIFT_DETECTED</span> '
                 '<span style="font-weight:600;color:#FAFAFA;margin-left:8px;">Population Stability Index (PSI): <b>0.3842</b> (Threshold: 0.2000)</span>'
                 '<div style="font-size:12px;color:#A1A1AA;margin-top:4px;">'
                 'Affected features: <code>request_rate</code> (PSI: 0.3812), <code>php_cpu_cores</code> (PSI: 0.4215), <code>p95_latency_seconds</code> (PSI: 0.3640).'
                 '</div>'
-                '</div>',
-                unsafe_allow_html=True,
+                '</div>'
             )
 
             # Step 3: Trigger Event-Driven Retraining
@@ -1059,15 +1041,14 @@ with tab_injector:
                 with col_res3:
                     st.metric("Restored Latency", "32.5 ms", delta="SLO Restored (< 100ms)")
 
-                st.markdown(
+                st.html(
                     '<div style="background:rgba(20,184,166,0.08);border:1px solid #14B8A6;border-radius:6px;padding:10px 14px;font-size:12px;color:#D4D4D8;">'
                     '✅ <b>Closed-Loop Complete:</b> The new model successfully learned the drifted traffic distribution. '
                     'Forecasts now accurately anticipate heavy workloads, expanding pods to 5 proactively and preventing SLO degradation.'
-                    '</div>',
-                    unsafe_allow_html=True,
+                    '</div>'
                 )
 
-                st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+                st.html("<div style='height:8px;'></div>")
                 if st.button("🔄 Inject Next Data Drift Cycle (Continuous Drift Testing)", key="btn_next_drift", use_container_width=True):
                     try:
                         requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "DRIFT_ANOMALY"}, timeout=3)
@@ -1078,13 +1059,10 @@ with tab_injector:
                     except Exception as e:
                         st.error(f"Failed to inject next drift cycle: {e}")
 
-        st.markdown(
-            f"""
-            <div style="margin-top:16px;padding:10px 14px;background:#18181B;border:1px solid #27272A;border-radius:6px;font-size:12px;color:#A1A1AA;">
-                💡 <b>Live Verification:</b> Open <a href="{GRAFANA_URL}" target="_blank" style="color:#14B8A6;text-decoration:none;"><b>Grafana Dashboard ↗</b></a> to observe real-time RPS, latency, and pod replica transitions as the workload changes.
-            </div>
-            """,
-            unsafe_allow_html=True,
+        st.html(
+            f'<div style="margin-top:16px;padding:10px 14px;background:#18181B;border:1px solid #27272A;border-radius:6px;font-size:12px;color:#A1A1AA;">'
+            f'💡 <b>Live Verification:</b> Open <a href="{GRAFANA_URL}" target="_blank" style="color:#14B8A6;text-decoration:none;"><b>Grafana Dashboard ↗</b></a> to observe real-time RPS, latency, and pod replica transitions as the workload changes.'
+            f'</div>'
         )
 
     render_workload_injector_view()
@@ -1159,7 +1137,7 @@ with tab_finops:
         f"**{avg_pred_pods:.2f} pods** (derived from the last {len(live_decs) if live_decs else 60} cluster scaling decisions)."
     )
 
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+    st.html("<div style='height:8px'></div>")
     chart_df = pd.DataFrame({
         "Strategy": ["Static 6 Pods", "Reactive HPA", "Predictive ML"],
         "Monthly Cost (IDR)": [cost_s * f_kurs, cost_r * f_kurs, cost_p * f_kurs],
@@ -1303,7 +1281,7 @@ with tab_benchmark:
     }
     st.dataframe(pd.DataFrame(bench).set_index("Metric"), use_container_width=True)
 
-    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+    st.html("<div style='height:12px'></div>")
     st.markdown("#### Live Production SLO Status (Current Evaluation Window)")
 
     live_sample = {}
@@ -1354,40 +1332,40 @@ with tab_registry:
     st.markdown("Centralized model lifecycle management with dataset provenance tracking in MinIO S3.")
 
     mr1, mr2 = st.columns(2)
+    champ_ver = active_model_ver
+    champ_algo = active_algo
+    challenger_ver = "v18" if champ_ver == "v19" else "v17"
+    challenger_algo = "Random Forest Regressor" if champ_ver == "v19" else "LightGBM Regressor"
     with mr1:
-        st.markdown(
-            """
-            <div class="card" style="border-left:3px solid #14B8A6;">
-                <span class="pill pill-ok">CHAMPION — PRODUCTION</span>
-                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v18</div>
-                <div style="font-size:12px;color:#71717A;margin-bottom:8px;">Random Forest Regressor (n_estimators=100, max_depth=8)</div>
-                <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
-                    <li><b>MAE:</b> <code style="color:#5EEAD4;">0.0210 RPS</code></li>
-                    <li><b>Dataset:</b> <code>processed/metrics_processed_20261005_020017.csv</code></li>
-                    <li><b>Serving:</b> Active in production, scaling 1–6 pods</li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        st.html(
+            f'<div class="card" style="border-left:3px solid #14B8A6;">'
+            f'<span class="pill pill-ok">CHAMPION — PRODUCTION</span>'
+            f'<div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler {champ_ver}</div>'
+            f'<div style="font-size:12px;color:#71717A;margin-bottom:8px;">{champ_algo}</div>'
+            f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">'
+            f'<li><b>Status:</b> <code style="color:#5EEAD4;">Serving Active (@{model_alias})</code></li>'
+            f'<li><b>Validation MAE:</b> <code>0.0210 RPS</code></li>'
+            f'<li><b>Dataset:</b> <code>processed/metrics_processed_20261005_020017.csv</code></li>'
+            f'<li><b>Serving:</b> Active in production memory, scaling 1–6 pods</li>'
+            f'</ul>'
+            f'</div>'
         )
     with mr2:
-        st.markdown(
-            """
-            <div class="card" style="border-left:3px solid #F59E0B;">
-                <span class="pill pill-warn">CHALLENGER — STAGING</span>
-                <div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler v17</div>
-                <div style="font-size:12px;color:#71717A;margin-bottom:8px;">LightGBM Regressor (lr=0.05, num_leaves=31)</div>
-                <ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">
-                    <li><b>MAE:</b> <code>0.1246 RPS</code></li>
-                    <li><b>Inference:</b> <code>2.8 ms</code></li>
-                    <li><b>Status:</b> Retained as staging benchmark challenger</li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        st.html(
+            f'<div class="card" style="border-left:3px solid #F59E0B;">'
+            f'<span class="pill pill-warn">CHALLENGER — STAGING</span>'
+            f'<div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler {challenger_ver}</div>'
+            f'<div style="font-size:12px;color:#71717A;margin-bottom:8px;">{challenger_algo}</div>'
+            f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">'
+            f'<li><b>Status:</b> <code>Staging Candidate (@challenger)</code></li>'
+            f'<li><b>Validation MAE:</b> <code>0.1246 RPS</code></li>'
+            f'<li><b>Inference:</b> <code>2.8 ms</code></li>'
+            f'<li><b>Result:</b> Retained as staging benchmark challenger</li>'
+            f'</ul>'
+            f'</div>'
         )
 
-    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+    st.html("<div style='height:14px'></div>")
     st.markdown("#### DVC Content-Addressable Storage")
     st.markdown(
         """

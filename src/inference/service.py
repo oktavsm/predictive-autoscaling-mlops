@@ -78,6 +78,8 @@ model_store: Dict[str, Any] = {
     "version": "v18",
 }
 
+total_evaluations_count: int = 1440
+
 
 def find_local_model_artifact() -> Optional[str]:
     """Mencari path direktori artefak champion model secara lokal di file system."""
@@ -224,16 +226,28 @@ class PredictionResponse(BaseModel):
 def health_check() -> Dict[str, Any]:
     """Health check endpoint validating model readiness."""
     is_ready = model_store.get("model") is not None
+    active_v = str(model_store.get("version", "v18"))
+    if not active_v.startswith("v"):
+        active_v = f"v{active_v}"
+    try:
+        v_num = int(active_v.lstrip("v"))
+    except Exception:
+        v_num = 18
+    algo_name = "LightGBM Regressor (Optuna)" if v_num >= 19 else "Random Forest Regressor"
+
     return {
         "status": "healthy" if is_ready else "degraded",
         "service": "predictive-autoscaler-inference",
         "model_ready": is_ready,
         "model_name": MODEL_NAME,
         "model_alias": MODEL_ALIAS,
+        "model_version": active_v,
+        "model_algorithm": algo_name,
         "model_uri": model_store.get("model_uri"),
         "load_time_ms": model_store.get("load_time_ms"),
         "target_rps_per_pod": TARGET_RPS_PER_POD,
         "replica_bounds": {"min": MIN_REPLICAS, "max": MAX_REPLICAS},
+        "total_api_calls": total_evaluations_count,
     }
 
 
@@ -349,7 +363,7 @@ def predict_workload(payload: TelemetryFeatures):
 
     return PredictionResponse(
         model_name=MODEL_NAME,
-        model_version=model_store.get("version", "2"),
+        model_version=str(model_store.get("version", "v18")),
         status="SUCCESS",
         current_workload_rps=req_rate,
         predicted_workload_rps_60s=predicted_rps,
@@ -411,7 +425,6 @@ def scaling_decision(payload: TelemetryFeatures) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Operational Telemetry & Scaling Event Audit Structures
 # ---------------------------------------------------------------------------
-total_evaluations_count: int = 1440
 scaling_decisions_ring: deque = deque(maxlen=60)
 scaling_actions_ring: deque = deque(maxlen=40)
 
