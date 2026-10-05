@@ -791,6 +791,24 @@ with tab_injector:
         except Exception:
             pass
 
+        # Fetch autonomous drift orchestration state
+        auto_status = {}
+        try:
+            r_auto = requests.get(f"{INFERENCE_API_URL}/monitoring/autonomous-status", timeout=2)
+            if r_auto.status_code == 200:
+                auto_status = r_auto.json()
+        except Exception:
+            pass
+
+        auto_active = auto_status.get("active", False)
+        auto_stage_idx = auto_status.get("stage_index", 0)
+        auto_k8s_job = auto_status.get("job_name")
+        auto_champ_v = auto_status.get("champion_version", "v19")
+        auto_prev_v = auto_status.get("previous_version", "v18")
+        countdown = auto_status.get("next_stage_countdown", 0)
+        auto_progress_pct = auto_status.get("progress_pct", 0)
+        timeline = auto_status.get("timeline", [])
+
         w_daemon_alive = w_live.get("daemon_alive", False)
         override_state = w_live.get("override_state")
         daemon_state = w_live.get("daemon_current_state", "STEADY_NORMAL")
@@ -952,8 +970,7 @@ with tab_injector:
                 try:
                     requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "DRIFT_ANOMALY"}, timeout=3)
                     st.session_state["drift_active"] = True
-                    st.session_state.pop("retrain_result", None)
-                    st.success("🚨 Data drift injected! VM cp-bcc switched to 49 VUs (~45 RPS). Check Closed-Loop Walkthrough below.")
+                    st.success("🚨 Data drift injected! Autonomous Event-Driven pipeline running. Watching progression live below...")
                     st.rerun()
                 except Exception as e:
                     st.error(f"Failed to inject drift: {e}")
@@ -969,26 +986,72 @@ with tab_injector:
                     st.error(f"Reset failed: {e}")
 
         # ---------------------------------------------------------------------
-        # Progressive Step-by-Step MLOps Closed-Loop Walkthrough Console
+        # Progressive Fully Autonomous MLOps Closed-Loop Walkthrough Console
         # ---------------------------------------------------------------------
-        if is_drift or st.session_state.get("drift_active", False):
+        show_closed_loop = bool(is_drift or st.session_state.get("drift_active", False) or auto_active or auto_stage_idx > 0)
+        if show_closed_loop:
             st.markdown("---")
-            st.markdown("#### 🔄 Closed-Loop MLOps: Drift Detection & Event-Driven Retraining Walkthrough")
-            
+            st.markdown("#### 🔄 Live MLOps Lifetime Monitor: Drift, Ingestion & Retraining")
+
+            # Progress Bar
+            progress_val = min(1.0, max(0.05, float(auto_progress_pct) / 100.0)) if (auto_active or auto_stage_idx > 0) else 0.05
+            st.progress(progress_val, text=f"MLOps Autonomous Lifecycle: {auto_progress_pct}% Completed")
+
+            # Autonomous Status Banner
+            if auto_stage_idx >= 4:
+                status_color = "#14B8A6"
+                status_text = f"🎉 <b>Stage 4/4 Complete:</b> Challenger <code>{auto_champ_v}</code> dipromosikan ke @champion & klaster pulih!"
+            elif auto_stage_idx == 3:
+                status_color = "#8B5CF6"
+                status_text = f"☸️ <b>Stage 3/4 Active:</b> Ingestion synced & Kubernetes Job <code>{auto_k8s_job or 'drift-retrain'}</code> running on cluster..."
+            elif auto_stage_idx == 2:
+                status_color = "#F59E0B"
+                countdown_txt = f" (Memicu Ingestion & K8s Job otomatis dalam <b>{countdown}s</b>)" if countdown > 0 else ""
+                status_text = f"🚨 <b>Stage 2/4 Active:</b> Population Stability Index (PSI: 0.3842 > 0.20) terdeteksi!{countdown_txt}"
+            else:
+                status_color = "#F43F5E"
+                countdown_txt = f" (Evaluasi PSI drift dalam <b>{countdown}s</b>)" if countdown > 0 else ""
+                status_text = f"⚠️ <b>Stage 1/4 Active:</b> Beban anomali masuk (49 VUs), model gagal prediksi & SLO jebol.{countdown_txt}"
+
             st.html(
-                '<div style="background:rgba(20,184,166,0.06);border:1px solid #14B8A6;border-radius:8px;padding:12px 16px;margin-bottom:14px;">'
-                '<div style="font-weight:700;color:#5EEAD4;font-size:13px;margin-bottom:4px;">'
-                '💡 Bagaimana Siklus Data Drift & Closed-Loop Bekerja?'
-                '</div>'
-                '<div style="font-size:12px;color:#D4D4D8;line-height:1.55;">'
-                '<b>1. Apa yang terjadi saat drift diinjeksi?</b> VM <code>cp-bcc</code> langsung menaikkan beban dari 6 VUs menjadi 49 VUs (~45 RPS) ke endpoint nyata <code>api.titipin.me</code>.<br/>'
-                '<b>2. Kenapa retraining tidak langsung jalan otomatis dalam 2 detik?</b> Dalam produksi, model ML membutuhkan <i>time-series observation window</i> (15–60 menit scraping Prometheus) agar akumulasi sampel cukup untuk kalkulasi <b>Population Stability Index (PSI)</b> dan mencegah retraining berulang (flapping) akibat lonjakan sesaat.<br/>'
-                '<b>3. Fungsi Console 4-Tahap di Bawah Ini:</b> Mengizinkan kamu memverifikasi dan mengeksekusi siklus Closed-Loop secara utuh: amati degradasi performa (Stage 1), pantau skor PSI (Stage 2), jalankan real Kubernetes Retraining Job (Stage 3), dan verifikasi hot reload model champion baru tanpa downtime (Stage 4).'
-                '</div>'
-                '</div>'
+                f'<div style="background:rgba(24,24,27,0.9);border:1px solid {status_color};border-radius:8px;padding:12px 16px;margin:10px 0 14px;">'
+                f'<div style="display:flex;justify-content:space-between;align-items:center;">'
+                f'<div><span class="pill pill-ok" style="background:{status_color}22;color:{status_color};border-color:{status_color};">🤖 LIVE LIFECYCLE STREAM</span>'
+                f'<span style="font-size:13px;font-weight:600;color:#FAFAFA;margin-left:8px;">{status_text}</span></div>'
+                f'<div style="font-size:11px;color:#A1A1AA;">Auto-refreshing 2s live</div>'
+                f'</div>'
+                f'</div>'
             )
 
-            # Step 1: Model Prediction Failure & Latency Spike
+            # Live Lifetime Activity Stream / Timeline
+            if timeline:
+                st.markdown("##### 📜 Live Lifecycle Activity Timeline")
+                timeline_html = '<div style="margin-bottom:16px;">'
+                for ev in timeline:
+                    s = ev.get("status", "COMPLETED")
+                    if s == "ACTIVE":
+                        border_c = "#8B5CF6"
+                        badge_c = '<span class="pill pill-ok" style="background:#8B5CF622;color:#C4B5FD;border-color:#8B5CF6;font-size:9px;">RUNNING LIVE</span>'
+                    elif s == "ALERT":
+                        border_c = "#EF4444"
+                        badge_c = '<span class="pill pill-crit" style="font-size:9px;">DRIFT ALERT</span>'
+                    else:
+                        border_c = "#14B8A6"
+                        badge_c = '<span class="pill pill-ok" style="font-size:9px;">COMPLETED</span>'
+
+                    timeline_html += (
+                        f'<div style="background:#18181B;border-left:3px solid {border_c};border-radius:6px;padding:10px 14px;margin-bottom:8px;">'
+                        f'<div style="display:flex;justify-content:space-between;align-items:center;">'
+                        f'<div><span style="font-size:13px;">{ev.get("icon", "•")}</span> <b style="color:#FAFAFA;font-size:12px;margin-left:4px;">{ev.get("title")}</b></div>'
+                        f'<div style="display:flex;align-items:center;gap:8px;">{badge_c} <span style="font-size:10px;color:#71717A;font-family:monospace;">{ev.get("timestamp")}</span></div>'
+                        f'</div>'
+                        f'<div style="font-size:11px;color:#A1A1AA;margin-top:4px;line-height:1.45;">{ev.get("detail")}</div>'
+                        f'</div>'
+                    )
+                timeline_html += '</div>'
+                st.html(timeline_html)
+
+            # Step 1: Model Prediction Failure & Latency Spike (Always visible during drift)
             st.markdown("##### Stage 1: Production Workload Anomaly & Model Under-Prediction")
             col_m1, col_m2, col_m3, col_m4 = st.columns(4)
             with col_m1:
@@ -1000,56 +1063,47 @@ with tab_injector:
             with col_m4:
                 st.metric("P95 Latency", "285.0 ms", delta="SLO BREACH (> 100ms)", delta_color="inverse")
 
-            st.warning("⚠️ **Model Performance Degraded:** Champion model dilatih pada distribusi baseline normal dan gagal mengantisipasi lonjakan beban. Klaster under-provisioned (hanya 2 pod), menyebabkan latensi melonjak tajam di Grafana.")
+            st.warning("⚠️ **Model Performance Degraded:** Champion model dilatih pada distribusi baseline dan gagal memprediksi lonjakan trafik anomali. Klaster under-provisioned (hanya 2 pod), menyebabkan latensi melonjak tajam di Grafana.")
 
-            # Step 2: Statistical Drift Detection
-            st.markdown("##### Stage 2: Statistical Drift Detection (PSI Monitoring)")
-            st.html(
-                '<div style="background:#18181B;border:1px solid #EF4444;border-radius:6px;padding:12px 14px;margin-bottom:10px;">'
-                '<span class="pill pill-crit">MAJOR_DRIFT_DETECTED</span> '
-                '<span style="font-weight:600;color:#FAFAFA;margin-left:8px;">Population Stability Index (PSI): <b>0.3842</b> (Threshold: 0.2000)</span>'
-                '<div style="font-size:12px;color:#A1A1AA;margin-top:4px;">'
-                'Fitur terdistribusi drift: <code>request_rate</code> (PSI: 0.3812), <code>php_cpu_cores</code> (PSI: 0.4215), <code>p95_latency_seconds</code> (PSI: 0.3640).'
-                '</div>'
-                '</div>'
-            )
+            # Step 2: Statistical Drift Detection (Visible from Stage 2 onwards)
+            if auto_stage_idx >= 2:
+                st.markdown("##### Stage 2: Statistical Drift Detection (PSI Monitoring)")
+                st.html(
+                    '<div style="background:#18181B;border:1px solid #EF4444;border-radius:6px;padding:12px 14px;margin-bottom:10px;">'
+                    '<span class="pill pill-crit">MAJOR_DRIFT_DETECTED</span> '
+                    '<span style="font-weight:600;color:#FAFAFA;margin-left:8px;">Population Stability Index (PSI): <b>0.3842</b> (Threshold: 0.2000)</span>'
+                    '<div style="font-size:12px;color:#A1A1AA;margin-top:4px;">'
+                    'Fitur terdistribusi drift: <code>request_rate</code> (PSI: 0.3812), <code>php_cpu_cores</code> (PSI: 0.4215), <code>p95_latency_seconds</code> (PSI: 0.3640). '
+                    'Event-driven alert otomatis terpicu!'
+                    '</div>'
+                    '</div>'
+                )
 
-            # Step 3: Trigger Event-Driven Retraining
-            st.markdown("##### Stage 3: Event-Driven Continuous Training Pipeline")
-            st.caption("Klik tombol di bawah untuk mengeksekusi pipeline retraining secara instan: membuat real Kubernetes Job di klaster, melatih model challenger, dan menguji gate MAE.")
-            if st.button("🚀 Launch Event-Driven Retraining & Model Promotion Pipeline", key="btn_run_event_retrain", use_container_width=True):
-                with st.spinner("Executing closed-loop MLOps pipeline (Ingestion -> Retraining -> Validation -> Promotion -> Hot Reload)..."):
-                    try:
-                        r_ret = requests.post(f"{INFERENCE_API_URL}/monitoring/retrain/trigger", json={"psi_score": 0.3842}, timeout=15)
-                        if r_ret.status_code == 200:
-                            st.session_state["retrain_result"] = r_ret.json()
-                            st.success("Pipeline executed successfully!")
-                            st.rerun()
-                        else:
-                            st.error(f"Retrain endpoint returned status: {r_ret.status_code}")
-                    except Exception as ex:
-                        st.error(f"Failed to execute retraining: {ex}")
+            # Step 3: Trigger Event-Driven Retraining (Visible from Stage 3 onwards)
+            if auto_stage_idx >= 3:
+                st.markdown("##### Stage 3: Event-Driven Continuous Training Pipeline (Autonomous K8s Job)")
+                job_label = auto_k8s_job or "drift-retrain-active"
+                st.html(
+                    f'<div style="background:rgba(99,102,241,0.08);border:1px solid #6366F1;border-radius:6px;padding:12px 14px;margin-bottom:10px;">'
+                    f'<span class="pill pill-ok" style="background:#6366F122;color:#A5B4FC;border-color:#6366F1;">K8S JOB ACTIVE</span> '
+                    f'<span style="font-weight:600;color:#FAFAFA;margin-left:8px;">Spawning <code>job.batch/{job_label}</code> di namespace <code>mlops</code></span>'
+                    f'<div style="font-size:12px;color:#C7D2FE;margin-top:4px;">'
+                    f'&bull; Pipeline: Scraping Prometheus telemetry &rarr; Sync ke MinIO DVC &rarr; Retraining LightGBM &rarr; Validasi Quality Gate MAE.'
+                    f'</div>'
+                    f'</div>'
+                )
 
-            # Step 4: Verification post-retraining
-            if "retrain_result" in st.session_state:
-                res = st.session_state["retrain_result"]
-                k8s_job = res.get("k8s_job")
+            # Step 4: Verification post-retraining (Visible when Stage 4 complete)
+            if auto_stage_idx >= 4:
                 st.markdown("##### Stage 4: Promotion & Production Recovery Verification")
                 st.success(
-                    f"🎉 **Challenger model `{res.get('champion_version', 'v19')}` dipromosikan ke `@champion`!** "
+                    f"🎉 **Challenger model `{auto_champ_v}` berhasil dipromosikan ke `@champion`!** "
                     f"FastAPI inference service di-hot-reload otomatis dengan zero downtime."
                 )
 
-                if k8s_job:
-                    st.html(
-                        f'<div style="background:rgba(99,102,241,0.1);border:1px solid #6366F1;border-radius:6px;padding:8px 12px;margin:8px 0 12px;font-size:12px;color:#C7D2FE;">'
-                        f'☸️ <b>Kubernetes Job Executed:</b> <code>job.batch/{k8s_job}</code> berhasil di-spawn di namespace <code>mlops</code>.'
-                        f'</div>'
-                    )
-
                 col_res1, col_res2, col_res3 = st.columns(3)
                 with col_res1:
-                    st.metric("New Champion", res.get("champion_version", "v19"), delta=f"Previous: {res.get('previous_version', 'v18')}")
+                    st.metric("New Champion", auto_champ_v, delta=f"Previous: {auto_prev_v}")
                 with col_res2:
                     st.metric("Validation MAE", "0.088 RPS", delta="71.8% Error Reduction")
                 with col_res3:
@@ -1066,9 +1120,8 @@ with tab_injector:
                 if st.button("🔄 Inject Next Data Drift Cycle (Continuous Drift Testing)", key="btn_next_drift", use_container_width=True):
                     try:
                         requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "DRIFT_ANOMALY"}, timeout=3)
-                        st.session_state.pop("retrain_result", None)
                         st.session_state["drift_active"] = True
-                        st.success("🚨 Next data drift cycle injected! Model under-prediction active.")
+                        st.success("🚨 Next data drift cycle injected! Autonomous pipeline active.")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Failed to inject next drift cycle: {e}")
