@@ -163,6 +163,33 @@ The preprocessed dataset includes 17 features:
 
 ---
 
+### Option 6: Data Versioning with DVC & Continual Learning Lineage
+
+All raw and preprocessed datasets are version-controlled using **DVC (Data Version Control)** backed by **MinIO S3 Object Storage** (`https://storage.titipin.me/mlops-dvc`), preventing repository bloat.
+
+```bash
+# 1. Verify DVC remote storage
+dvc remote list
+# Output: minio   s3://mlops-dvc (endpoint: https://storage.titipin.me)
+
+# 2. Pull latest dataset binaries from MinIO S3
+dvc pull
+
+# 3. Simulate continual learning: add new ingested telemetry and version it
+dvc add data/raw data/processed
+git add data/raw.dvc data/processed.dvc
+git commit -m "feat(data): track updated telemetry dataset v2.0"
+dvc push
+
+# 4. Audit dataset differences between releases (Data Lineage)
+dvc diff v1.0-data v2.0-data
+# Inspect additions/modifications between baseline v1.0 and continual learning v2.0
+```
+
+For complete technical architecture, MD5 Content-Addressable Storage (CAS), and time-travel guides, refer to [`docs/DATA_VERSIONING_DVC.md`](docs/DATA_VERSIONING_DVC.md).
+
+---
+
 ## 📁 Repository Structure
 
 ```text
