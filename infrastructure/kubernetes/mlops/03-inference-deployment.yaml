@@ -29,6 +29,7 @@ spec:
             - "/bin/sh"
             - "-c"
             - |
+              pip install --no-cache-dir minio && \
               mkdir -p /app/src/inference && \
               cp /config/inference/service.py /app/src/inference/service.py && \
               exec uvicorn src.inference.service:app --host 0.0.0.0 --port 8000
