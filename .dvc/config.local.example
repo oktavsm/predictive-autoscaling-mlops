@@ -1,0 +1,13 @@
+# ==============================================================================
+# DVC Local Configuration Template (MinIO S3 Remote Credentials)
+# ==============================================================================
+# Salin file ini menjadi .dvc/config.local di lingkungan lokal atau remote VM:
+#   cp .dvc/config.local.example .dvc/config.local
+#
+# PENTING: File .dvc/config.local sudah di-ignore oleh Git (.dvc/.gitignore)
+# sehingga kredensial Anda tidak akan pernah bocor ke publik.
+# ==============================================================================
+
+['remote "minio"']
+    access_key_id = <YOUR_MINIO_ACCESS_KEY>
+    secret_access_key = <YOUR_MINIO_SECRET_KEY>

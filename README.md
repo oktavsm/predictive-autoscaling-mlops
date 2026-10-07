@@ -255,6 +255,7 @@ predictive-autoscaling-mlops/
 - **[Live Demonstration Guide](docs/LIVE_DEMO_GUIDE.md):** Runbook for executing live traffic verification and observation.
 - **[Workload Generation Guide](docs/WORKLOAD_GENERATION.md):** k6 benchmark scenarios (steady, spike, gradual, periodic).
 - **[Codespace Setup Guide](docs/CODESPACE_SETUP.md):** Development workflow and port forwarding guide.
+- **[Remote VM & Infrastructure Automation](docs/REMOTE_VM_AUTOMATION.md):** Multi-node VM automation, systemd services, k6 load daemon, and in-cluster DVC sync runbook.
 - **[CI/CD & CT Workflow Design](docs/CICD_DESIGN.md):** Architecture for Continuous Integration, Delivery, and Training (MLOps).
 - **[Architecture Decision Records](docs/DECISIONS.md):** Log of major technical decisions and trade-offs.
 
