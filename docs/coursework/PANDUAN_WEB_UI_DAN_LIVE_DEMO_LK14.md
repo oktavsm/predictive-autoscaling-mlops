@@ -78,7 +78,7 @@ Saat mempresentasikan **LK-14 (Live Demo)**, buka dua tab browser berdampingan:
 
 ### Langkah 4: Tunjukkan Tata Kelola MLflow & DVC (LK-05, LK-06, LK-07)
 1. Buka `https://mlflow.titipin.me`:
-   * Tunjukkan model `predictive-autoscaler` yang aktif dengan tag `@champion` (v8) dan `@challenger` (v7).
+   * Tunjukkan model `predictive-autoscaler` yang aktif dengan tag `@champion` (v30) dan `@challenger` (v29).
    * Perlihatkan metrik perbandingan MAE, RMSE, dan artefak model `model.pkl`.
 2. Buka `https://minio.titipin.me`:
    * Tunjukkan hash chunk data DVC yang tersimpan aman di S3.

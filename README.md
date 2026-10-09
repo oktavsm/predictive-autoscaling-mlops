@@ -163,30 +163,70 @@ The preprocessed dataset includes 17 features:
 
 ---
 
-### Option 6: Data Versioning with DVC & Continual Learning Lineage
+### Option 6: Data Versioning with DVC & Continual Learning Lineage (LK-05)
 
-All raw and preprocessed datasets are version-controlled using **DVC (Data Version Control)** backed by **MinIO S3 Object Storage** (`https://storage.titipin.me/mlops-dvc`), preventing repository bloat.
+All raw (`data/raw/`) and preprocessed (`data/processed/`) datasets are version-controlled using **DVC (Data Version Control)** backed by **MinIO S3 Object Storage** (`https://storage.titipin.me/mlops-dvc`). This decouples large binary time-series data from Git, preventing repository bloating while preserving complete data lineage and reproducibility across training iterations.
 
+#### 1. Inisialisasi DVC & Konfigurasi Remote S3
 ```bash
-# 1. Verify DVC remote storage
-dvc remote list
-# Output: minio   s3://mlops-dvc (endpoint: https://storage.titipin.me)
+# Inisialisasi DVC di repositori proyek (konfigurasi tercatat di Git: .dvc/config, .dvcignore)
+dvc init
 
-# 2. Pull latest dataset binaries from MinIO S3
-dvc pull
-
-# 3. Simulate continual learning: add new ingested telemetry and version it
-dvc add data/raw data/processed
-git add data/raw.dvc data/processed.dvc
-git commit -m "feat(data): track updated telemetry dataset v2.0"
-dvc push
-
-# 4. Audit dataset differences between releases (Data Lineage)
-dvc diff v1.0-data v2.0-data
-# Inspect additions/modifications between baseline v1.0 and continual learning v2.0
+# Konfigurasi MinIO S3 remote storage luar sistem
+dvc remote add -d minio s3://mlops-dvc
+dvc remote modify minio endpointurl https://storage.titipin.me
 ```
 
-For complete technical architecture, MD5 Content-Addressable Storage (CAS), and time-travel guides, refer to [`docs/DATA_VERSIONING_DVC.md`](docs/DATA_VERSIONING_DVC.md).
+#### 2. Pelacakan Dataset Awal (Baseline `v1.0-data`)
+```bash
+# Lacak dataset hasil pipeline LK-04 menggunakan DVC (membuat pointer .dvc & update data/.gitignore)
+dvc add data/raw data/processed
+git add data/raw.dvc data/processed.dvc data/.gitignore .dvc/config
+git commit -m "feat(lk05): initialize DVC and track initial dataset v1.0 with MinIO S3 remote"
+git tag -a v1.0-data -m "Release v1.0: Baseline telemetry dataset"
+dvc push
+```
+
+#### 3. Simulasi Continual Learning (Penambahan Data Telemetri Baru)
+```bash
+# Jalankan kembali pipeline ingesti untuk menarik observasi telemetri tambahan dari Prometheus
+python src/ingest_data.py --minutes 30
+python src/preprocess.py
+# Menghasilkan batch data baru (contoh: metrics_20260930_124503.csv & metrics_processed_20260930_124507.csv)
+```
+
+#### 4. Versioning Versi Baru (`v2.0-data`) & Pembaruan Hash
+```bash
+# Lakukan dvc add kembali pada direktori yang telah diperbarui
+dvc add data/raw data/processed
+
+# Perhatikan perubahan nilai hash MD5 pada berkas penunjuk teks .dvc
+git diff data/raw.dvc data/processed.dvc
+
+# Commit berkas penunjuk .dvc baru ke Git tanpa membawa file biner CSV
+git add data/raw.dvc data/processed.dvc
+git commit -m "feat(lk05): update dataset to v2.0 via continual learning pipeline and track diff"
+git tag -a v2.0-data -m "Release v2.0: Continual learning dataset"
+dvc push
+```
+
+#### 5. Audit dan Perbandingan Silsilah Data (`dvc diff` & `dvc status`)
+```bash
+# Audit perbedaan metadata antar dua versi dataset secara presisi
+dvc diff v1.0-data v2.0-data
+
+# Verifikasi sinkronisasi integritas data lokal dengan cloud storage MinIO
+dvc status
+# Output: "Data and pipelines are up to date."
+```
+
+#### 6. Pengambilan Data bagi Kontributor / CI/CD (`dvc pull`)
+```bash
+# Menarik binary dataset dari remote MinIO S3 berdasarkan hash pointer commit saat ini
+dvc pull
+```
+
+For complete technical architecture, MD5 Content-Addressable Storage (CAS), and time-travel guides, refer to [`docs/DATA_VERSIONING_DVC.md`](docs/DATA_VERSIONING_DVC.md) and [`docs/coursework/LK05_DATA_VERSIONING_DVC.md`](docs/coursework/LK05_DATA_VERSIONING_DVC.md).
 
 ---
 
