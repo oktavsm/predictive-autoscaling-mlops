@@ -7,11 +7,10 @@ Workload forecasting, pod scaling simulation, drift monitoring,
 cost analysis, and live traffic injection.
 """
 
-import json
 import math
 import os
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import requests
@@ -235,10 +234,18 @@ except Exception:
 
 model_name = health_data.get("model_name", "predictive-autoscaler")
 model_alias = health_data.get("model_alias", "champion")
-active_model_ver = str(health_data.get("model_version") or audit_data.get("retraining", {}).get("latest", {}).get("version", "v30"))
+active_model_ver = str(
+    health_data.get("model_version")
+    or audit_data.get("retraining", {}).get("latest", {}).get("version", "v30")
+)
 if not active_model_ver.startswith("v"):
     active_model_ver = f"v{active_model_ver}"
-active_algo = str(health_data.get("model_algorithm") or audit_data.get("retraining", {}).get("latest", {}).get("algorithm", "LightGBM Regressor (Optuna)"))
+active_algo = str(
+    health_data.get("model_algorithm")
+    or audit_data.get("retraining", {})
+    .get("latest", {})
+    .get("algorithm", "LightGBM Regressor (Optuna)")
+)
 is_healthy = health_data.get("status") == "healthy"
 replica_bounds = health_data.get("replica_bounds", {"min": 1, "max": 6})
 target_rps_cfg = health_data.get("target_rps_per_pod", 10.0)
@@ -252,7 +259,11 @@ except Exception:
     pass
 
 daemon_alive = workload_status.get("daemon_alive", False)
-daemon_state = workload_status.get("daemon_current_state") or workload_status.get("override_state") or "STEADY_NORMAL"
+daemon_state = (
+    workload_status.get("daemon_current_state")
+    or workload_status.get("override_state")
+    or "STEADY_NORMAL"
+)
 daemon_vus = workload_status.get("daemon_vus", 6)
 cmd_seq_id = workload_status.get("override_id", 0)
 
@@ -280,15 +291,25 @@ with st.sidebar:
     cfg_target_rps = st.number_input(
         "Target RPS per Pod",
         value=float(target_rps_cfg),
-        min_value=2.0, max_value=30.0, step=1.0,
+        min_value=2.0,
+        max_value=30.0,
+        step=1.0,
         help="Ideal throughput per PHP-FPM replica to keep P95 latency below 100 ms.",
     )
-    cfg_min_pods = st.number_input("Min Replicas", value=int(replica_bounds.get("min", 1)), min_value=1, max_value=2)
-    cfg_max_pods = st.number_input("Max Replicas", value=int(replica_bounds.get("max", 6)), min_value=2, max_value=8)
+    cfg_min_pods = st.number_input(
+        "Min Replicas", value=int(replica_bounds.get("min", 1)), min_value=1, max_value=2
+    )
+    cfg_max_pods = st.number_input(
+        "Max Replicas", value=int(replica_bounds.get("max", 6)), min_value=2, max_value=8
+    )
 
     st.divider()
     st.markdown("#### Telemetry Refresh")
-    auto_refresh = st.toggle("Auto-refresh", value=True, help="Periodically poll the audit API for fresh data without reloading the page.")
+    auto_refresh = st.toggle(
+        "Auto-refresh",
+        value=True,
+        help="Periodically poll the audit API for fresh data without reloading the page.",
+    )
     refresh_rate = st.select_slider(
         "Interval",
         options=[5, 10, 15, 30],
@@ -302,29 +323,45 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 header_html = (
     '<div class="hdr">'
-    '<div>'
+    "<div>"
     '<div class="hdr-title">Titipin MLOps &mdash; Predictive Autoscaling Console</div>'
     '<div class="hdr-sub">Closed-loop telemetry ingestion, workload forecasting (t+60 s), and proactive Kubernetes pod allocation.</div>'
-    '</div>'
+    "</div>"
     f'<div><span class="pill pill-ok">MODEL @champion {active_model_ver}</span></div>'
-    '</div>'
+    "</div>"
 )
 st.html(header_html)
 
 # Status strip
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    st.metric("Serving Engine", "HEALTHY" if is_healthy else "OFFLINE", delta="Sub-15 ms latency",
-              help="FastAPI inference container status in namespace mlops.")
+    st.metric(
+        "Serving Engine",
+        "HEALTHY" if is_healthy else "OFFLINE",
+        delta="Sub-15 ms latency",
+        help="FastAPI inference container status in namespace mlops.",
+    )
 with c2:
-    st.metric("Active Model", f"{active_model_ver} ({active_algo.split()[0]})", delta=f"@{model_alias}",
-              help="Currently serving champion model loaded into inference service memory.")
+    st.metric(
+        "Active Model",
+        f"{active_model_ver} ({active_algo.split()[0]})",
+        delta=f"@{model_alias}",
+        help="Currently serving champion model loaded into inference service memory.",
+    )
 with c3:
-    st.metric("Replica Range", f"{cfg_min_pods}–{cfg_max_pods} pods", delta=f"Target: {cfg_target_rps:.0f} RPS/pod",
-              help="Allowed pod scaling bounds enforced by the policy controller.")
+    st.metric(
+        "Replica Range",
+        f"{cfg_min_pods}–{cfg_max_pods} pods",
+        delta=f"Target: {cfg_target_rps:.0f} RPS/pod",
+        help="Allowed pod scaling bounds enforced by the policy controller.",
+    )
 with c4:
-    st.metric("Traffic Profile", daemon_state, delta=f"{daemon_vus} VUs {'(ONLINE)' if daemon_alive else '(STANDBY)'}",
-              help="Live workload profile running on 24/7 load generator VM cp-bcc.")
+    st.metric(
+        "Traffic Profile",
+        daemon_state,
+        delta=f"{daemon_vus} VUs {'(ONLINE)' if daemon_alive else '(STANDBY)'}",
+        help="Live workload profile running on 24/7 load generator VM cp-bcc.",
+    )
 
 st.html("<div style='height:6px'></div>")
 
@@ -340,16 +377,18 @@ st.html("<div style='height:6px'></div>")
     tab_benchmark,
     tab_registry,
     tab_k8s,
-) = st.tabs([
-    "Telemetry Audit",
-    "Scaling Simulator",
-    "Workload Injector",
-    "FinOps & Carbon",
-    "Drift & Retraining",
-    "HPA vs Predictive",
-    "Model Registry",
-    "Cluster Architecture",
-])
+) = st.tabs(
+    [
+        "Telemetry Audit",
+        "Scaling Simulator",
+        "Workload Injector",
+        "FinOps & Carbon",
+        "Drift & Retraining",
+        "HPA vs Predictive",
+        "Model Registry",
+        "Cluster Architecture",
+    ]
+)
 
 
 # =========================================================================
@@ -370,7 +409,9 @@ with tab_audit:
 
         today_utc = datetime.now(timezone.utc)
         today_wib = today_utc.astimezone(timezone(timedelta(hours=7)))
-        now_ts_str = f"{today_utc.strftime('%Y-%m-%d %H:%M:%S UTC')} ({today_wib.strftime('%H:%M:%S WIB')})"
+        now_ts_str = (
+            f"{today_utc.strftime('%Y-%m-%d %H:%M:%S UTC')} ({today_wib.strftime('%H:%M:%S WIB')})"
+        )
         now_tag = today_utc.strftime("%Y%m%d")
 
         if not audit:
@@ -407,7 +448,9 @@ with tab_audit:
                         "trigger": "Scheduled Continuous Training (K8s CronJob)",
                     },
                     "challenger": {
-                        "version": str(max(1, int(active_model_ver.lstrip("v")) - 1)) if active_model_ver.lstrip("v").isdigit() else "29",
+                        "version": str(max(1, int(active_model_ver.lstrip("v")) - 1))
+                        if active_model_ver.lstrip("v").isdigit()
+                        else "29",
                         "timestamp": now_ts_str,
                         "algorithm": "LightGBM Regressor (Optuna)",
                         "val_mae": "0.1246 RPS",
@@ -444,7 +487,7 @@ with tab_audit:
                 f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
                 f'<span class="pill {pill_cls}">{pill_txt}</span>'
                 f'<span style="font-size:12px;color:#71717A;">Last sync: <b style="color:#A1A1AA;">{now_wib}</b></span>'
-                f'</div>'
+                f"</div>"
             )
         with cb2:
             if st.button("Refresh now", use_container_width=True):
@@ -458,23 +501,42 @@ with tab_audit:
         recent_decs = api.get("recent_decisions", [])
         acts = audit.get("scaling_actions", {})
         recent_acts = acts.get("recent_actions", [])
-        last_act = recent_acts[0] if recent_acts else {"action": "MAINTAIN", "from_replicas": 1, "to_replicas": 1, "status": "STABLE"}
+        last_act = (
+            recent_acts[0]
+            if recent_acts
+            else {"action": "MAINTAIN", "from_replicas": 1, "to_replicas": 1, "status": "STABLE"}
+        )
 
         m1, m2, m3, m4 = st.columns(4)
         with m1:
-            st.metric("Last Ingestion", f"{ing.get('records_count', 5760):,} rows", delta=f"Window: {ing.get('window_minutes', 1440)}m (24h)",
-                      help="Volume and observation window of the most recent telemetry collection.")
+            st.metric(
+                "Last Ingestion",
+                f"{ing.get('records_count', 5760):,} rows",
+                delta=f"Window: {ing.get('window_minutes', 1440)}m (24h)",
+                help="Volume and observation window of the most recent telemetry collection.",
+            )
         with m2:
-            st.metric("Last Retrain", f"Model v{latest.get('version', '18')}", delta=f"MAE: {latest.get('val_mae', '0.0210 RPS')}",
-                      help="Active champion model version from the MLflow registry.")
+            st.metric(
+                "Last Retrain",
+                f"Model v{latest.get('version', '18')}",
+                delta=f"MAE: {latest.get('val_mae', '0.0210 RPS')}",
+                help="Active champion model version from the MLflow registry.",
+            )
         with m3:
             total_api_calls = api.get("total_calls_tracked", 1440)
-            st.metric("API Calls Tracked", f"{total_api_calls:,}", delta=f"Buffer: {len(recent_decs)}/60 cycles (15m window)",
-                      help="Cumulative scaling decision evaluations executed by FastAPI serving container (sliding 60-cycle telemetry buffer).")
+            st.metric(
+                "API Calls Tracked",
+                f"{total_api_calls:,}",
+                delta=f"Buffer: {len(recent_decs)}/60 cycles (15m window)",
+                help="Cumulative scaling decision evaluations executed by FastAPI serving container (sliding 60-cycle telemetry buffer).",
+            )
         with m4:
-            st.metric("Last Scale Action", f"{last_act['action']} ({last_act['from_replicas']} > {last_act['to_replicas']})",
-                      delta=last_act.get("status", "STABLE"),
-                      help="Most recent Kubernetes replica change by the predictive scaler.")
+            st.metric(
+                "Last Scale Action",
+                f"{last_act['action']} ({last_act['from_replicas']} > {last_act['to_replicas']})",
+                delta=last_act.get("status", "STABLE"),
+                help="Most recent Kubernetes replica change by the predictive scaler.",
+            )
 
         st.html("<div style='height:10px'></div>")
 
@@ -497,14 +559,14 @@ with tab_audit:
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
                 f'<span style="font-size:13px;font-weight:600;color:#FAFAFA;">Ingestion Status</span>'
                 f'<span class="pill pill-ok">{ing.get("status", "HEALTHY_INGESTED")}</span>'
-                f'</div>'
+                f"</div>"
                 f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">'
-                f'<li><b>Timestamp:</b> <code>{ing.get("timestamp", now_ts_str)}</code></li>'
-                f'<li><b>Records:</b> <code>{ing.get("records_count", 5760):,}</code> telemetry rows</li>'
-                f'<li><b>Window:</b> <code>{ing.get("window_minutes", 1440)} minutes (24h continuous scrape)</code></li>'
-                f'<li><b>Raw Source:</b> <code>{ing.get("raw_dataset", f"data/raw/metrics_{now_tag}_020011.csv")}</code></li>'
-                f'</ul>'
-                f'</div>'
+                f"<li><b>Timestamp:</b> <code>{ing.get('timestamp', now_ts_str)}</code></li>"
+                f"<li><b>Records:</b> <code>{ing.get('records_count', 5760):,}</code> telemetry rows</li>"
+                f"<li><b>Window:</b> <code>{ing.get('window_minutes', 1440)} minutes (24h continuous scrape)</code></li>"
+                f"<li><b>Raw Source:</b> <code>{ing.get('raw_dataset', f'data/raw/metrics_{now_tag}_020011.csv')}</code></li>"
+                f"</ul>"
+                f"</div>"
             )
         with ci2:
             st.html(
@@ -512,22 +574,29 @@ with tab_audit:
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
                 f'<span style="font-size:13px;font-weight:600;color:#FAFAFA;">Feature Store & MinIO S3 DVC</span>'
                 f'<span class="pill pill-ok">Synced (s3://mlops-dvc)</span>'
-                f'</div>'
+                f"</div>"
                 f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">'
-                f'<li><b>Processed Dataset:</b> <code>{ing.get("target_dataset", f"data/processed/metrics_processed_{now_tag}_020017.csv")}</code></li>'
-                f'<li><b>MinIO CAS MD5:</b> <code>{ing.get("md5", "live_cas_synced")}</code></li>'
-                f'<li><b>Bucket:</b> <code>{ing.get("bucket", "s3://mlops-dvc")}</code></li>'
-                f'<li><b>Local Sync Command:</b> <code>make sync-data</code></li>'
-                f'</ul>'
-                f'</div>'
+                f"<li><b>Processed Dataset:</b> <code>{ing.get('target_dataset', f'data/processed/metrics_processed_{now_tag}_020017.csv')}</code></li>"
+                f"<li><b>MinIO CAS MD5:</b> <code>{ing.get('md5', 'live_cas_synced')}</code></li>"
+                f"<li><b>Bucket:</b> <code>{ing.get('bucket', 's3://mlops-dvc')}</code></li>"
+                f"<li><b>Local Sync Command:</b> <code>make sync-data</code></li>"
+                f"</ul>"
+                f"</div>"
             )
 
         ing_history = audit.get("ingestion_history", [])
         if ing_history:
-            df_ing = pd.DataFrame(ing_history).rename(columns={
-                "batch": "Batch", "time_utc": "Time (UTC)", "source": "Source",
-                "records": "Records", "window": "Window", "output": "Output Dataset", "status": "DVC Status"
-            })
+            df_ing = pd.DataFrame(ing_history).rename(
+                columns={
+                    "batch": "Batch",
+                    "time_utc": "Time (UTC)",
+                    "source": "Source",
+                    "records": "Records",
+                    "window": "Window",
+                    "output": "Output Dataset",
+                    "status": "DVC Status",
+                }
+            )
             st.dataframe(df_ing.set_index("Batch"), use_container_width=True)
         else:
             st.info("No ingestion batches recorded in registry.")
@@ -555,15 +624,15 @@ with tab_audit:
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
                 f'<span class="pill pill-ok">CHAMPION — PRODUCTION</span>'
                 f'<span style="font-size:11px;color:#5EEAD4;font-family:monospace;">@champion</span>'
-                f'</div>'
+                f"</div>"
                 f'<div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {latest.get("version", active_model_ver.lstrip("v"))} — {latest.get("algorithm", active_algo)}</div>'
                 f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">'
-                f'<li><b>Trained:</b> <code>{latest.get("timestamp", now_ts_str)}</code></li>'
-                f'<li><b>Trigger:</b> {latest.get("trigger","Scheduled Continuous Training (K8s CronJob)")}</li>'
-                f'<li><b>Validation MAE:</b> <b>{latest.get("val_mae","0.0880 RPS")}</b></li>'
-                f'<li><b>Deployment:</b> Hot-reloaded, zero restarts</li>'
-                f'</ul>'
-                f'</div>'
+                f"<li><b>Trained:</b> <code>{latest.get('timestamp', now_ts_str)}</code></li>"
+                f"<li><b>Trigger:</b> {latest.get('trigger', 'Scheduled Continuous Training (K8s CronJob)')}</li>"
+                f"<li><b>Validation MAE:</b> <b>{latest.get('val_mae', '0.0880 RPS')}</b></li>"
+                f"<li><b>Deployment:</b> Hot-reloaded, zero restarts</li>"
+                f"</ul>"
+                f"</div>"
             )
         with cr2:
             st.html(
@@ -571,24 +640,30 @@ with tab_audit:
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
                 f'<span class="pill pill-warn">CHALLENGER — STAGING</span>'
                 f'<span style="font-size:11px;color:#FCD34D;font-family:monospace;">@challenger</span>'
-                f'</div>'
-                f'<div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {challenger.get("version","29")} — {challenger.get("algorithm","LightGBM Regressor (Optuna)")}</div>'
+                f"</div>"
+                f'<div style="font-size:14px;font-weight:600;color:#FAFAFA;margin-bottom:4px;">Version {challenger.get("version", "29")} — {challenger.get("algorithm", "LightGBM Regressor (Optuna)")}</div>'
                 f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:4px 0 0;padding-left:16px;">'
-                f'<li><b>Trained:</b> <code>{challenger.get("timestamp", now_ts_str)}</code></li>'
-                f'<li><b>Trigger:</b> {challenger.get("trigger","Autonomous Evaluation Gate")}</li>'
-                f'<li><b>Validation MAE:</b> {challenger.get("val_mae","0.1246 RPS")} (inference: 2.8 ms)</li>'
-                f'<li><b>Result:</b> Retained as staging candidate</li>'
-                f'</ul>'
-                f'</div>'
+                f"<li><b>Trained:</b> <code>{challenger.get('timestamp', now_ts_str)}</code></li>"
+                f"<li><b>Trigger:</b> {challenger.get('trigger', 'Autonomous Evaluation Gate')}</li>"
+                f"<li><b>Validation MAE:</b> {challenger.get('val_mae', '0.1246 RPS')} (inference: 2.8 ms)</li>"
+                f"<li><b>Result:</b> Retained as staging candidate</li>"
+                f"</ul>"
+                f"</div>"
             )
 
         history = ret.get("history", [])
         if history:
             st.markdown("##### Model Version Lineage")
-            df_h = pd.DataFrame(history).rename(columns={
-                "version": "Version", "timestamp": "Trained (UTC)", "algorithm": "Algorithm",
-                "val_mae": "MAE", "stage": "Stage", "trigger": "Trigger",
-            })
+            df_h = pd.DataFrame(history).rename(
+                columns={
+                    "version": "Version",
+                    "timestamp": "Trained (UTC)",
+                    "algorithm": "Algorithm",
+                    "val_mae": "MAE",
+                    "stage": "Stage",
+                    "trigger": "Trigger",
+                }
+            )
             st.dataframe(df_h.set_index("Version"), use_container_width=True)
 
         st.html("<div style='height:10px'></div>")
@@ -607,12 +682,21 @@ with tab_audit:
         decisions = api.get("recent_decisions", [])
         if decisions:
             df_d = pd.DataFrame(decisions)
-            col_map = {"timestamp": "Time (UTC)", "input_rps": "RPS In", "input_cpu": "CPU",
-                       "input_p95_ms": "P95 (ms)", "current_replicas": "Pods Now",
-                       "predicted_rps_60s": "Predicted RPS", "desired_replicas": "Target Pods",
-                       "action": "Decision", "latency_ms": "Latency (ms)"}
+            col_map = {
+                "timestamp": "Time (UTC)",
+                "input_rps": "RPS In",
+                "input_cpu": "CPU",
+                "input_p95_ms": "P95 (ms)",
+                "current_replicas": "Pods Now",
+                "predicted_rps_60s": "Predicted RPS",
+                "desired_replicas": "Target Pods",
+                "action": "Decision",
+                "latency_ms": "Latency (ms)",
+            }
             cols = [c for c in col_map if c in df_d.columns]
-            st.dataframe(df_d[cols].rename(columns=col_map).set_index("Time (UTC)"), use_container_width=True)
+            st.dataframe(
+                df_d[cols].rename(columns=col_map).set_index("Time (UTC)"), use_container_width=True
+            )
         else:
             st.info("No API calls recorded in the current ring buffer.")
 
@@ -634,12 +718,30 @@ with tab_audit:
 
         if recent_acts:
             df_a = pd.DataFrame(recent_acts)
-            df_a["Transition"] = df_a.apply(lambda r: f"{r.get('from_replicas',1)} > {r.get('to_replicas',1)} pods", axis=1)
-            df_a = df_a.rename(columns={
-                "timestamp": "Time (UTC)", "action": "Action", "predicted_rps": "Trigger RPS",
-                "reason": "Controller Reason", "status": "K8s Status",
-            })
-            show = [c for c in ["Time (UTC)", "Action", "Transition", "Trigger RPS", "Controller Reason", "K8s Status"] if c in df_a.columns]
+            df_a["Transition"] = df_a.apply(
+                lambda r: f"{r.get('from_replicas', 1)} > {r.get('to_replicas', 1)} pods", axis=1
+            )
+            df_a = df_a.rename(
+                columns={
+                    "timestamp": "Time (UTC)",
+                    "action": "Action",
+                    "predicted_rps": "Trigger RPS",
+                    "reason": "Controller Reason",
+                    "status": "K8s Status",
+                }
+            )
+            show = [
+                c
+                for c in [
+                    "Time (UTC)",
+                    "Action",
+                    "Transition",
+                    "Trigger RPS",
+                    "Controller Reason",
+                    "K8s Status",
+                ]
+                if c in df_a.columns
+            ]
             st.dataframe(df_a[show].set_index("Time (UTC)"), use_container_width=True)
         else:
             st.info("No scaling actions recorded in the current buffer.")
@@ -681,28 +783,62 @@ with tab_sim:
 
     ci1, ci2 = st.columns(2)
     with ci1:
-        sim_rps = st.slider("Request Rate (RPS)", 0.0, 90.0, float(st.session_state.get("cur_rps", 12.5)), step=1.0,
-                             help="Incoming HTTP requests per second from Caddy Ingress.")
-        sim_cpu = st.slider("CPU Usage (cores)", 0.0, 2.5, float(st.session_state.get("cur_cpu", 0.32)), step=0.05,
-                            help="Total CPU consumption across PHP-FPM workers.")
+        sim_rps = st.slider(
+            "Request Rate (RPS)",
+            0.0,
+            90.0,
+            float(st.session_state.get("cur_rps", 12.5)),
+            step=1.0,
+            help="Incoming HTTP requests per second from Caddy Ingress.",
+        )
+        sim_cpu = st.slider(
+            "CPU Usage (cores)",
+            0.0,
+            2.5,
+            float(st.session_state.get("cur_cpu", 0.32)),
+            step=0.05,
+            help="Total CPU consumption across PHP-FPM workers.",
+        )
     with ci2:
-        sim_p95 = st.slider("P95 Latency (s)", 0.010, 0.400, float(st.session_state.get("cur_p95", 0.038)), step=0.005,
-                            help="Server P95 response latency. SLO target: < 0.100 s.")
-        sim_mem = st.slider("PHP-FPM Memory (MB)", 50.0, 500.0, float(st.session_state.get("cur_mem", 130.0)), step=10.0,
-                            help="Total physical memory allocated to PHP-FPM workers.")
+        sim_p95 = st.slider(
+            "P95 Latency (s)",
+            0.010,
+            0.400,
+            float(st.session_state.get("cur_p95", 0.038)),
+            step=0.005,
+            help="Server P95 response latency. SLO target: < 0.100 s.",
+        )
+        sim_mem = st.slider(
+            "PHP-FPM Memory (MB)",
+            50.0,
+            500.0,
+            float(st.session_state.get("cur_mem", 130.0)),
+            step=10.0,
+            help="Total physical memory allocated to PHP-FPM workers.",
+        )
 
-    btn_calc = st.button("Compute forecast (t+60 s) and pod recommendation", type="primary", use_container_width=True)
+    btn_calc = st.button(
+        "Compute forecast (t+60 s) and pod recommendation", type="primary", use_container_width=True
+    )
 
     if btn_calc or "sim_res" in st.session_state:
         if btn_calc:
             payload = {
-                "request_rate": sim_rps, "php_cpu_cores": sim_cpu,
-                "p95_latency_seconds": sim_p95, "php_memory_mb": sim_mem,
-                "rps_lag1": sim_rps * 0.95, "rps_lag2": sim_rps * 0.90,
-                "cpu_lag1": sim_cpu * 0.95, "cpu_lag2": sim_cpu * 0.90,
-                "rps_roll_mean_30s": sim_rps * 0.98, "rps_roll_mean_60s": sim_rps * 0.95,
-                "rps_roll_std_60s": 1.2, "rps_delta": 0.5, "cpu_delta": 0.02,
-                "hour": datetime.now().hour, "minute": datetime.now().minute,
+                "request_rate": sim_rps,
+                "php_cpu_cores": sim_cpu,
+                "p95_latency_seconds": sim_p95,
+                "php_memory_mb": sim_mem,
+                "rps_lag1": sim_rps * 0.95,
+                "rps_lag2": sim_rps * 0.90,
+                "cpu_lag1": sim_cpu * 0.95,
+                "cpu_lag2": sim_cpu * 0.90,
+                "rps_roll_mean_30s": sim_rps * 0.98,
+                "rps_roll_mean_60s": sim_rps * 0.95,
+                "rps_roll_std_60s": 1.2,
+                "rps_delta": 0.5,
+                "cpu_delta": 0.02,
+                "hour": datetime.now().hour,
+                "minute": datetime.now().minute,
                 "current_replicas": max(1, min(cfg_max_pods, math.ceil(sim_rps / cfg_target_rps))),
             }
             try:
@@ -714,7 +850,9 @@ with tab_sim:
                     st.session_state["sim_lat"] = t_lat
             except Exception:
                 pred_workload = max(0.5, sim_rps * 1.08 + (sim_cpu * 4.0))
-                rec_pods = max(cfg_min_pods, min(cfg_max_pods, math.ceil(pred_workload / cfg_target_rps)))
+                rec_pods = max(
+                    cfg_min_pods, min(cfg_max_pods, math.ceil(pred_workload / cfg_target_rps))
+                )
                 st.session_state["sim_res"] = {
                     "current_workload_rps": sim_rps,
                     "predicted_workload_rps_60s": round(pred_workload, 2),
@@ -732,18 +870,33 @@ with tab_sim:
         st.html("<div style='height:8px'></div>")
         r1, r2, r3, r4 = st.columns(4)
         with r1:
-            st.metric("Forecast (t+60 s)", f"{pred_v:.1f} RPS", delta=f"{pred_v - cur_v:+.1f} RPS",
-                      help="Predicted request rate 60 seconds from now.")
+            st.metric(
+                "Forecast (t+60 s)",
+                f"{pred_v:.1f} RPS",
+                delta=f"{pred_v - cur_v:+.1f} RPS",
+                help="Predicted request rate 60 seconds from now.",
+            )
         with r2:
-            st.metric("Recommended Pods", f"{pods_v}", delta=res.get("scaling_action", "MAINTAIN"),
-                      help="ceil(predicted_RPS / target_RPS_per_pod), clamped to bounds.")
+            st.metric(
+                "Recommended Pods",
+                f"{pods_v}",
+                delta=res.get("scaling_action", "MAINTAIN"),
+                help="ceil(predicted_RPS / target_RPS_per_pod), clamped to bounds.",
+            )
         with r3:
-            st.metric("Cluster Capacity", f"{pods_v * cfg_target_rps:.0f} RPS",
-                      delta=f"Headroom: +{(pods_v * cfg_target_rps) - pred_v:.1f} RPS",
-                      help="Total safe throughput at the recommended replica count.")
+            st.metric(
+                "Cluster Capacity",
+                f"{pods_v * cfg_target_rps:.0f} RPS",
+                delta=f"Headroom: +{(pods_v * cfg_target_rps) - pred_v:.1f} RPS",
+                help="Total safe throughput at the recommended replica count.",
+            )
         with r4:
-            st.metric("Inference Latency", f"{st.session_state.get('sim_lat', 3.5):.1f} ms", delta="In-memory",
-                      help="Time to execute the ML model prediction.")
+            st.metric(
+                "Inference Latency",
+                f"{st.session_state.get('sim_lat', 3.5):.1f} ms",
+                delta="In-memory",
+                help="Time to execute the ML model prediction.",
+            )
 
         # Pod visualizer
         st.markdown("#### Pod Allocation — `titipin/laravel-backend`")
@@ -754,19 +907,19 @@ with tab_sim:
                     st.html(
                         f'<div class="pod-box active">'
                         f'<div style="width:8px;height:8px;border-radius:50%;background:#14B8A6;margin:0 auto 6px;"></div>'
-                        f'<div class="pod-name">Pod {i+1}</div>'
+                        f'<div class="pod-name">Pod {i + 1}</div>'
                         f'<span class="pill pill-ok" style="font-size:9px;">RUNNING</span>'
                         f'<div class="pod-detail" style="margin-top:4px;">{cfg_target_rps:.0f} RPS</div>'
-                        f'</div>'
+                        f"</div>"
                     )
                 else:
                     st.html(
                         f'<div class="pod-box">'
                         f'<div style="width:8px;height:8px;border-radius:50%;background:#3F3F46;margin:0 auto 6px;"></div>'
-                        f'<div class="pod-name" style="color:#52525B;">Pod {i+1}</div>'
+                        f'<div class="pod-name" style="color:#52525B;">Pod {i + 1}</div>'
                         f'<span style="font-size:9px;color:#52525B;font-weight:600;">STANDBY</span>'
                         f'<div class="pod-detail" style="margin-top:4px;">Scaled down</div>'
-                        f'</div>'
+                        f"</div>"
                     )
 
 
@@ -825,7 +978,13 @@ with tab_injector:
         last_hb = w_live.get("last_heartbeat_seconds_ago", 0)
 
         # Helper to render clean cards with zero markdown indentation issues
-        def render_injector_card(title: str, subtitle: str, is_active: bool, in_transition: bool = False, accent_color: str = "#14B8A6"):
+        def render_injector_card(
+            title: str,
+            subtitle: str,
+            is_active: bool,
+            in_transition: bool = False,
+            accent_color: str = "#14B8A6",
+        ):
             if is_active and in_transition:
                 badge = '<span class="pill pill-warn" style="margin-bottom:6px;display:inline-block;">SWITCHING TO PROFILE (~2s)...</span>'
             elif is_active:
@@ -834,35 +993,43 @@ with tab_injector:
                 badge = '<span class="pill pill-mute" style="margin-bottom:6px;display:inline-block;">STANDBY</span>'
 
             border_c = accent_color if is_active else "#27272A"
-            bg_c = "rgba(20,184,166,0.05)" if (is_active and accent_color == "#14B8A6") else ("rgba(244,63,94,0.06)" if is_active else "#18181B")
+            bg_c = (
+                "rgba(20,184,166,0.05)"
+                if (is_active and accent_color == "#14B8A6")
+                else ("rgba(244,63,94,0.06)" if is_active else "#18181B")
+            )
             card_html = (
                 f'<div class="card" style="border-left: 3px solid {border_c};background:{bg_c};margin-bottom:8px;padding:12px 14px;">'
-                f'{badge}'
+                f"{badge}"
                 f'<div style="font-weight:600;color:#FAFAFA;font-size:13px;margin-top:3px;">{title}</div>'
                 f'<div style="font-size:12px;color:#A1A1AA;margin:3px 0 6px;">{subtitle}</div>'
-                f'</div>'
+                f"</div>"
             )
             st.html(card_html)
 
         # Daemon Status Card
         if w_daemon_alive:
-            switching_badge = ' &bull; <span style="color:#F59E0B;font-weight:600;">Switching state...</span>' if is_transitioning else ''
+            switching_badge = (
+                ' &bull; <span style="color:#F59E0B;font-weight:600;">Switching state...</span>'
+                if is_transitioning
+                else ""
+            )
             status_txt = (
                 '<div style="background:rgba(20,184,166,0.08);border:1px solid #14B8A6;border-radius:6px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">'
-                '<div>'
+                "<div>"
                 '<span class="pill pill-ok">DAEMON ONLINE</span>'
                 '<span style="font-size:13px;font-weight:600;color:#FAFAFA;margin-left:8px;">VM cp-bcc (proxy.bccdev.id)</span>'
                 f'<div style="font-size:12px;color:#A1A1AA;margin-top:4px;">Active Profile: <b style="color:#5EEAD4;">{w_curr_state}</b> ({w_vus} VUs) &bull; Time remaining: <b>{w_rem_min}m {w_rem_sec:02d}s</b>{switching_badge}</div>'
-                '</div>'
+                "</div>"
                 f'<div style="text-align:right;"><span style="font-size:11px;color:#71717A;">Heartbeat: {last_hb:.1f}s ago</span></div>'
-                '</div>'
+                "</div>"
             )
         else:
             status_txt = (
                 '<div style="background:rgba(245,158,11,0.08);border:1px solid #F59E0B;border-radius:6px;padding:12px 16px;margin-bottom:14px;">'
                 '<span class="pill pill-warn">CONNECTING TO DAEMON</span>'
                 '<span style="font-size:13px;color:#FAFAFA;margin-left:8px;">Awaiting heartbeat from VM cp-bcc load generator...</span>'
-                '</div>'
+                "</div>"
             )
         st.html(status_txt)
 
@@ -871,7 +1038,7 @@ with tab_injector:
 
         with col_w1:
             # Profile 1: Steady Normal
-            is_steady = (w_curr_state == "STEADY_NORMAL")
+            is_steady = w_curr_state == "STEADY_NORMAL"
             render_injector_card(
                 title="1. Steady Normal (Baseline Traffic)",
                 subtitle="4–8 k6 VUs &bull; ~5–12 RPS &bull; Optimal for single pod baseline.",
@@ -880,11 +1047,20 @@ with tab_injector:
                 accent_color="#14B8A6",
             )
             if is_steady:
-                st.button("Active: Steady Normal (Running) ✅", key="btn_steady", disabled=True, use_container_width=True)
+                st.button(
+                    "Active: Steady Normal (Running) ✅",
+                    key="btn_steady",
+                    disabled=True,
+                    use_container_width=True,
+                )
             else:
                 if st.button("Activate Steady Normal", key="btn_steady", use_container_width=True):
                     try:
-                        requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "STEADY_NORMAL"}, timeout=3)
+                        requests.post(
+                            f"{INFERENCE_API_URL}/workload/trigger",
+                            json={"state": "STEADY_NORMAL"},
+                            timeout=3,
+                        )
                         st.success("Activating `STEADY_NORMAL` (4-8 VUs). VM daemon switching...")
                         st.rerun()
                     except Exception as e:
@@ -893,7 +1069,7 @@ with tab_injector:
             st.html("<div style='height:8px;'></div>")
 
             # Profile 2: Rush Hour Surge
-            is_burst = (w_curr_state == "BURST_BUSY")
+            is_burst = w_curr_state == "BURST_BUSY"
             render_injector_card(
                 title="2. Rush Hour Surge (High Load)",
                 subtitle="18–28 k6 VUs &bull; ~20–40 RPS &bull; Scaler anticipates scale-up to 3-4 pods.",
@@ -902,19 +1078,30 @@ with tab_injector:
                 accent_color="#F59E0B",
             )
             if is_burst:
-                st.button("Active: Rush Hour Surge (Running) ✅", key="btn_burst", disabled=True, use_container_width=True)
+                st.button(
+                    "Active: Rush Hour Surge (Running) ✅",
+                    key="btn_burst",
+                    disabled=True,
+                    use_container_width=True,
+                )
             else:
                 if st.button("Activate Rush Hour Surge", key="btn_burst", use_container_width=True):
                     try:
-                        requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "BURST_BUSY"}, timeout=3)
-                        st.success("Activating `BURST_BUSY` (18-28 VUs). Scaler anticipating surge...")
+                        requests.post(
+                            f"{INFERENCE_API_URL}/workload/trigger",
+                            json={"state": "BURST_BUSY"},
+                            timeout=3,
+                        )
+                        st.success(
+                            "Activating `BURST_BUSY` (18-28 VUs). Scaler anticipating surge..."
+                        )
                         st.rerun()
                     except Exception as e:
                         st.error(f"Failed to send trigger: {e}")
 
         with col_w2:
             # Profile 3: Flash-Sale Spike
-            is_flash = (w_curr_state == "FLASH_ANOMALY")
+            is_flash = w_curr_state == "FLASH_ANOMALY"
             render_injector_card(
                 title="3. Flash-Sale Spike (Massive Surge)",
                 subtitle="50–75 k6 VUs &bull; ~60–95 RPS &bull; Proactively expands to 6 pods capacity.",
@@ -923,12 +1110,23 @@ with tab_injector:
                 accent_color="#06B6D4",
             )
             if is_flash:
-                st.button("Active: Flash-Sale Spike (Running) ⚡", key="btn_flash", disabled=True, use_container_width=True)
+                st.button(
+                    "Active: Flash-Sale Spike (Running) ⚡",
+                    key="btn_flash",
+                    disabled=True,
+                    use_container_width=True,
+                )
             else:
                 if st.button("Trigger Flash-Sale Spike", key="btn_flash", use_container_width=True):
                     try:
-                        requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "FLASH_ANOMALY"}, timeout=3)
-                        st.success("Triggering `FLASH_ANOMALY` (50-75 VUs)! Scaler scaling to 6 pods...")
+                        requests.post(
+                            f"{INFERENCE_API_URL}/workload/trigger",
+                            json={"state": "FLASH_ANOMALY"},
+                            timeout=3,
+                        )
+                        st.success(
+                            "Triggering `FLASH_ANOMALY` (50-75 VUs)! Scaler scaling to 6 pods..."
+                        )
                         st.rerun()
                     except Exception as e:
                         st.error(f"Failed to send trigger: {e}")
@@ -936,7 +1134,7 @@ with tab_injector:
             st.html("<div style='height:8px;'></div>")
 
             # Profile 4: Idle Silent
-            is_idle = (w_curr_state == "IDLE_SILENT")
+            is_idle = w_curr_state == "IDLE_SILENT"
             render_injector_card(
                 title="4. Quiet / Idle Mode (Low Traffic)",
                 subtitle="0–1 k6 VUs &bull; ~0–1 RPS &bull; Smooth cooldown & scale down to 1 pod.",
@@ -945,19 +1143,30 @@ with tab_injector:
                 accent_color="#71717A",
             )
             if is_idle:
-                st.button("Active: Idle Mode (Running) 🌙", key="btn_idle", disabled=True, use_container_width=True)
+                st.button(
+                    "Active: Idle Mode (Running) 🌙",
+                    key="btn_idle",
+                    disabled=True,
+                    use_container_width=True,
+                )
             else:
                 if st.button("Activate Idle Mode", key="btn_idle", use_container_width=True):
                     try:
-                        requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "IDLE_SILENT"}, timeout=3)
-                        st.success("Activating `IDLE_SILENT` (0-1 VUs). Traffic dropping to 0 RPS...")
+                        requests.post(
+                            f"{INFERENCE_API_URL}/workload/trigger",
+                            json={"state": "IDLE_SILENT"},
+                            timeout=3,
+                        )
+                        st.success(
+                            "Activating `IDLE_SILENT` (0-1 VUs). Traffic dropping to 0 RPS..."
+                        )
                         st.rerun()
                     except Exception as e:
                         st.error(f"Failed to send trigger: {e}")
 
         # Profile 5: Dedicated Data Drift & Model Degradation Scenario Card
         st.html("<div style='height:12px'></div>")
-        is_drift = (w_curr_state == "DRIFT_ANOMALY")
+        is_drift = w_curr_state == "DRIFT_ANOMALY"
 
         render_injector_card(
             title="5. Data Drift & Model Degradation Scenario (Distribution Shift)",
@@ -969,19 +1178,37 @@ with tab_injector:
 
         col_dr1, col_dr2 = st.columns([3, 1])
         with col_dr1:
-            drift_btn_label = "⚡ Re-inject Telemetry Data Drift (45–55 VUs)" if is_drift else "⚡ Inject Telemetry Data Drift (Simulate Distribution Shift)"
+            drift_btn_label = (
+                "⚡ Re-inject Telemetry Data Drift (45–55 VUs)"
+                if is_drift
+                else "⚡ Inject Telemetry Data Drift (Simulate Distribution Shift)"
+            )
             if st.button(drift_btn_label, key="btn_drift", use_container_width=True):
                 try:
-                    requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "DRIFT_ANOMALY"}, timeout=3)
+                    requests.post(
+                        f"{INFERENCE_API_URL}/workload/trigger",
+                        json={"state": "DRIFT_ANOMALY"},
+                        timeout=3,
+                    )
                     st.session_state["drift_active"] = True
-                    st.success("🚨 Data drift injected! Autonomous Event-Driven pipeline running. Watching progression live below...")
+                    st.success(
+                        "🚨 Data drift injected! Autonomous Event-Driven pipeline running. Watching progression live below..."
+                    )
                     st.rerun()
                 except Exception as e:
                     st.error(f"Failed to inject drift: {e}")
         with col_dr2:
-            if st.button("🔄 Reset Baseline", use_container_width=True, help="Reset VM traffic generator to baseline 6 VUs (~8 RPS)"):
+            if st.button(
+                "🔄 Reset Baseline",
+                use_container_width=True,
+                help="Reset VM traffic generator to baseline 6 VUs (~8 RPS)",
+            ):
                 try:
-                    requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "STEADY_NORMAL"}, timeout=3)
+                    requests.post(
+                        f"{INFERENCE_API_URL}/workload/trigger",
+                        json={"state": "STEADY_NORMAL"},
+                        timeout=3,
+                    )
                     st.session_state.pop("drift_active", None)
                     st.session_state.pop("retrain_result", None)
                     st.success("Reset to baseline traffic (6 VUs).")
@@ -992,14 +1219,25 @@ with tab_injector:
         # ---------------------------------------------------------------------
         # Progressive Fully Autonomous MLOps Closed-Loop Walkthrough Console
         # ---------------------------------------------------------------------
-        show_closed_loop = bool(is_drift or st.session_state.get("drift_active", False) or auto_active or auto_stage_idx > 0)
+        show_closed_loop = bool(
+            is_drift
+            or st.session_state.get("drift_active", False)
+            or auto_active
+            or auto_stage_idx > 0
+        )
         if show_closed_loop:
             st.markdown("---")
             st.markdown("#### 🔄 Live MLOps Lifetime Monitor: Drift, Ingestion & Retraining")
 
             # Progress Bar
-            progress_val = min(1.0, max(0.05, float(auto_progress_pct) / 100.0)) if (auto_active or auto_stage_idx > 0) else 0.05
-            st.progress(progress_val, text=f"MLOps Autonomous Lifecycle: {auto_progress_pct}% Completed")
+            progress_val = (
+                min(1.0, max(0.05, float(auto_progress_pct) / 100.0))
+                if (auto_active or auto_stage_idx > 0)
+                else 0.05
+            )
+            st.progress(
+                progress_val, text=f"MLOps Autonomous Lifecycle: {auto_progress_pct}% Completed"
+            )
 
             # Autonomous Status Banner
             if auto_stage_idx >= 4:
@@ -1010,11 +1248,17 @@ with tab_injector:
                 status_text = f"☸️ <b>Stage 3/4 Active:</b> Ingestion synced & Kubernetes Job <code>{auto_k8s_job or 'drift-retrain'}</code> running on cluster..."
             elif auto_stage_idx == 2:
                 status_color = "#F59E0B"
-                countdown_txt = f" (Memicu Ingestion & K8s Job otomatis dalam <b>{countdown}s</b>)" if countdown > 0 else ""
+                countdown_txt = (
+                    f" (Memicu Ingestion & K8s Job otomatis dalam <b>{countdown}s</b>)"
+                    if countdown > 0
+                    else ""
+                )
                 status_text = f"🚨 <b>Stage 2/4 Active:</b> Population Stability Index (PSI: 0.3842 > 0.20) terdeteksi!{countdown_txt}"
             else:
                 status_color = "#F43F5E"
-                countdown_txt = f" (Evaluasi PSI drift dalam <b>{countdown}s</b>)" if countdown > 0 else ""
+                countdown_txt = (
+                    f" (Evaluasi PSI drift dalam <b>{countdown}s</b>)" if countdown > 0 else ""
+                )
                 status_text = f"⚠️ <b>Stage 1/4 Active:</b> Beban anomali masuk (49 VUs), model gagal prediksi & SLO jebol.{countdown_txt}"
 
             st.html(
@@ -1023,8 +1267,8 @@ with tab_injector:
                 f'<div><span class="pill pill-ok" style="background:{status_color}22;color:{status_color};border-color:{status_color};">🤖 LIVE LIFECYCLE STREAM</span>'
                 f'<span style="font-size:13px;font-weight:600;color:#FAFAFA;margin-left:8px;">{status_text}</span></div>'
                 f'<div style="font-size:11px;color:#A1A1AA;">Auto-refreshing 2s live</div>'
-                f'</div>'
-                f'</div>'
+                f"</div>"
+                f"</div>"
             )
 
             # Live Lifetime Activity Stream / Timeline
@@ -1038,36 +1282,59 @@ with tab_injector:
                         badge_c = '<span class="pill pill-ok" style="background:#8B5CF622;color:#C4B5FD;border-color:#8B5CF6;font-size:9px;">RUNNING LIVE</span>'
                     elif s == "ALERT":
                         border_c = "#EF4444"
-                        badge_c = '<span class="pill pill-crit" style="font-size:9px;">DRIFT ALERT</span>'
+                        badge_c = (
+                            '<span class="pill pill-crit" style="font-size:9px;">DRIFT ALERT</span>'
+                        )
                     else:
                         border_c = "#14B8A6"
-                        badge_c = '<span class="pill pill-ok" style="font-size:9px;">COMPLETED</span>'
+                        badge_c = (
+                            '<span class="pill pill-ok" style="font-size:9px;">COMPLETED</span>'
+                        )
 
                     timeline_html += (
                         f'<div style="background:#18181B;border-left:3px solid {border_c};border-radius:6px;padding:10px 14px;margin-bottom:8px;">'
                         f'<div style="display:flex;justify-content:space-between;align-items:center;">'
                         f'<div><span style="font-size:13px;">{ev.get("icon", "•")}</span> <b style="color:#FAFAFA;font-size:12px;margin-left:4px;">{ev.get("title")}</b></div>'
                         f'<div style="display:flex;align-items:center;gap:8px;">{badge_c} <span style="font-size:10px;color:#71717A;font-family:monospace;">{ev.get("timestamp")}</span></div>'
-                        f'</div>'
+                        f"</div>"
                         f'<div style="font-size:11px;color:#A1A1AA;margin-top:4px;line-height:1.45;">{ev.get("detail")}</div>'
-                        f'</div>'
+                        f"</div>"
                     )
-                timeline_html += '</div>'
+                timeline_html += "</div>"
                 st.html(timeline_html)
 
             # Step 1: Model Prediction Failure & Latency Spike (Always visible during drift)
             st.markdown("##### Stage 1: Production Workload Anomaly & Model Under-Prediction")
             col_m1, col_m2, col_m3, col_m4 = st.columns(4)
             with col_m1:
-                st.metric("Live Workload Rate", "44.5 RPS", delta="+34.5 RPS above baseline", delta_color="inverse")
+                st.metric(
+                    "Live Workload Rate",
+                    "44.5 RPS",
+                    delta="+34.5 RPS above baseline",
+                    delta_color="inverse",
+                )
             with col_m2:
-                st.metric("Champion Forecast (t+60s)", "17.8 RPS", delta="UNDER-PREDICTION: -60%", delta_color="inverse")
+                st.metric(
+                    "Champion Forecast (t+60s)",
+                    "17.8 RPS",
+                    delta="UNDER-PREDICTION: -60%",
+                    delta_color="inverse",
+                )
             with col_m3:
-                st.metric("Allocated Pods", "2 Pods", delta="Required: 5 Pods (Under-provisioned)", delta_color="inverse")
+                st.metric(
+                    "Allocated Pods",
+                    "2 Pods",
+                    delta="Required: 5 Pods (Under-provisioned)",
+                    delta_color="inverse",
+                )
             with col_m4:
-                st.metric("P95 Latency", "285.0 ms", delta="SLO BREACH (> 100ms)", delta_color="inverse")
+                st.metric(
+                    "P95 Latency", "285.0 ms", delta="SLO BREACH (> 100ms)", delta_color="inverse"
+                )
 
-            st.warning("⚠️ **Model Performance Degraded:** Champion model dilatih pada distribusi baseline dan gagal memprediksi lonjakan trafik anomali. Klaster under-provisioned (hanya 2 pod), menyebabkan latensi melonjak tajam di Grafana.")
+            st.warning(
+                "⚠️ **Model Performance Degraded:** Champion model dilatih pada distribusi baseline dan gagal memprediksi lonjakan trafik anomali. Klaster under-provisioned (hanya 2 pod), menyebabkan latensi melonjak tajam di Grafana."
+            )
 
             # Step 2: Statistical Drift Detection (Visible from Stage 2 onwards)
             if auto_stage_idx >= 2:
@@ -1077,24 +1344,26 @@ with tab_injector:
                     '<span class="pill pill-crit">MAJOR_DRIFT_DETECTED</span> '
                     '<span style="font-weight:600;color:#FAFAFA;margin-left:8px;">Population Stability Index (PSI): <b>0.3842</b> (Threshold: 0.2000)</span>'
                     '<div style="font-size:12px;color:#A1A1AA;margin-top:4px;">'
-                    'Fitur terdistribusi drift: <code>request_rate</code> (PSI: 0.3812), <code>php_cpu_cores</code> (PSI: 0.4215), <code>p95_latency_seconds</code> (PSI: 0.3640). '
-                    'Event-driven alert otomatis terpicu!'
-                    '</div>'
-                    '</div>'
+                    "Fitur terdistribusi drift: <code>request_rate</code> (PSI: 0.3812), <code>php_cpu_cores</code> (PSI: 0.4215), <code>p95_latency_seconds</code> (PSI: 0.3640). "
+                    "Event-driven alert otomatis terpicu!"
+                    "</div>"
+                    "</div>"
                 )
 
             # Step 3: Trigger Event-Driven Retraining (Visible from Stage 3 onwards)
             if auto_stage_idx >= 3:
-                st.markdown("##### Stage 3: Event-Driven Continuous Training Pipeline (Autonomous K8s Job)")
+                st.markdown(
+                    "##### Stage 3: Event-Driven Continuous Training Pipeline (Autonomous K8s Job)"
+                )
                 job_label = auto_k8s_job or "drift-retrain-active"
                 st.html(
                     f'<div style="background:rgba(99,102,241,0.08);border:1px solid #6366F1;border-radius:6px;padding:12px 14px;margin-bottom:10px;">'
                     f'<span class="pill pill-ok" style="background:#6366F122;color:#A5B4FC;border-color:#6366F1;">K8S JOB ACTIVE</span> '
                     f'<span style="font-weight:600;color:#FAFAFA;margin-left:8px;">Spawning <code>job.batch/{job_label}</code> di namespace <code>mlops</code></span>'
                     f'<div style="font-size:12px;color:#C7D2FE;margin-top:4px;">'
-                    f'&bull; Pipeline: Scraping Prometheus telemetry &rarr; Sync ke MinIO DVC &rarr; Retraining LightGBM &rarr; Validasi Quality Gate MAE.'
-                    f'</div>'
-                    f'</div>'
+                    f"&bull; Pipeline: Scraping Prometheus telemetry &rarr; Sync ke MinIO DVC &rarr; Retraining LightGBM &rarr; Validasi Quality Gate MAE."
+                    f"</div>"
+                    f"</div>"
                 )
 
             # Step 4: Verification post-retraining (Visible when Stage 4 complete)
@@ -1115,15 +1384,23 @@ with tab_injector:
 
                 st.html(
                     '<div style="background:rgba(20,184,166,0.08);border:1px solid #14B8A6;border-radius:6px;padding:10px 14px;font-size:12px;color:#D4D4D8;">'
-                    '✅ <b>Closed-Loop Complete:</b> Model baru sukses mempelajari pola pergeseran trafik drift. '
-                    'Prediksi t+60s sekarang akurat mengantisipasi beban tinggi (45.2 RPS) dan secara proaktif mengalokasikan 5 pod, memulihkan latensi di bawah SLO.'
-                    '</div>'
+                    "✅ <b>Closed-Loop Complete:</b> Model baru sukses mempelajari pola pergeseran trafik drift. "
+                    "Prediksi t+60s sekarang akurat mengantisipasi beban tinggi (45.2 RPS) dan secara proaktif mengalokasikan 5 pod, memulihkan latensi di bawah SLO."
+                    "</div>"
                 )
 
                 st.html("<div style='height:8px;'></div>")
-                if st.button("🔄 Inject Next Data Drift Cycle (Continuous Drift Testing)", key="btn_next_drift", use_container_width=True):
+                if st.button(
+                    "🔄 Inject Next Data Drift Cycle (Continuous Drift Testing)",
+                    key="btn_next_drift",
+                    use_container_width=True,
+                ):
                     try:
-                        requests.post(f"{INFERENCE_API_URL}/workload/trigger", json={"state": "DRIFT_ANOMALY"}, timeout=3)
+                        requests.post(
+                            f"{INFERENCE_API_URL}/workload/trigger",
+                            json={"state": "DRIFT_ANOMALY"},
+                            timeout=3,
+                        )
                         st.session_state["drift_active"] = True
                         st.success("🚨 Next data drift cycle injected! Autonomous pipeline active.")
                         st.rerun()
@@ -1133,7 +1410,7 @@ with tab_injector:
         st.html(
             f'<div style="margin-top:16px;padding:10px 14px;background:#18181B;border:1px solid #27272A;border-radius:6px;font-size:12px;color:#A1A1AA;">'
             f'💡 <b>Live Verification:</b> Open <a href="{GRAFANA_URL}" target="_blank" style="color:#14B8A6;text-decoration:none;"><b>Grafana Dashboard ↗</b></a> to observe real-time RPS, latency, and pod replica transitions as the workload changes.'
-            f'</div>'
+            f"</div>"
         )
 
     render_workload_injector_view()
@@ -1158,7 +1435,9 @@ with tab_finops:
     with f1:
         f_days = st.slider("Evaluation period (days)", 7, 60, 30, step=1)
     with f2:
-        f_rate = st.number_input("AWS vCPU cost ($/hr)", value=0.0175, format="%.4f", help="EC2 t3 instance rate.")
+        f_rate = st.number_input(
+            "AWS vCPU cost ($/hr)", value=0.0175, format="%.4f", help="EC2 t3 instance rate."
+        )
     with f3:
         f_kurs = st.number_input("IDR/USD exchange rate", value=15800, step=100)
 
@@ -1178,7 +1457,9 @@ with tab_finops:
         pass
 
     if live_decs:
-        avg_pred_pods = round(float(sum(d.get("desired_replicas", 1) for d in live_decs) / len(live_decs)), 2)
+        avg_pred_pods = round(
+            float(sum(d.get("desired_replicas", 1) for d in live_decs) / len(live_decs)), 2
+        )
     else:
         avg_pred_pods = 1.6
     avg_pred_pods = max(1.0, min(6.0, avg_pred_pods))
@@ -1187,7 +1468,9 @@ with tab_finops:
     co2_s = 6.0 * cpu_sz * f_hours * carbon
     cost_r = (2.8 * cpu_sz * f_hours * f_rate) + (2.8 * ram_sz * f_hours * ram_cost)
     co2_r = 2.8 * cpu_sz * f_hours * carbon
-    cost_p = (avg_pred_pods * cpu_sz * f_hours * f_rate) + (avg_pred_pods * ram_sz * f_hours * ram_cost)
+    cost_p = (avg_pred_pods * cpu_sz * f_hours * f_rate) + (
+        avg_pred_pods * ram_sz * f_hours * ram_cost
+    )
     co2_p = avg_pred_pods * cpu_sz * f_hours * carbon
 
     saved = cost_s - cost_p
@@ -1197,11 +1480,22 @@ with tab_finops:
     with k1:
         st.metric("Cost Saved", f"Rp {saved * f_kurs:,.0f}", delta=f"-{saved_pct:.1f}% vs static")
     with k2:
-        st.metric("Actual Cloud Cost", f"${cost_p:.2f}", delta=f"-${saved:.2f}", delta_color="inverse")
+        st.metric(
+            "Actual Cloud Cost", f"${cost_p:.2f}", delta=f"-${saved:.2f}", delta_color="inverse"
+        )
     with k3:
-        st.metric("Carbon Footprint", f"{co2_p:.2f} kg CO2e", delta=f"-{co2_s - co2_p:.2f} kg", delta_color="inverse")
+        st.metric(
+            "Carbon Footprint",
+            f"{co2_p:.2f} kg CO2e",
+            delta=f"-{co2_s - co2_p:.2f} kg",
+            delta_color="inverse",
+        )
     with k4:
-        st.metric("Resource Efficiency", f"{100.0 - (avg_pred_pods / 6.0 * 20.0):.1f}%", delta=f"{avg_pred_pods:.1f} avg pods")
+        st.metric(
+            "Resource Efficiency",
+            f"{100.0 - (avg_pred_pods / 6.0 * 20.0):.1f}%",
+            delta=f"{avg_pred_pods:.1f} avg pods",
+        )
 
     st.caption(
         f"💡 **Dynamic Allocation Coefficient:** Predictive cost model is dynamically parameterized on the live average replica coefficient: "
@@ -1209,11 +1503,13 @@ with tab_finops:
     )
 
     st.html("<div style='height:8px'></div>")
-    chart_df = pd.DataFrame({
-        "Strategy": ["Static 6 Pods", "Reactive HPA", "Predictive ML"],
-        "Monthly Cost (IDR)": [cost_s * f_kurs, cost_r * f_kurs, cost_p * f_kurs],
-        "Carbon (kg CO2e)": [co2_s, co2_r, co2_p],
-    }).set_index("Strategy")
+    chart_df = pd.DataFrame(
+        {
+            "Strategy": ["Static 6 Pods", "Reactive HPA", "Predictive ML"],
+            "Monthly Cost (IDR)": [cost_s * f_kurs, cost_r * f_kurs, cost_p * f_kurs],
+            "Carbon (kg CO2e)": [co2_s, co2_r, co2_p],
+        }
+    ).set_index("Strategy")
 
     ch1, ch2 = st.columns(2)
     with ch1:
@@ -1252,9 +1548,15 @@ with tab_retrain:
 
     with d2:
         if st.button("Trigger Event-Driven Retraining Pipeline", use_container_width=True):
-            with st.spinner("Executing closed-loop retraining pipeline (Ingestion -> Train -> Promote -> Hot Reload)..."):
+            with st.spinner(
+                "Executing closed-loop retraining pipeline (Ingestion -> Train -> Promote -> Hot Reload)..."
+            ):
                 try:
-                    r_rel = requests.post(f"{INFERENCE_API_URL}/monitoring/retrain/trigger", json={"psi_score": 0.3842}, timeout=8)
+                    r_rel = requests.post(
+                        f"{INFERENCE_API_URL}/monitoring/retrain/trigger",
+                        json={"psi_score": 0.3842},
+                        timeout=8,
+                    )
                     rel_data = r_rel.json() if r_rel.status_code == 200 else {}
                     st.session_state["ct_eval"] = {
                         "job_name": "drift-retraining-closed-loop",
@@ -1288,18 +1590,22 @@ with tab_retrain:
         if features_dict:
             drift_rows = []
             for fname, fval in features_dict.items():
-                drift_rows.append({
-                    "Feature": fname,
-                    "PSI Score": f"{fval['psi']:.4f}",
-                    "Live Mean": f"{fval['live_mean']}",
-                    "Baseline Mean": f"{fval['baseline_mean']}",
-                    "Status": "DRIFT DETECTED" if fval["has_drift"] else "STABLE",
-                })
+                drift_rows.append(
+                    {
+                        "Feature": fname,
+                        "PSI Score": f"{fval['psi']:.4f}",
+                        "Live Mean": f"{fval['live_mean']}",
+                        "Baseline Mean": f"{fval['baseline_mean']}",
+                        "Status": "DRIFT DETECTED" if fval["has_drift"] else "STABLE",
+                    }
+                )
             st.dataframe(pd.DataFrame(drift_rows).set_index("Feature"), use_container_width=True)
 
     if "ct_eval" in st.session_state:
         cte = st.session_state["ct_eval"]
-        st.success(f"**Retraining complete.** Model `{cte['model_version']}` is now serving in production.")
+        st.success(
+            f"**Retraining complete.** Model `{cte['model_version']}` is now serving in production."
+        )
         ck1, ck2, ck3 = st.columns(3)
         with ck1:
             val_mae_disp = cte.get("validation_mae", "5.6538 RPS").split()[0]
@@ -1367,9 +1673,13 @@ with tab_benchmark:
     if live_sample:
         lp1, lp2, lp3, lp4 = st.columns(4)
         with lp1:
-            st.metric("Live Ingress Workload", f"{live_sample.get('input_rps', 0.0):.1f} RPS", help="Incoming traffic measured at Ingress.")
+            st.metric(
+                "Live Ingress Workload",
+                f"{live_sample.get('input_rps', 0.0):.1f} RPS",
+                help="Incoming traffic measured at Ingress.",
+            )
         with lp2:
-            live_p95 = live_sample.get('input_p95_ms', 0.0)
+            live_p95 = live_sample.get("input_p95_ms", 0.0)
             is_slo_met = live_p95 < 100.0
             st.metric(
                 "Live P95 Latency",
@@ -1389,7 +1699,7 @@ with tab_benchmark:
             st.metric(
                 "Forecast (t+60s)",
                 f"{live_sample.get('predicted_rps_60s', 0.0):.1f} RPS",
-                delta=live_sample.get('action', 'MAINTAIN'),
+                delta=live_sample.get("action", "MAINTAIN"),
                 help="Predicted workload demand at t+60s.",
             )
     else:
@@ -1401,7 +1711,9 @@ with tab_benchmark:
 # =========================================================================
 with tab_registry:
     st.markdown("### MLflow Model Registry & DVC Data Lineage")
-    st.markdown("Centralized model lifecycle management with dataset provenance tracking in MinIO S3.")
+    st.markdown(
+        "Centralized model lifecycle management with dataset provenance tracking in MinIO S3."
+    )
 
     mr1, mr2 = st.columns(2)
     latest_retrain = audit_data.get("retraining", {}).get("latest", {})
@@ -1412,7 +1724,9 @@ with tab_registry:
         champ_ver = f"v{champ_ver}"
     champ_algo = latest_retrain.get("algorithm", active_algo)
     champ_mae = latest_retrain.get("val_mae", "0.0880 RPS")
-    champ_dataset = audit_data.get("last_ingestion", {}).get("target_dataset", "data/processed/latest.csv")
+    champ_dataset = audit_data.get("last_ingestion", {}).get(
+        "target_dataset", "data/processed/latest.csv"
+    )
 
     challenger_ver = challenger_retrain.get("version", "29")
     if not challenger_ver.startswith("v"):
@@ -1428,11 +1742,11 @@ with tab_registry:
             f'<div style="font-size:12px;color:#71717A;margin-bottom:8px;">{champ_algo}</div>'
             f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">'
             f'<li><b>Status:</b> <code style="color:#5EEAD4;">Serving Active (@{model_alias})</code></li>'
-            f'<li><b>Validation MAE:</b> <code>{champ_mae}</code></li>'
-            f'<li><b>Dataset:</b> <code>{champ_dataset}</code></li>'
-            f'<li><b>Serving:</b> Active in production memory, scaling 1–6 pods</li>'
-            f'</ul>'
-            f'</div>'
+            f"<li><b>Validation MAE:</b> <code>{champ_mae}</code></li>"
+            f"<li><b>Dataset:</b> <code>{champ_dataset}</code></li>"
+            f"<li><b>Serving:</b> Active in production memory, scaling 1–6 pods</li>"
+            f"</ul>"
+            f"</div>"
         )
     with mr2:
         st.html(
@@ -1441,12 +1755,12 @@ with tab_registry:
             f'<div style="font-size:14px;font-weight:600;color:#FAFAFA;margin:6px 0 4px;">predictive-autoscaler {challenger_ver}</div>'
             f'<div style="font-size:12px;color:#71717A;margin-bottom:8px;">{challenger_algo}</div>'
             f'<ul style="font-size:12px;color:#A1A1AA;line-height:1.8;margin:0;padding-left:16px;">'
-            f'<li><b>Status:</b> <code>Staging Candidate (@challenger)</code></li>'
-            f'<li><b>Validation MAE:</b> <code>{challenger_mae}</code></li>'
-            f'<li><b>Inference:</b> <code>2.8 ms</code></li>'
-            f'<li><b>Result:</b> Retained as staging benchmark challenger</li>'
-            f'</ul>'
-            f'</div>'
+            f"<li><b>Status:</b> <code>Staging Candidate (@challenger)</code></li>"
+            f"<li><b>Validation MAE:</b> <code>{challenger_mae}</code></li>"
+            f"<li><b>Inference:</b> <code>2.8 ms</code></li>"
+            f"<li><b>Result:</b> Retained as staging benchmark challenger</li>"
+            f"</ul>"
+            f"</div>"
         )
 
     st.html("<div style='height:14px'></div>")
@@ -1468,15 +1782,17 @@ with tab_registry:
         for item in ing_hist[:10]:
             out_name = item.get("output", "")
             raw_name = out_name.replace("metrics_processed_", "metrics_")
-            lineage_rows.append({
-                "Batch ID": item.get("batch", "ING-LATEST"),
-                "Timestamp (UTC)": item.get("time_utc", "N/A"),
-                "Processed CSV": out_name,
-                "Raw CSV": raw_name,
-                "Records": f"{item.get('records', 5760):,}",
-                "MinIO Remote": "s3://mlops-dvc",
-                "Status": item.get("status", "HEALTHY (DVC Synced)"),
-            })
+            lineage_rows.append(
+                {
+                    "Batch ID": item.get("batch", "ING-LATEST"),
+                    "Timestamp (UTC)": item.get("time_utc", "N/A"),
+                    "Processed CSV": out_name,
+                    "Raw CSV": raw_name,
+                    "Records": f"{item.get('records', 5760):,}",
+                    "MinIO Remote": "s3://mlops-dvc",
+                    "Status": item.get("status", "HEALTHY (DVC Synced)"),
+                }
+            )
         st.dataframe(pd.DataFrame(lineage_rows).set_index("Batch ID"), use_container_width=True)
     else:
         st.info("No lineage data currently available from MinIO S3.")
@@ -1491,16 +1807,18 @@ with tab_registry:
         pass
 
     if live_samps:
-        df_samp = pd.DataFrame(live_samps).rename(columns={
-            "timestamp": "Time (UTC)",
-            "input_rps": "Workload RPS",
-            "input_cpu": "CPU (cores)",
-            "input_p95_ms": "P95 (ms)",
-            "current_replicas": "Pods Now",
-            "predicted_rps_60s": "Forecast RPS (t+60s)",
-            "desired_replicas": "Target Pods",
-            "action": "Action",
-        })
+        df_samp = pd.DataFrame(live_samps).rename(
+            columns={
+                "timestamp": "Time (UTC)",
+                "input_rps": "Workload RPS",
+                "input_cpu": "CPU (cores)",
+                "input_p95_ms": "P95 (ms)",
+                "current_replicas": "Pods Now",
+                "predicted_rps_60s": "Forecast RPS (t+60s)",
+                "desired_replicas": "Target Pods",
+                "action": "Action",
+            }
+        )
         st.dataframe(df_samp.set_index("Time (UTC)"), use_container_width=True)
     else:
         st.info("No active telemetry evaluation records in current buffer.")

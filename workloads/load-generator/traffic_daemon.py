@@ -15,11 +15,9 @@ import os
 import random
 import signal
 import subprocess
-import sys
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
 from typing import Optional
 
 logging.basicConfig(
@@ -34,7 +32,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SCENARIO_PATH = os.path.join(BASE_DIR, "k6_scenario.js")
 OVERRIDE_FILE = os.path.join(BASE_DIR, "force_state.txt")
 REMOTE_STATUS_URL = os.getenv("REMOTE_STATUS_URL", "https://model.titipin.me/workload/status")
-REMOTE_HEARTBEAT_URL = os.getenv("REMOTE_HEARTBEAT_URL", "https://model.titipin.me/workload/heartbeat")
+REMOTE_HEARTBEAT_URL = os.getenv(
+    "REMOTE_HEARTBEAT_URL", "https://model.titipin.me/workload/heartbeat"
+)
 
 LAST_SEEN_OVERRIDE_ID = 0
 
@@ -183,7 +183,11 @@ def check_override() -> Optional[str]:
                 ov_state = data.get("override_state")
                 if ov_id != LAST_SEEN_OVERRIDE_ID and ov_id > 0 and ov_state:
                     LAST_SEEN_OVERRIDE_ID = ov_id
-                    logger.info("Remote override triggered from Web Dashboard: ID=%s State=%s", ov_id, ov_state)
+                    logger.info(
+                        "Remote override triggered from Web Dashboard: ID=%s State=%s",
+                        ov_id,
+                        ov_state,
+                    )
                     if ov_state in STATES:
                         return ov_state
                     if ov_state in ("SPIKE", "FLASH", "ANOMALY"):
@@ -267,7 +271,9 @@ def run_state(state_name: str) -> Optional[str]:
             send_heartbeat(state_name, vus, rem)
             ov = check_override()
             if ov:
-                logger.info("Override detected during execution (%s). Terminating current k6 run.", ov)
+                logger.info(
+                    "Override detected during execution (%s). Terminating current k6 run.", ov
+                )
                 next_override = ov
                 current_proc.terminate()
                 break
@@ -285,7 +291,9 @@ def run_state(state_name: str) -> Optional[str]:
 
 
 def main():
-    logger.info("Starting Titipin Continuous Traffic Generator Daemon (with Remote Dashboard Hook & Heartbeat)...")
+    logger.info(
+        "Starting Titipin Continuous Traffic Generator Daemon (with Remote Dashboard Hook & Heartbeat)..."
+    )
     logger.info("Scenario Path : %s", SCENARIO_PATH)
     logger.info("Target Host   : %s", TARGET_URL)
 

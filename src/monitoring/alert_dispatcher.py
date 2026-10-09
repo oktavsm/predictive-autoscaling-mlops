@@ -18,8 +18,6 @@ import argparse
 import json
 import logging
 import os
-import sys
-import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -54,7 +52,10 @@ class AlertDispatcher:
         self.audit_file = audit_file or AUDIT_LOG_FILE
 
         if self.audit_file:
-            os.makedirs(os.path.dirname(self.audit_file) if os.path.dirname(self.audit_file) else ".", exist_ok=True)
+            os.makedirs(
+                os.path.dirname(self.audit_file) if os.path.dirname(self.audit_file) else ".",
+                exist_ok=True,
+            )
 
     def _log_audit(self, event_type: str, title: str, details: Dict[str, Any]) -> None:
         """Appends alert to structured JSONL audit trail."""
@@ -70,7 +71,9 @@ class AlertDispatcher:
         except Exception as e:
             logger.warning("Failed to write to audit log: %s", e)
 
-    def dispatch_discord(self, title: str, description: str, color_hex: int, fields: List[Dict[str, str]]) -> bool:
+    def dispatch_discord(
+        self, title: str, description: str, color_hex: int, fields: List[Dict[str, str]]
+    ) -> bool:
         """Sends rich embed message to Discord Webhook."""
         if not self.discord_url:
             logger.debug("Discord webhook URL not configured; skipping Discord dispatch.")
@@ -97,7 +100,10 @@ class AlertDispatcher:
             req = urllib.request.Request(
                 self.discord_url,
                 data=data,
-                headers={"Content-Type": "application/json", "User-Agent": "Titipin-MLOps-AlertBot/1.0"},
+                headers={
+                    "Content-Type": "application/json",
+                    "User-Agent": "Titipin-MLOps-AlertBot/1.0",
+                },
             )
             with urllib.request.urlopen(req, timeout=5.0) as resp:
                 if resp.status in (200, 204):
@@ -148,20 +154,40 @@ class AlertDispatcher:
             f"Population Stability Index (PSI) has crossed critical threshold: "
             f"**`{psi_score:.4f}`** (Threshold: `{threshold:.2f}`)."
         )
-        features_str = ", ".join(drift_features) if drift_features else "request_rate, php_cpu_cores"
+        features_str = (
+            ", ".join(drift_features) if drift_features else "request_rate, php_cpu_cores"
+        )
         color = 0xFF5722  # Deep Orange
 
         fields = [
             {"name": "📊 PSI Score", "value": f"`{psi_score:.4f}`", "inline": True},
-            {"name": "⚠️ Drift Level", "value": "Major Distribution Shift" if psi_score > 0.25 else "Moderate Drift", "inline": True},
+            {
+                "name": "⚠️ Drift Level",
+                "value": "Major Distribution Shift" if psi_score > 0.25 else "Moderate Drift",
+                "inline": True,
+            },
             {"name": "🧬 Affected Features", "value": f"`{features_str}`", "inline": False},
-            {"name": "🔄 Automated Action", "value": "✅ Retraining Triggered" if auto_retrain_triggered else "⏸️ Manual Approval Needed", "inline": True},
-            {"name": "🔗 Observability", "value": "[Grafana MLOps](https://grafana.titipin.me)", "inline": True},
+            {
+                "name": "🔄 Automated Action",
+                "value": "✅ Retraining Triggered"
+                if auto_retrain_triggered
+                else "⏸️ Manual Approval Needed",
+                "inline": True,
+            },
+            {
+                "name": "🔗 Observability",
+                "value": "[Grafana MLOps](https://grafana.titipin.me)",
+                "inline": True,
+            },
         ]
 
         # Audit & Console
         logger.warning("DATA DRIFT ALERT: PSI=%.4f (Features: %s)", psi_score, features_str)
-        self._log_audit("DATA_DRIFT", title, {"psi": psi_score, "threshold": threshold, "features": drift_features})
+        self._log_audit(
+            "DATA_DRIFT",
+            title,
+            {"psi": psi_score, "threshold": threshold, "features": drift_features},
+        )
 
         # Dispatches
         self.dispatch_discord(title, desc, color, fields)
@@ -184,11 +210,19 @@ class AlertDispatcher:
             {"name": "⏱️ P95 Latency", "value": f"`{p95_latency_ms:.1f} ms`", "inline": True},
             {"name": "❌ HTTP 5xx Rate", "value": f"`{error_rate_pct:.2f}%`", "inline": True},
             {"name": "🎯 Target Deployment", "value": "`titipin/laravel-backend`", "inline": True},
-            {"name": "🛡️ Remediation", "value": "Predictive Scaler auto-scaling pod ceiling.", "inline": False},
+            {
+                "name": "🛡️ Remediation",
+                "value": "Predictive Scaler auto-scaling pod ceiling.",
+                "inline": False,
+            },
         ]
 
-        logger.warning("SLO BREACH ALERT: P95=%.1fms, Errors=%.2f%%", p95_latency_ms, error_rate_pct)
-        self._log_audit("SLO_BREACH", title, {"p95_latency_ms": p95_latency_ms, "error_rate": error_rate_pct})
+        logger.warning(
+            "SLO BREACH ALERT: P95=%.1fms, Errors=%.2f%%", p95_latency_ms, error_rate_pct
+        )
+        self._log_audit(
+            "SLO_BREACH", title, {"p95_latency_ms": p95_latency_ms, "error_rate": error_rate_pct}
+        )
 
         self.dispatch_discord(title, desc, color, fields)
         tg_text = (
@@ -211,7 +245,11 @@ class AlertDispatcher:
         """Triggered when continuous training finishes evaluation."""
         delta = champion_mae - new_mae
         pct_improvement = (delta / max(0.001, champion_mae)) * 100.0
-        title = "🎉 [CT-PIPELINE] New Champion Model Promoted" if promoted else "ℹ️ [CT-PIPELINE] Challenger Model Evaluated"
+        title = (
+            "🎉 [CT-PIPELINE] New Champion Model Promoted"
+            if promoted
+            else "ℹ️ [CT-PIPELINE] Challenger Model Evaluated"
+        )
         desc = (
             f"Continuous training job evaluated **`{model_name} (v{new_version})`**. "
             f"Validation MAE improved by **`{pct_improvement:.1f}%`**."
@@ -221,14 +259,26 @@ class AlertDispatcher:
         fields = [
             {"name": "📦 Model Name", "value": f"`{model_name}`", "inline": True},
             {"name": "🏷️ Version", "value": f"`v{new_version}`", "inline": True},
-            {"name": "👑 Stage Status", "value": "`@champion (Production)`" if promoted else "`@challenger (Staging)`", "inline": True},
+            {
+                "name": "👑 Stage Status",
+                "value": "`@champion (Production)`" if promoted else "`@challenger (Staging)`",
+                "inline": True,
+            },
             {"name": "📉 New MAE", "value": f"`{new_mae:.4f} RPS`", "inline": True},
             {"name": "📊 Previous MAE", "value": f"`{champion_mae:.4f} RPS`", "inline": True},
-            {"name": "⚡ Serving Reload", "value": "Hot-Reloaded via API" if promoted else "N/A", "inline": True},
+            {
+                "name": "⚡ Serving Reload",
+                "value": "Hot-Reloaded via API" if promoted else "N/A",
+                "inline": True,
+            },
         ]
 
         logger.info("RETRAINING PROMOTION: %s (v%s) Promoted=%s", model_name, new_version, promoted)
-        self._log_audit("RETRAIN_PROMOTION", title, {"model": model_name, "version": new_version, "new_mae": new_mae, "promoted": promoted})
+        self._log_audit(
+            "RETRAIN_PROMOTION",
+            title,
+            {"model": model_name, "version": new_version, "new_mae": new_mae, "promoted": promoted},
+        )
 
         self.dispatch_discord(title, desc, color, fields)
         tg_text = (
@@ -249,11 +299,17 @@ class AlertDispatcher:
         fields = [
             {"name": "☸️ Current Pods", "value": f"`{current_replicas}`", "inline": True},
             {"name": "🛡️ Max Limit", "value": f"`{max_replicas}`", "inline": True},
-            {"name": "💡 Note", "value": "Node hardware capacity stable; consider raising bounds if traffic persists.", "inline": False},
+            {
+                "name": "💡 Note",
+                "value": "Node hardware capacity stable; consider raising bounds if traffic persists.",
+                "inline": False,
+            },
         ]
 
         logger.warning("CAPACITY SATURATION: %d/%d Pods", current_replicas, max_replicas)
-        self._log_audit("CAPACITY_SATURATION", title, {"current": current_replicas, "max": max_replicas})
+        self._log_audit(
+            "CAPACITY_SATURATION", title, {"current": current_replicas, "max": max_replicas}
+        )
         self.dispatch_discord(title, desc, color, fields)
 
 
@@ -275,9 +331,15 @@ def main() -> None:
 
     if args.test:
         logger.info("Executing test alert dispatch...")
-        dispatcher.notify_data_drift(psi_score=0.284, threshold=0.25, drift_features=["request_rate", "php_cpu_cores", "p95_latency_seconds"])
+        dispatcher.notify_data_drift(
+            psi_score=0.284,
+            threshold=0.25,
+            drift_features=["request_rate", "php_cpu_cores", "p95_latency_seconds"],
+        )
         dispatcher.notify_slo_violation(p95_latency_ms=138.5, error_rate_pct=0.0)
-        dispatcher.notify_retraining_promotion("predictive-autoscaler", "8", new_mae=0.0241, champion_mae=0.0295, promoted=True)
+        dispatcher.notify_retraining_promotion(
+            "predictive-autoscaler", "8", new_mae=0.0241, champion_mae=0.0295, promoted=True
+        )
         logger.info("Test dispatch finished. Audit logged to %s", dispatcher.audit_file)
         return
 

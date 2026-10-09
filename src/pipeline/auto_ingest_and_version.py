@@ -89,13 +89,21 @@ def run_command(cmd: list[str], env: Dict[str, str], description: str) -> str:
     )
     duration = round(time.time() - t0, 2)
     if res.returncode != 0:
-        logger.error("Gagal mengeksekusi [%s] (code %d):\n%s\n%s", description, res.returncode, res.stdout, res.stderr)
+        logger.error(
+            "Gagal mengeksekusi [%s] (code %d):\n%s\n%s",
+            description,
+            res.returncode,
+            res.stdout,
+            res.stderr,
+        )
         raise RuntimeError(f"Command failed: {description} ({res.stderr.strip()})")
     logger.info("Berhasil [%s] dalam %.2fs", description, duration)
     return res.stdout.strip()
 
 
-def run_pipeline(minutes: int = 1440, step: int = 15, skip_dvc: bool = False, git_commit: bool = False) -> Dict[str, Any]:
+def run_pipeline(
+    minutes: int = 1440, step: int = 15, skip_dvc: bool = False, git_commit: bool = False
+) -> Dict[str, Any]:
     """Menjalankan end-to-end ingestion, feature engineering, dan DVC push."""
     t_start = datetime.now(timezone.utc)
     env = prepare_environment()
@@ -107,7 +115,7 @@ def run_pipeline(minutes: int = 1440, step: int = 15, skip_dvc: bool = False, gi
     print(f"Waktu Eksekusi    : {t_start.isoformat()}")
     print(f"Time Window       : {minutes} menit ({round(minutes / 60, 1)} jam terakhir)")
     print(f"Resolusi Scraping : {step} detik")
-    print(f"MinIO Push Target : s3://mlops-dvc (https://storage.titipin.me)")
+    print("MinIO Push Target : s3://mlops-dvc (https://storage.titipin.me)")
     print("-" * 78)
 
     # 1. Tahap Ingestion
@@ -120,15 +128,12 @@ def run_pipeline(minutes: int = 1440, step: int = 15, skip_dvc: bool = False, gi
         "--step",
         str(step),
     ]
-    ingest_out = run_command(ingest_cmd, env, "Prometheus Ingestion")
+    run_command(ingest_cmd, env, "Prometheus Ingestion")
 
     # 2. Tahap Preprocessing
     logger.info("[2/4] Membersihkan data dan melakukan feature engineering...")
     prep_cmd = [python_bin, "src/preprocess.py"]
-    prep_out = run_command(prep_cmd, env, "Data Preprocessing & Feature Engineering")
-
-    dvc_status_out = ""
-    dvc_push_out = ""
+    run_command(prep_cmd, env, "Data Preprocessing & Feature Engineering")
 
     if not skip_dvc:
         # Cari binary DVC (di venv atau sistem)
@@ -145,7 +150,7 @@ def run_pipeline(minutes: int = 1440, step: int = 15, skip_dvc: bool = False, gi
         # 4. Tahap DVC Push ke MinIO
         logger.info("[4/4] Mengunggah artefak biner dataset ke MinIO Object Storage...")
         dvc_push_cmd = [dvc_bin, "push"]
-        dvc_push_out = run_command(dvc_push_cmd, env, "DVC Push to MinIO")
+        run_command(dvc_push_cmd, env, "DVC Push to MinIO")
         print("✓ Artefak dataset berhasil diunggah ke MinIO CAS Storage!")
 
         if git_commit:
@@ -176,10 +181,21 @@ def run_pipeline(minutes: int = 1440, step: int = 15, skip_dvc: bool = False, gi
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Automated Ingestion and DVC Sync Pipeline")
-    parser.add_argument("--minutes", type=int, default=1440, help="Jendela waktu ingestion dalam menit (default: 1440 = 24 jam)")
-    parser.add_argument("--step", type=int, default=15, help="Resolusi query dalam detik (default: 15)")
+    parser.add_argument(
+        "--minutes",
+        type=int,
+        default=1440,
+        help="Jendela waktu ingestion dalam menit (default: 1440 = 24 jam)",
+    )
+    parser.add_argument(
+        "--step", type=int, default=15, help="Resolusi query dalam detik (default: 15)"
+    )
     parser.add_argument("--skip-dvc", action="store_true", help="Lewati tahap DVC commit dan push")
-    parser.add_argument("--git-commit", action="store_true", help="Otomatis jalankan git commit pada file pointer .dvc")
+    parser.add_argument(
+        "--git-commit",
+        action="store_true",
+        help="Otomatis jalankan git commit pada file pointer .dvc",
+    )
     args = parser.parse_args()
 
     try:

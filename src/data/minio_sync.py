@@ -25,7 +25,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 try:
     from minio import Minio
@@ -60,7 +60,11 @@ def get_minio_client() -> Tuple[Minio, str]:
     if Minio is None:
         raise RuntimeError("Library 'minio' belum terinstall. Jalankan: pip install minio")
 
-    endpoint_raw = os.getenv("MINIO_ENDPOINT") or os.getenv("MLFLOW_S3_ENDPOINT_URL") or "https://storage.titipin.me"
+    endpoint_raw = (
+        os.getenv("MINIO_ENDPOINT")
+        or os.getenv("MLFLOW_S3_ENDPOINT_URL")
+        or "https://storage.titipin.me"
+    )
     access_key = os.getenv("AWS_ACCESS_KEY_ID") or "titipin_minio"
     secret_key = os.getenv("AWS_SECRET_ACCESS_KEY") or "rahasiawoy"
     bucket_name = os.getenv("DVC_BUCKET_NAME") or "mlops-dvc"
@@ -87,7 +91,9 @@ def get_minio_client() -> Tuple[Minio, str]:
     return client, bucket_name
 
 
-def push_dataset_to_minio(raw_path: Optional[Path | str] = None, processed_path: Optional[Path | str] = None) -> Dict[str, Any]:
+def push_dataset_to_minio(
+    raw_path: Optional[Path | str] = None, processed_path: Optional[Path | str] = None
+) -> Dict[str, Any]:
     """Mengunggah dataset raw dan processed ke MinIO (Format Langsung + Format CAS DVC)."""
     client, bucket_name = get_minio_client()
 
@@ -125,15 +131,21 @@ def push_dataset_to_minio(raw_path: Optional[Path | str] = None, processed_path:
         dvc_cas_key = f"files/md5/{md5_hash[:2]}/{md5_hash[2:]}"
         client.fput_object(bucket_name, dvc_cas_key, str(file_path))
 
-        results["pushed_files"].append({
-            "file": filename,
-            "prefix": prefix,
-            "size": file_size,
-            "md5": md5_hash,
-            "dvc_key": dvc_cas_key,
-        })
+        results["pushed_files"].append(
+            {
+                "file": filename,
+                "prefix": prefix,
+                "size": file_size,
+                "md5": md5_hash,
+                "dvc_key": dvc_cas_key,
+            }
+        )
 
-    logger.info("✓ Berhasil menyinkronkan %d file ke MinIO bucket '%s'", len(results["pushed_files"]), bucket_name)
+    logger.info(
+        "✓ Berhasil menyinkronkan %d file ke MinIO bucket '%s'",
+        len(results["pushed_files"]),
+        bucket_name,
+    )
     return results
 
 
@@ -152,7 +164,9 @@ def pull_datasets_from_minio() -> Dict[str, Any]:
     for obj in objects:
         name = obj.object_name
         # Hanya unduh dari prefix raw/ dan processed/ (kecualikan 'latest.csv' untuk mencegah duplikasi penamaan)
-        if (name.startswith("raw/") or name.startswith("processed/")) and not name.endswith("latest.csv"):
+        if (name.startswith("raw/") or name.startswith("processed/")) and not name.endswith(
+            "latest.csv"
+        ):
             parts = name.split("/", 1)
             folder_type = parts[0]
             filename = parts[1]
@@ -167,23 +181,29 @@ def pull_datasets_from_minio() -> Dict[str, Any]:
 
             logger.info("Mengunduh %s (%d bytes) -> %s", name, obj.size, local_target)
             client.fget_object(bucket_name, name, str(local_target))
-            downloaded.append({
-                "file": filename,
-                "type": folder_type,
-                "size": obj.size,
-            })
+            downloaded.append(
+                {
+                    "file": filename,
+                    "type": folder_type,
+                    "size": obj.size,
+                }
+            )
 
     # Otomatis trigger dvc commit lokal agar pointer .dvc terupdate tanpa error
     dvc_bin = REPO_ROOT / ".venv" / "bin" / "dvc"
     if dvc_bin.exists() or Path("/usr/bin/dvc").exists():
         bin_to_run = str(dvc_bin) if dvc_bin.exists() else "dvc"
         try:
-            subprocess.run([bin_to_run, "commit", "-f"], cwd=str(REPO_ROOT), check=False, capture_output=True)
+            subprocess.run(
+                [bin_to_run, "commit", "-f"], cwd=str(REPO_ROOT), check=False, capture_output=True
+            )
             logger.info("✓ Sinkronisasi lokal DVC cache berhasil di-commit.")
         except Exception as e:
             logger.warning("DVC local commit skipped: %s", e)
 
-    logger.info("✓ Selesai: %d file baru diunduh, %d file lokal sudah cocok.", len(downloaded), len(skipped))
+    logger.info(
+        "✓ Selesai: %d file baru diunduh, %d file lokal sudah cocok.", len(downloaded), len(skipped)
+    )
     return {
         "downloaded_count": len(downloaded),
         "downloaded": downloaded,
@@ -215,10 +235,20 @@ def list_remote_datasets() -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="MinIO and DVC Bi-Directional Dataset Synchronization")
-    parser.add_argument("--pull", action="store_true", help="Unduh semua dataset terbaru dari MinIO ke lokal")
-    parser.add_argument("--push-latest", action="store_true", help="Unggah file raw & processed lokal terbaru ke MinIO")
-    parser.add_argument("--status", action="store_true", help="Tampilkan daftar dataset yang tersimpan di MinIO")
+    parser = argparse.ArgumentParser(
+        description="MinIO and DVC Bi-Directional Dataset Synchronization"
+    )
+    parser.add_argument(
+        "--pull", action="store_true", help="Unduh semua dataset terbaru dari MinIO ke lokal"
+    )
+    parser.add_argument(
+        "--push-latest",
+        action="store_true",
+        help="Unggah file raw & processed lokal terbaru ke MinIO",
+    )
+    parser.add_argument(
+        "--status", action="store_true", help="Tampilkan daftar dataset yang tersimpan di MinIO"
+    )
     args = parser.parse_args()
 
     if args.pull:

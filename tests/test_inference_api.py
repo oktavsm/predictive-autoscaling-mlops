@@ -105,4 +105,3 @@ def test_scale_decision_k8s_adapter(client):
     assert data["kind"] == "AutoscalingDecision"
     assert "desiredReplicas" in data["spec"]
     assert data["spec"]["policy"]["maxReplicas"] in (4, 6)
-

@@ -29,9 +29,9 @@ logger = logging.getLogger("finops")
 
 # Hardware & AWS Pricing Reference (AWS EC2 us-east-1 / ap-southeast-3 standard)
 CPU_REQUEST_CORES = 0.175  # 175m per pod
-RAM_REQUEST_GB = 0.152     # 152 MiB per pod
-HOURS_PER_MONTH = 720.0    # 30 days * 24 hours
-USD_TO_IDR = 15800.0       # Exchange rate
+RAM_REQUEST_GB = 0.152  # 152 MiB per pod
+HOURS_PER_MONTH = 720.0  # 30 days * 24 hours
+USD_TO_IDR = 15800.0  # Exchange rate
 
 # AWS Compute Cost Estimation (t3.medium base equivalent ~$0.0416/hr for 2vCPU, 4GB RAM)
 COST_PER_VCPU_HOUR_USD = 0.0175
@@ -79,7 +79,9 @@ class FinOpsCalculator:
         }
 
     def evaluate_all(self) -> Dict[str, Any]:
-        static_res = self._calculate_strategy(self.max_pods, "Static Over-Provisioning (Always 6 Pods)")
+        static_res = self._calculate_strategy(
+            self.max_pods, "Static Over-Provisioning (Always 6 Pods)"
+        )
         reactive_res = self._calculate_strategy(self.reactive_avg, "Reactive HPA Baseline")
         predictive_res = self._calculate_strategy(self.predictive_avg, "ML Predictive Autoscaling")
 
@@ -89,7 +91,9 @@ class FinOpsCalculator:
         carbon_saved_vs_static = static_res["carbon_kg_co2e"] - predictive_res["carbon_kg_co2e"]
 
         # Savings vs Reactive
-        usd_saved_vs_reactive = reactive_res["monthly_cost_usd"] - predictive_res["monthly_cost_usd"]
+        usd_saved_vs_reactive = (
+            reactive_res["monthly_cost_usd"] - predictive_res["monthly_cost_usd"]
+        )
         pct_saved_vs_reactive = (usd_saved_vs_reactive / reactive_res["monthly_cost_usd"]) * 100.0
         carbon_saved_vs_reactive = reactive_res["carbon_kg_co2e"] - predictive_res["carbon_kg_co2e"]
 
@@ -125,9 +129,9 @@ def generate_markdown_report(data: Dict[str, Any], output_path: str) -> None:
     md = f"""# Analisis FinOps & Green Computing: Efisiensi Biaya & Karbon
 ## Tata Kelola AI Berkelanjutan (*Sustainable MLOps & Resource Optimization*)
 
-> **Periode Evaluasi:** 1 Bulan Kalender (720 Jam Operasional)  
-> **Spesifikasi Pod:** 175m vCPU & 152 MiB RAM per instance PHP-FPM / Laravel  
-> **Standar Kurs:** 1 USD = Rp {USD_TO_IDR:,.0f} IDR  
+> **Periode Evaluasi:** 1 Bulan Kalender (720 Jam Operasional)
+> **Spesifikasi Pod:** 175m vCPU & 152 MiB RAM per instance PHP-FPM / Laravel
+> **Standar Kurs:** 1 USD = Rp {USD_TO_IDR:,.0f} IDR
 
 ---
 
@@ -135,33 +139,33 @@ def generate_markdown_report(data: Dict[str, Any], output_path: str) -> None:
 
 | Strategi Penskalaan Klaster | Rata-rata Replika | vCPU-Hours | RAM GB-Hours | Biaya Bulanan (USD) | Biaya Bulanan (IDR) | Emisi Karbon (kg CO₂e) |
 |:---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Static Over-Provisioning** *(Always 6 Pods)* | `6.0 Pods` | `{st['static']['vcpu_hours']:,.1f}` | `{st['static']['ram_gb_hours']:,.1f}` | **${st['static']['monthly_cost_usd']:,.2f}** | **Rp {st['static']['monthly_cost_idr']:,.0f}** | `{st['static']['carbon_kg_co2e']:.2f} kg` |
-| **Reactive HPA** *(Bawaan Kubernetes)* | `2.8 Pods` | `{st['reactive']['vcpu_hours']:,.1f}` | `{st['reactive']['ram_gb_hours']:,.1f}` | **${st['reactive']['monthly_cost_usd']:,.2f}** | **Rp {st['reactive']['monthly_cost_idr']:,.0f}** | `{st['reactive']['carbon_kg_co2e']:.2f} kg` |
-| **ML Predictive Autoscaler** *(Proaktif)* | `1.6 Pods` | `{st['predictive']['vcpu_hours']:,.1f}` | `{st['predictive']['ram_gb_hours']:,.1f}` | **${st['predictive']['monthly_cost_usd']:,.2f}** | **Rp {st['predictive']['monthly_cost_idr']:,.0f}** | **{st['predictive']['carbon_kg_co2e']:.2f} kg** |
+| **Static Over-Provisioning** *(Always 6 Pods)* | `6.0 Pods` | `{st["static"]["vcpu_hours"]:,.1f}` | `{st["static"]["ram_gb_hours"]:,.1f}` | **${st["static"]["monthly_cost_usd"]:,.2f}** | **Rp {st["static"]["monthly_cost_idr"]:,.0f}** | `{st["static"]["carbon_kg_co2e"]:.2f} kg` |
+| **Reactive HPA** *(Bawaan Kubernetes)* | `2.8 Pods` | `{st["reactive"]["vcpu_hours"]:,.1f}` | `{st["reactive"]["ram_gb_hours"]:,.1f}` | **${st["reactive"]["monthly_cost_usd"]:,.2f}** | **Rp {st["reactive"]["monthly_cost_idr"]:,.0f}** | `{st["reactive"]["carbon_kg_co2e"]:.2f} kg` |
+| **ML Predictive Autoscaler** *(Proaktif)* | `1.6 Pods` | `{st["predictive"]["vcpu_hours"]:,.1f}` | `{st["predictive"]["ram_gb_hours"]:,.1f}` | **${st["predictive"]["monthly_cost_usd"]:,.2f}** | **Rp {st["predictive"]["monthly_cost_idr"]:,.0f}** | **{st["predictive"]["carbon_kg_co2e"]:.2f} kg** |
 
 ---
 
 ## 🏆 2. Kuantifikasi Penghematan FinOps
 
 ### A. Dibandingkan Static Over-Provisioning (Alokasi Statis Maksimum):
-* 📉 **Penurunan Biaya Komputasi:** **{comp['vs_static']['cost_reduction_pct']}% Lebih Hemat**
-* 💵 **Uang yang Dihemat per Bulan:** **${comp['vs_static']['monthly_savings_usd']:.2f}** (atau setara **Rp {comp['vs_static']['monthly_savings_idr']:,.0f}**)
-* 🌱 **Pengurangan Jejak Karbon:** **{comp['vs_static']['carbon_avoidance_kg_co2e']:.2f} kg CO₂e / bulan**
+* 📉 **Penurunan Biaya Komputasi:** **{comp["vs_static"]["cost_reduction_pct"]}% Lebih Hemat**
+* 💵 **Uang yang Dihemat per Bulan:** **${comp["vs_static"]["monthly_savings_usd"]:.2f}** (atau setara **Rp {comp["vs_static"]["monthly_savings_idr"]:,.0f}**)
+* 🌱 **Pengurangan Jejak Karbon:** **{comp["vs_static"]["carbon_avoidance_kg_co2e"]:.2f} kg CO₂e / bulan**
 
 ### B. Dibandingkan Reactive HPA (Penskalaan Reaktif Standar):
-* 📉 **Penurunan Biaya Tambahan:** **{comp['vs_reactive']['cost_reduction_pct']}% Lebih Efisien**
-* 💵 **Uang yang Dihemat per Bulan:** **${comp['vs_reactive']['monthly_savings_usd']:.2f}** (atau setara **Rp {comp['vs_reactive']['monthly_savings_idr']:,.0f}**)
-* 🌱 **Pengurangan Jejak Karbon:** **{comp['vs_reactive']['carbon_avoidance_kg_co2e']:.2f} kg CO₂e / bulan**
+* 📉 **Penurunan Biaya Tambahan:** **{comp["vs_reactive"]["cost_reduction_pct"]}% Lebih Efisien**
+* 💵 **Uang yang Dihemat per Bulan:** **${comp["vs_reactive"]["monthly_savings_usd"]:.2f}** (atau setara **Rp {comp["vs_reactive"]["monthly_savings_idr"]:,.0f}**)
+* 🌱 **Pengurangan Jejak Karbon:** **{comp["vs_reactive"]["carbon_avoidance_kg_co2e"]:.2f} kg CO₂e / bulan**
 
 ---
 
 ## 🔍 3. Mengapa Predictive Autoscaling Lebih Hemat daripada Reactive HPA?
 
-1. **Anti-Osilasi Cooldown yang Terukur:**  
+1. **Anti-Osilasi Cooldown yang Terukur:**
    Reactive HPA cenderung lambat melakukan *scale-down* (default K8s stabilisasi 5 menit), sehingga pod berlebih tetap menyala dan membakar biaya komputasi jauh setelah lonjakan trafik mereda.
-2. **Right-Sizing Presisi Berbasis Beban Aktual:**  
+2. **Right-Sizing Presisi Berbasis Beban Aktual:**
    Model ML memprediksi kebutuhan kapasitas secara adaptif sesuai *request rate* (RPS), menjaga klaster tetap berada di batas minimum 1 Pod selama periode sepi/malam hari (*idle hours*).
-3. **Penyelarasan Prinsip Green Computing & Sustainability:**  
+3. **Penyelarasan Prinsip Green Computing & Sustainability:**
    Pengurangan penggunaan *vCPU-hours* secara langsung berkontribusi pada penurunan konsumsi listrik datacenter AWS dan pemenuhan target *sustainable AI governance*.
 """
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

@@ -25,7 +25,7 @@ import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 from src.monitoring.alert_dispatcher import AlertDispatcher
@@ -42,7 +42,9 @@ DEFAULT_MLFLOW_URL = os.getenv("MLFLOW_TRACKING_URI", "https://mlflow.titipin.me
 DRIFT_THRESHOLD = float(os.getenv("DRIFT_PSI_THRESHOLD", "0.25"))
 
 
-def calculate_psi(expected: List[float], actual: List[float], num_bins: int = 10, epsilon: float = 1e-4) -> float:
+def calculate_psi(
+    expected: List[float], actual: List[float], num_bins: int = 10, epsilon: float = 1e-4
+) -> float:
     """Calculates Population Stability Index between reference and current distribution."""
     if not expected or not actual:
         return 0.0
@@ -62,13 +64,21 @@ def calculate_psi(expected: List[float], actual: List[float], num_bins: int = 10
 
     for val in expected:
         for b in range(len(bin_edges) - 1):
-            if (b == 0 and val <= bin_edges[1]) or (bin_edges[b] < val <= bin_edges[b + 1]) or (b == len(bin_edges) - 2 and val >= bin_edges[b]):
+            if (
+                (b == 0 and val <= bin_edges[1])
+                or (bin_edges[b] < val <= bin_edges[b + 1])
+                or (b == len(bin_edges) - 2 and val >= bin_edges[b])
+            ):
                 exp_counts[b] += 1
                 break
 
     for val in actual:
         for b in range(len(bin_edges) - 1):
-            if (b == 0 and val <= bin_edges[1]) or (bin_edges[b] < val <= bin_edges[b + 1]) or (b == len(bin_edges) - 2 and val >= bin_edges[b]):
+            if (
+                (b == 0 and val <= bin_edges[1])
+                or (bin_edges[b] < val <= bin_edges[b + 1])
+                or (b == len(bin_edges) - 2 and val >= bin_edges[b])
+            ):
                 act_counts[b] += 1
                 break
 
@@ -81,7 +91,9 @@ def calculate_psi(expected: List[float], actual: List[float], num_bins: int = 10
     return round(float(psi), 4)
 
 
-def evaluate_telemetry_drift(ref_file: str, curr_file: str, threshold: float = DRIFT_THRESHOLD) -> Tuple[bool, float, List[str], Dict[str, Any]]:
+def evaluate_telemetry_drift(
+    ref_file: str, curr_file: str, threshold: float = DRIFT_THRESHOLD
+) -> Tuple[bool, float, List[str], Dict[str, Any]]:
     """Evaluates multi-feature drift between reference dataset and recent telemetry."""
     if not os.path.exists(ref_file):
         raise FileNotFoundError(f"Reference file not found: {ref_file}")
@@ -176,7 +188,11 @@ def hot_reload_inference_service(api_url: str = DEFAULT_MODEL_API) -> bool:
         with urllib.request.urlopen(req, timeout=10.0) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             if data.get("status") == "reloaded":
-                logger.info("Model hot reload SUCCESSFUL! Model: %s, URI: %s", data.get("model"), data.get("model_uri"))
+                logger.info(
+                    "Model hot reload SUCCESSFUL! Model: %s, URI: %s",
+                    data.get("model"),
+                    data.get("model_uri"),
+                )
                 return True
     except Exception as exc:
         logger.warning("Failed to invoke model reload: %s", exc)
@@ -194,7 +210,9 @@ def run_autonomous_cycle(
     dispatcher = AlertDispatcher()
     logger.info("Starting Autonomous MLOps Closed-Loop Monitoring Cycle...")
 
-    is_drifted, max_psi, drift_feats, report = evaluate_telemetry_drift(ref_file, curr_file, threshold)
+    is_drifted, max_psi, drift_feats, report = evaluate_telemetry_drift(
+        ref_file, curr_file, threshold
+    )
 
     cycle_result: Dict[str, Any] = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -208,7 +226,11 @@ def run_autonomous_cycle(
     }
 
     if is_drifted or force_retrain:
-        trigger_reason = "Force Retrain Flag" if force_retrain else f"Severe Drift (PSI={max_psi:.4f} > {threshold})"
+        trigger_reason = (
+            "Force Retrain Flag"
+            if force_retrain
+            else f"Severe Drift (PSI={max_psi:.4f} > {threshold})"
+        )
         logger.warning("TRIGGERING AUTONOMOUS RETRAINING: %s", trigger_reason)
 
         # 1. Notify channels about detected incident
@@ -222,6 +244,7 @@ def run_autonomous_cycle(
         # 1.5 Sync drift telemetry dataset to MinIO DVC storage
         try:
             from src.data.minio_sync import push_dataset_to_minio
+
             push_dataset_to_minio(raw_path=curr_file, processed_path=curr_file)
             logger.info("✓ Drift telemetry dataset synced to MinIO cloud remote: %s", curr_file)
         except Exception as sync_e:
@@ -245,17 +268,32 @@ def run_autonomous_cycle(
                 promoted=True,
             )
     else:
-        logger.info("Distribution stable (Max PSI = %.4f <= %.2f). No retraining needed.", max_psi, threshold)
+        logger.info(
+            "Distribution stable (Max PSI = %.4f <= %.2f). No retraining needed.",
+            max_psi,
+            threshold,
+        )
 
     return cycle_result
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Autonomous Closed-Loop Drift Retraining Engine")
-    parser.add_argument("--ref-file", default="src/data/raw/spike_run_001.csv", help="Baseline reference dataset")
-    parser.add_argument("--curr-file", default="src/data/raw/periodic_run_001.csv", help="Current telemetry dataset")
-    parser.add_argument("--threshold", type=float, default=DRIFT_THRESHOLD, help="PSI threshold for retraining trigger")
-    parser.add_argument("--force-retrain", action="store_true", help="Force retraining trigger regardless of PSI")
+    parser.add_argument(
+        "--ref-file", default="src/data/raw/spike_run_001.csv", help="Baseline reference dataset"
+    )
+    parser.add_argument(
+        "--curr-file", default="src/data/raw/periodic_run_001.csv", help="Current telemetry dataset"
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=DRIFT_THRESHOLD,
+        help="PSI threshold for retraining trigger",
+    )
+    parser.add_argument(
+        "--force-retrain", action="store_true", help="Force retraining trigger regardless of PSI"
+    )
     parser.add_argument("--output-json", default="docs/coursework/AUTONOMOUS_DRIFT_REPORT.json")
     args = parser.parse_args()
 

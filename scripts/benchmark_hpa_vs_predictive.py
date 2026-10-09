@@ -141,7 +141,7 @@ def set_deployment_replicas(namespace: str, deployment: str, replicas: int) -> b
 
 def trigger_traffic_spike_remote(vus: int = 65, duration_s: int = 45) -> bool:
     """Triggers spike workload on remote VM cp-bcc or locally via curl."""
-    ssh_cmd = f"ssh -o StrictHostKeyChecking=no -p 11049 dev@proxy.bccdev.id 'cd ~/titipin-traffic-generator && ./manage_generator.sh trigger spike' 2>/dev/null"
+    ssh_cmd = "ssh -o StrictHostKeyChecking=no -p 11049 dev@proxy.bccdev.id 'cd ~/titipin-traffic-generator && ./manage_generator.sh trigger spike' 2>/dev/null"
     res = subprocess.call(ssh_cmd, shell=True)
     if res == 0:
         logger.info("Remote traffic spike successfully triggered on VM cp-bcc (VUs: %d).", vus)
@@ -185,18 +185,24 @@ def run_benchmark_phase(
 
         if reps > 1 and initial_scale_time is None:
             initial_scale_time = elapsed
-            logger.info("[%s] FIRST SCALE-UP DETECTED at +%.1fs (Replicas: %d)", phase_name, elapsed, reps)
+            logger.info(
+                "[%s] FIRST SCALE-UP DETECTED at +%.1fs (Replicas: %d)", phase_name, elapsed, reps
+            )
 
         if reps >= 4 and target_scale_time is None:
             target_scale_time = elapsed
-            logger.info("[%s] TARGET SCALE-UP REACHED at +%.1fs (Replicas: %d)", phase_name, elapsed, reps)
+            logger.info(
+                "[%s] TARGET SCALE-UP REACHED at +%.1fs (Replicas: %d)", phase_name, elapsed, reps
+            )
 
-        samples.append({
-            "elapsed_seconds": elapsed,
-            "replicas": reps,
-            "p95_latency_ms": round(p95 * 1000.0, 2),
-            "incoming_rps": round(rps, 2),
-        })
+        samples.append(
+            {
+                "elapsed_seconds": elapsed,
+                "replicas": reps,
+                "p95_latency_ms": round(p95 * 1000.0, 2),
+                "incoming_rps": round(rps, 2),
+            }
+        )
         time.sleep(poll_interval_s)
 
     # Compute Phase Metrics
@@ -226,8 +232,13 @@ def run_benchmark_phase(
         "samples_count": len(samples),
         "timeline": samples,
     }
-    logger.info("[%s] COMPLETED: ScaleLag=%.1fs, MaxP95=%.1fms, SLO Compliance=%.1f%%",
-                phase_name, scale_lag_s, max_p95, slo_compliance)
+    logger.info(
+        "[%s] COMPLETED: ScaleLag=%.1fs, MaxP95=%.1fms, SLO Compliance=%.1f%%",
+        phase_name,
+        scale_lag_s,
+        max_p95,
+        slo_compliance,
+    )
     return result
 
 
@@ -236,29 +247,41 @@ def main() -> None:
     parser.add_argument("--prom-url", default=DEFAULT_PROMETHEUS)
     parser.add_argument("--duration", type=int, default=50, help="Duration in seconds per phase")
     parser.add_argument("--output-json", default="benchmark_results.json")
-    parser.add_argument("--output-md", default="docs/coursework/BENCHMARK_HPA_VS_PREDICTIVE_RESULT.md")
+    parser.add_argument(
+        "--output-md", default="docs/coursework/BENCHMARK_HPA_VS_PREDICTIVE_RESULT.md"
+    )
     args = parser.parse_args()
 
     collector = TelemetryCollector(args.prom_url)
 
     logger.info("Initializing Head-to-Head Comparative Benchmark...")
     # 1. Run Reactive HPA Baseline
-    res_reactive = run_benchmark_phase("Reactive_HPA_Baseline", dry_run=True, collector=collector, duration_s=args.duration)
+    res_reactive = run_benchmark_phase(
+        "Reactive_HPA_Baseline", dry_run=True, collector=collector, duration_s=args.duration
+    )
 
     logger.info("Cooling down cluster for 15 seconds before Phase 2...")
     time.sleep(15)
 
     # 2. Run Predictive Autoscaler Active
-    res_predictive = run_benchmark_phase("Predictive_Autoscaler_Active", dry_run=False, collector=collector, duration_s=args.duration)
+    res_predictive = run_benchmark_phase(
+        "Predictive_Autoscaler_Active", dry_run=False, collector=collector, duration_s=args.duration
+    )
 
     # 3. Restore Predictive Scaler to Active
     set_predictive_scaler_dry_run(False)
 
     # Calculate Comparative Delta
-    lead_time_advantage = round(res_reactive["scale_reaction_time_s"] - res_predictive["scale_reaction_time_s"], 2)
+    lead_time_advantage = round(
+        res_reactive["scale_reaction_time_s"] - res_predictive["scale_reaction_time_s"], 2
+    )
     latency_reduction_pct = round(
-        ((res_reactive["max_p95_latency_ms"] - res_predictive["max_p95_latency_ms"]) /
-         max(1.0, res_reactive["max_p95_latency_ms"])) * 100.0, 2
+        (
+            (res_reactive["max_p95_latency_ms"] - res_predictive["max_p95_latency_ms"])
+            / max(1.0, res_reactive["max_p95_latency_ms"])
+        )
+        * 100.0,
+        2,
     )
 
     summary = {
@@ -268,7 +291,9 @@ def main() -> None:
         "comparison": {
             "anticipation_lead_time_advantage_s": lead_time_advantage,
             "peak_latency_reduction_pct": latency_reduction_pct,
-            "slo_compliance_gain_pct": round(res_predictive["slo_compliance_pct"] - res_reactive["slo_compliance_pct"], 2),
+            "slo_compliance_gain_pct": round(
+                res_predictive["slo_compliance_pct"] - res_reactive["slo_compliance_pct"], 2
+            ),
             "recommendation": "Predictive Autoscaling completely mitigates PHP-FPM cold-start lag under burst traffic.",
         },
     }
@@ -282,9 +307,9 @@ def main() -> None:
     md_content = f"""# 📊 Hasil Uji Komparasi Head-to-Head: Reactive HPA vs Predictive Autoscaler
 ## Uji Benchmark Empiris Penskalaan Beban Lonjakan (*Spike Traffic*)
 
-> **Waktu Pengujian:** `{summary['timestamp']}`  
-> **Target Workload:** `{DEFAULT_NAMESPACE}/{DEFAULT_DEPLOYMENT}`  
-> **Klaster:** AWS K3s Multi-Node Cluster  
+> **Waktu Pengujian:** `{summary["timestamp"]}`
+> **Target Workload:** `{DEFAULT_NAMESPACE}/{DEFAULT_DEPLOYMENT}`
+> **Klaster:** AWS K3s Multi-Node Cluster
 > **Generator Beban:** Continuous Traffic Generator (`VM cp-bcc`)
 
 ---
@@ -294,22 +319,22 @@ def main() -> None:
 | Metrik Kinerja Operasional | Reactive HPA (Bawaan K8s) | Predictive Autoscaler (ML Champion) | Selisih / Keuntungan MLOps |
 |:---|:---:|:---:|:---:|
 | **Mekanisme Pemicu Skala** | Reaktif (Ambang CPU > 60%) | Proaktif (Prediksi Workload $t+60$s) | **Antisipatif (+60s)** |
-| **Waktu Reaksi Penskalaan Pod** | `{res_reactive['scale_reaction_time_s']:.1f} detik` | `{res_predictive['scale_reaction_time_s']:.1f} detik` | **+{lead_time_advantage:.1f} detik lebih cepat** |
-| **Puncak Latensi P95** | `{res_reactive['max_p95_latency_ms']:.1f} ms` | `{res_predictive['max_p95_latency_ms']:.1f} ms` | **Turun {latency_reduction_pct:.1f}%** |
-| **Rata-rata Latensi P95** | `{res_reactive['avg_p95_latency_ms']:.1f} ms` | `{res_predictive['avg_p95_latency_ms']:.1f} ms` | **Konsisten Rendah** |
-| **Tingkat Kepatuhan SLO (<100ms)**| `{res_reactive['slo_compliance_pct']:.1f}%` | `{res_predictive['slo_compliance_pct']:.1f}%` | **+{summary['comparison']['slo_compliance_gain_pct']:.1f}% Bebas Pelanggaran** |
+| **Waktu Reaksi Penskalaan Pod** | `{res_reactive["scale_reaction_time_s"]:.1f} detik` | `{res_predictive["scale_reaction_time_s"]:.1f} detik` | **+{lead_time_advantage:.1f} detik lebih cepat** |
+| **Puncak Latensi P95** | `{res_reactive["max_p95_latency_ms"]:.1f} ms` | `{res_predictive["max_p95_latency_ms"]:.1f} ms` | **Turun {latency_reduction_pct:.1f}%** |
+| **Rata-rata Latensi P95** | `{res_reactive["avg_p95_latency_ms"]:.1f} ms` | `{res_predictive["avg_p95_latency_ms"]:.1f} ms` | **Konsisten Rendah** |
+| **Tingkat Kepatuhan SLO (<100ms)**| `{res_reactive["slo_compliance_pct"]:.1f}%` | `{res_predictive["slo_compliance_pct"]:.1f}%` | **+{summary["comparison"]["slo_compliance_gain_pct"]:.1f}% Bebas Pelanggaran** |
 | **Cold-Start PHP-FPM Spikes** | Ada lonjakan latensi | **Tereliminasi Sepenuhnya** | **Zero Degradation** |
 
 ---
 
 ## 2. Analisis Akademis & Kesimpulan
 
-1. **Eliminasi Reactive Lag:**  
-   Horizontal Pod Autoscaler (HPA) konvensional mengalami keterlambatan reaksi (*reactive lag*) sekitar {res_reactive['scale_reaction_time_s']:.1f} detik karena harus menunggu metrik CPU terkumpul dan dirata-ratakan selama 1-2 menit.
-2. **Kesiapan Pod (Pre-Provisioned):**  
+1. **Eliminasi Reactive Lag:**
+   Horizontal Pod Autoscaler (HPA) konvensional mengalami keterlambatan reaksi (*reactive lag*) sekitar {res_reactive["scale_reaction_time_s"]:.1f} detik karena harus menunggu metrik CPU terkumpul dan dirata-ratakan selama 1-2 menit.
+2. **Kesiapan Pod (Pre-Provisioned):**
    Dengan model Machine Learning (*Random Forest Ensemble*), pod baru sudah berada dalam kondisi `Running (1/1)` sesaat sebelum puncak trafik tiba di gerbang Caddy Ingress, sehingga seluruh request langsung terdistribusi rata tanpa mengantre.
-3. **Kepatuhan Service Level Agreement (SLA):**  
-   Penggunaan Predictive Autoscaling meningkatkan kepatuhan SLO hingga `{res_predictive['slo_compliance_pct']:.1f}%` pada saat flash-sale spike 60+ RPS.
+3. **Kepatuhan Service Level Agreement (SLA):**
+   Penggunaan Predictive Autoscaling meningkatkan kepatuhan SLO hingga `{res_predictive["slo_compliance_pct"]:.1f}%` pada saat flash-sale spike 60+ RPS.
 """
     os.makedirs(os.path.dirname(args.output_md), exist_ok=True)
     with open(args.output_md, "w", encoding="utf-8") as f:

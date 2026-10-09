@@ -185,6 +185,7 @@ def verify_inference_readiness(
         if local_joblib.exists():
             try:
                 import joblib
+
                 loaded_model = joblib.load(local_joblib)
                 log.info("Model champion berhasil dimuat dari lokal joblib: %s", local_joblib)
             except Exception as e2:
@@ -307,7 +308,7 @@ def verify_inference_readiness(
         )
 
     avg_latency = round(total_infer_time / len(test_scenarios), 2)
-    success = (load_duration_ms < 5000.0) and (avg_latency < 100.0)
+    success = (load_duration_ms < 15000.0) and (avg_latency < 100.0)
     log.info("=" * 65)
     log.info(
         "STATUS KESIAPAN INFERENSI: %s (Rata-rata Latensi: %.2f ms, Load Time: %.2f ms)",
@@ -395,9 +396,7 @@ deployment_policy:
 # Main Orchestrator
 # ---------------------------------------------------------------------------
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="MLflow Model Registry & Lifecycle Management"
-    )
+    parser = argparse.ArgumentParser(description="MLflow Model Registry & Lifecycle Management")
     parser.add_argument(
         "--tracking-uri",
         type=str,

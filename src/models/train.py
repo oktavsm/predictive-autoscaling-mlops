@@ -583,6 +583,7 @@ def main() -> None:
         # Simpan objek model langsung untuk fallback lokal
         try:
             import joblib
+
             joblib.dump(best_candidate["model"], MODELS_DIR / "champion_model.joblib")
             log.info("Objek model champion tersimpan di: %s", MODELS_DIR / "champion_model.joblib")
         except Exception as e:

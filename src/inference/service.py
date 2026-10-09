@@ -28,8 +28,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger("predictive-autoscaler")
-
+import mlflow
+import mlflow.pyfunc
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Response
@@ -43,8 +43,7 @@ from prometheus_client import (
 from pydantic import BaseModel, Field
 
 os.environ["MLFLOW_DISABLE_AGENT_HINT"] = "1"
-import mlflow
-import mlflow.pyfunc
+logger = logging.getLogger("predictive-autoscaler")
 
 # ---------------------------------------------------------------------------
 # Configuration & Constants
@@ -53,7 +52,9 @@ MODEL_NAME = os.getenv("MODEL_NAME", "predictive-autoscaler")
 MODEL_ALIAS = os.getenv("MODEL_ALIAS", "champion")
 DEFAULT_TRACKING_URI = os.getenv(
     "MLFLOW_TRACKING_URI",
-    "http://mlops-mlflow-svc:5000" if (os.getenv("KUBERNETES_SERVICE_HOST") or os.path.exists("/var/run/secrets/kubernetes.io")) else "sqlite:///mlflow.db"
+    "http://mlops-mlflow-svc:5000"
+    if (os.getenv("KUBERNETES_SERVICE_HOST") or os.path.exists("/var/run/secrets/kubernetes.io"))
+    else "sqlite:///mlflow.db",
 )
 TARGET_RPS_PER_POD = float(os.getenv("TARGET_RPS_PER_POD", "10.0"))
 MIN_REPLICAS = int(os.getenv("MIN_REPLICAS", "1"))
@@ -149,6 +150,7 @@ def load_model_from_registry():
         model_store["load_time_ms"] = round((time.perf_counter() - t0) * 1000.0, 2)
         try:
             from mlflow.tracking import MlflowClient
+
             client = MlflowClient(DEFAULT_TRACKING_URI)
             mvs = client.search_model_versions(f"name='{MODEL_NAME}'")
             for mv in mvs:
@@ -164,6 +166,7 @@ def load_model_from_registry():
     # Fallback 1: Versi langsung dari Production atau latest
     try:
         from mlflow.tracking import MlflowClient
+
         client = MlflowClient(DEFAULT_TRACKING_URI)
         mvs = client.search_model_versions(f"name='{MODEL_NAME}'")
         target_v = "30"
@@ -414,20 +417,24 @@ def scaling_decision(payload: TelemetryFeatures) -> Dict[str, Any]:
     global total_evaluations_count
     total_evaluations_count += 1
     pred_res = predict_workload(payload)
-    current_reps = int(payload.current_replicas or math.ceil(payload.request_rate / TARGET_RPS_PER_POD) or 1)
+    current_reps = int(
+        payload.current_replicas or math.ceil(payload.request_rate / TARGET_RPS_PER_POD) or 1
+    )
 
     # Track decision in ring buffer
-    scaling_decisions_ring.appendleft({
-        "timestamp": pred_res.timestamp,
-        "input_rps": round(payload.request_rate, 2),
-        "input_cpu": round(payload.php_cpu_cores, 3),
-        "input_p95_ms": round((payload.p95_latency_seconds or 0.0) * 1000.0, 1),
-        "current_replicas": current_reps,
-        "predicted_rps_60s": round(pred_res.predicted_workload_rps_60s, 2),
-        "desired_replicas": pred_res.recommended_replicas,
-        "action": pred_res.scaling_action,
-        "latency_ms": round(pred_res.inference_latency_ms, 2),
-    })
+    scaling_decisions_ring.appendleft(
+        {
+            "timestamp": pred_res.timestamp,
+            "input_rps": round(payload.request_rate, 2),
+            "input_cpu": round(payload.php_cpu_cores, 3),
+            "input_p95_ms": round((payload.p95_latency_seconds or 0.0) * 1000.0, 1),
+            "current_replicas": current_reps,
+            "predicted_rps_60s": round(pred_res.predicted_workload_rps_60s, 2),
+            "desired_replicas": pred_res.recommended_replicas,
+            "action": pred_res.scaling_action,
+            "latency_ms": round(pred_res.inference_latency_ms, 2),
+        }
+    )
 
     return {
         "kind": "AutoscalingDecision",
@@ -463,42 +470,50 @@ scaling_actions_ring: deque = deque(maxlen=40)
 
 # Pre-populate with realistic verified historical cluster events
 _now_utc = datetime.now(timezone.utc)
-scaling_actions_ring.appendleft({
-    "timestamp": (_now_utc - timedelta(minutes=45)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "action": "SCALE_UP",
-    "from_replicas": 1,
-    "to_replicas": 4,
-    "predicted_rps": 42.8,
-    "reason": "SCALE_UP (1 -> 4) rush-hour surge anticipation",
-    "status": "APPLIED (K8s Patched)",
-})
-scaling_actions_ring.appendleft({
-    "timestamp": (_now_utc - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "action": "SCALE_DOWN",
-    "from_replicas": 4,
-    "to_replicas": 1,
-    "predicted_rps": 8.5,
-    "reason": "SCALE_DOWN (4 -> 1) cooldown window elapsed",
-    "status": "APPLIED (K8s Patched)",
-})
-scaling_actions_ring.appendleft({
-    "timestamp": (_now_utc - timedelta(minutes=10)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "action": "MAINTAIN",
-    "from_replicas": 1,
-    "to_replicas": 1,
-    "predicted_rps": 10.4,
-    "reason": "MAINTAIN (1 replicas optimal) after CT model reload",
-    "status": "STABLE",
-})
-scaling_actions_ring.appendleft({
-    "timestamp": (_now_utc - timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "action": "MAINTAIN",
-    "from_replicas": 1,
-    "to_replicas": 1,
-    "predicted_rps": 5.2,
-    "reason": "MAINTAIN (1 replicas optimal) within steady-state boundary",
-    "status": "STABLE",
-})
+scaling_actions_ring.appendleft(
+    {
+        "timestamp": (_now_utc - timedelta(minutes=45)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "action": "SCALE_UP",
+        "from_replicas": 1,
+        "to_replicas": 4,
+        "predicted_rps": 42.8,
+        "reason": "SCALE_UP (1 -> 4) rush-hour surge anticipation",
+        "status": "APPLIED (K8s Patched)",
+    }
+)
+scaling_actions_ring.appendleft(
+    {
+        "timestamp": (_now_utc - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "action": "SCALE_DOWN",
+        "from_replicas": 4,
+        "to_replicas": 1,
+        "predicted_rps": 8.5,
+        "reason": "SCALE_DOWN (4 -> 1) cooldown window elapsed",
+        "status": "APPLIED (K8s Patched)",
+    }
+)
+scaling_actions_ring.appendleft(
+    {
+        "timestamp": (_now_utc - timedelta(minutes=10)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "action": "MAINTAIN",
+        "from_replicas": 1,
+        "to_replicas": 1,
+        "predicted_rps": 10.4,
+        "reason": "MAINTAIN (1 replicas optimal) after CT model reload",
+        "status": "STABLE",
+    }
+)
+scaling_actions_ring.appendleft(
+    {
+        "timestamp": (_now_utc - timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "action": "MAINTAIN",
+        "from_replicas": 1,
+        "to_replicas": 1,
+        "predicted_rps": 5.2,
+        "reason": "MAINTAIN (1 replicas optimal) within steady-state boundary",
+        "status": "STABLE",
+    }
+)
 
 
 @app.post("/scaling/action-record")
@@ -529,7 +544,9 @@ def get_scaling_decisions() -> List[Dict[str, Any]]:
     return list(scaling_decisions_ring)
 
 
-def compute_psi_between(expected: np.ndarray, actual: np.ndarray, num_bins: int = 10, epsilon: float = 1e-4) -> float:
+def compute_psi_between(
+    expected: np.ndarray, actual: np.ndarray, num_bins: int = 10, epsilon: float = 1e-4
+) -> float:
     """Calculates Population Stability Index between two 1D numeric distributions."""
     if len(expected) == 0 or len(actual) == 0:
         return 0.0
@@ -629,7 +646,9 @@ def get_live_telemetry_sample() -> List[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 _init_now = datetime.now(timezone.utc)
 _init_wib = _init_now.astimezone(timezone(timedelta(hours=7)))
-_init_ts_str = f"{_init_now.strftime('%Y-%m-%d %H:%M:%S UTC')} ({_init_wib.strftime('%H:%M:%S WIB')})"
+_init_ts_str = (
+    f"{_init_now.strftime('%Y-%m-%d %H:%M:%S UTC')} ({_init_wib.strftime('%H:%M:%S WIB')})"
+)
 _init_date_str = _init_now.strftime("%Y%m%d")
 
 ingestion_store: Dict[str, Any] = {
@@ -713,15 +732,29 @@ def _sync_live_ingestion_and_mlflow(force: bool = False):
     # 1. Sync Ingestion from MinIO S3 or local processed files
     try:
         from minio import Minio
-        minio_endpoint = os.getenv("MINIO_ENDPOINT", "storage.titipin.me").replace("https://", "").replace("http://", "").split("/")[0]
+
+        minio_endpoint = (
+            os.getenv("MINIO_ENDPOINT", "storage.titipin.me")
+            .replace("https://", "")
+            .replace("http://", "")
+            .split("/")[0]
+        )
         minio_user = os.getenv("MINIO_ROOT_USER", os.getenv("MINIO_ACCESS_KEY", "titipin_minio"))
-        minio_password = os.getenv("MINIO_ROOT_PASSWORD", os.getenv("MINIO_SECRET_KEY", "rahasiawoy"))
+        minio_password = os.getenv(
+            "MINIO_ROOT_PASSWORD", os.getenv("MINIO_SECRET_KEY", "rahasiawoy")
+        )
         minio_secure = os.getenv("MINIO_SECURE", "true").lower() in ("true", "1")
         bucket_name = os.getenv("MINIO_BUCKET", "mlops-dvc")
 
-        m_client = Minio(minio_endpoint, access_key=minio_user, secret_key=minio_password, secure=minio_secure)
+        m_client = Minio(
+            minio_endpoint, access_key=minio_user, secret_key=minio_password, secure=minio_secure
+        )
         objs = list(m_client.list_objects(bucket_name, prefix="processed/"))
-        proc_objs = [o for o in objs if "metrics_processed_" in o.object_name and not o.object_name.endswith("latest.csv")]
+        proc_objs = [
+            o
+            for o in objs
+            if "metrics_processed_" in o.object_name and not o.object_name.endswith("latest.csv")
+        ]
         proc_objs.sort(key=lambda x: x.last_modified, reverse=True)
 
         if proc_objs:
@@ -732,17 +765,19 @@ def _sync_live_ingestion_and_mlflow(force: bool = False):
                 ts_wib = o.last_modified.astimezone(wib)
                 ts_str = f"{ts_utc.strftime('%Y-%m-%d %H:%M:%S UTC')} ({ts_wib.strftime('%H:%M:%S WIB')})"
                 fname = os.path.basename(o.object_name)
-                dyn_history.append({
-                    "batch": f"ING-{ts_utc.strftime('%Y%m%d-%H%M%S')}",
-                    "time_utc": ts_utc.strftime("%Y-%m-%d %H:%M:%S"),
-                    "timestamp": ts_str,
-                    "source": "Prometheus (Automated CT Ingestion)",
-                    "records": 5760,
-                    "window": "1440 min",
-                    "output": fname,
-                    "size": o.size,
-                    "status": "HEALTHY (DVC Synced)",
-                })
+                dyn_history.append(
+                    {
+                        "batch": f"ING-{ts_utc.strftime('%Y%m%d-%H%M%S')}",
+                        "time_utc": ts_utc.strftime("%Y-%m-%d %H:%M:%S"),
+                        "timestamp": ts_str,
+                        "source": "Prometheus (Automated CT Ingestion)",
+                        "records": 5760,
+                        "window": "1440 min",
+                        "output": fname,
+                        "size": o.size,
+                        "status": "HEALTHY (DVC Synced)",
+                    }
+                )
 
             top = dyn_history[0]
             raw_target = top["output"].replace("metrics_processed_", "metrics_")
@@ -757,12 +792,18 @@ def _sync_live_ingestion_and_mlflow(force: bool = False):
                 "status": "HEALTHY_INGESTED (Live MinIO S3 Synced)",
             }
             ingestion_store["history"] = dyn_history
-            logger.info(f"[LIVE-SYNC] Synced latest ingestion from MinIO: {top['output']} ({top['timestamp']})")
+            logger.info(
+                f"[LIVE-SYNC] Synced latest ingestion from MinIO: {top['output']} ({top['timestamp']})"
+            )
     except Exception as e_minio:
         logger.debug(f"[LIVE-SYNC] MinIO sync exception: {e_minio}")
         try:
             base_dir = Path(__file__).resolve().parent.parent.parent
-            proc_files = sorted(list((base_dir / "data" / "processed").glob("metrics_processed_*.csv")), key=lambda p: p.stat().st_mtime, reverse=True)
+            proc_files = sorted(
+                list((base_dir / "data" / "processed").glob("metrics_processed_*.csv")),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
             if proc_files:
                 top_f = proc_files[0]
                 mtime = top_f.stat().st_mtime
@@ -788,6 +829,7 @@ def _sync_live_ingestion_and_mlflow(force: bool = False):
     # 2. Sync Retraining from MLflow Model Registry
     try:
         from mlflow.tracking import MlflowClient
+
         ml_client = MlflowClient(DEFAULT_TRACKING_URI)
         mvs = ml_client.search_model_versions(f"name='{MODEL_NAME}'")
         mvs.sort(key=lambda x: int(x.version), reverse=True)
@@ -806,7 +848,9 @@ def _sync_live_ingestion_and_mlflow(force: bool = False):
                     dt_utc = datetime.fromtimestamp(st, tz=timezone.utc)
                     dt_wib = dt_utc.astimezone(wib)
                     ts_str = f"{dt_utc.strftime('%Y-%m-%d %H:%M:%S UTC')} ({dt_wib.strftime('%H:%M:%S WIB')})"
-                    algo = params.get("model_type", params.get("algorithm", "LightGBM Regressor (Optuna)"))
+                    algo = params.get(
+                        "model_type", params.get("algorithm", "LightGBM Regressor (Optuna)")
+                    )
                     if "lightgbm" in algo.lower():
                         algo = "LightGBM Regressor (Optuna)"
                     elif "random" in algo.lower():
@@ -814,23 +858,29 @@ def _sync_live_ingestion_and_mlflow(force: bool = False):
                     elif "ridge" in algo.lower():
                         algo = "Ridge Linear Regressor"
 
-                    stage_str = "Production (@champion)" if mv.current_stage == "Production" else (
-                        "Staging (@challenger)" if mv.current_stage == "Staging" else "Archived"
+                    stage_str = (
+                        "Production (@champion)"
+                        if mv.current_stage == "Production"
+                        else (
+                            "Staging (@challenger)" if mv.current_stage == "Staging" else "Archived"
+                        )
                     )
                     if mv.current_stage == "Production" and not prod_ver:
                         prod_ver = str(mv.version)
                         prod_algo = algo
 
                     val_mae = metrics.get("val_mae", metrics.get("mae", 0.088))
-                    dyn_retrain.append({
-                        "version": str(mv.version),
-                        "timestamp": ts_str,
-                        "time_utc": dt_utc.strftime("%Y-%m-%d %H:%M:%S"),
-                        "algorithm": algo,
-                        "val_mae": f"{float(val_mae):.4f} RPS",
-                        "stage": stage_str,
-                        "trigger": "Continuous Training Pipeline (K8s CronJob)",
-                    })
+                    dyn_retrain.append(
+                        {
+                            "version": str(mv.version),
+                            "timestamp": ts_str,
+                            "time_utc": dt_utc.strftime("%Y-%m-%d %H:%M:%S"),
+                            "algorithm": algo,
+                            "val_mae": f"{float(val_mae):.4f} RPS",
+                            "stage": stage_str,
+                            "trigger": "Continuous Training Pipeline (K8s CronJob)",
+                        }
+                    )
                 except Exception:
                     continue
 
@@ -842,7 +892,9 @@ def _sync_live_ingestion_and_mlflow(force: bool = False):
                     if prod_algo:
                         model_store["model_algorithm"] = prod_algo
                     autonomous_drift_coordinator["champion_version"] = f"v{prod_ver}"
-                logger.info(f"[LIVE-SYNC] Synced MLflow retraining history: {len(dyn_retrain)} versions. Active Champion: v{prod_ver}")
+                logger.info(
+                    f"[LIVE-SYNC] Synced MLflow retraining history: {len(dyn_retrain)} versions. Active Champion: v{prod_ver}"
+                )
     except Exception as e_mlflow:
         logger.debug(f"[LIVE-SYNC] MLflow sync exception: {e_mlflow}")
 
@@ -909,16 +961,20 @@ def _add_timeline_event(stage_code: str, icon: str, title: str, desc: str, statu
     for ev in autonomous_drift_coordinator["timeline"]:
         if ev.get("status") == "ACTIVE":
             ev["status"] = "COMPLETED"
-    autonomous_drift_coordinator["timeline"].insert(0, {
-        "timestamp": ts_str,
-        "stage": stage_code,
-        "icon": icon,
-        "title": title,
-        "detail": desc,
-        "status": status,
-    })
+    autonomous_drift_coordinator["timeline"].insert(
+        0,
+        {
+            "timestamp": ts_str,
+            "stage": stage_code,
+            "icon": icon,
+            "title": title,
+            "detail": desc,
+            "status": status,
+        },
+    )
     # Keep up to 20 historical lifecycle events
     autonomous_drift_coordinator["timeline"] = autonomous_drift_coordinator["timeline"][:20]
+
 
 # ---------------------------------------------------------------------------
 # Workload Generator Coordination Endpoints (for VM cp-bcc & Dashboard)
@@ -968,17 +1024,19 @@ def trigger_workload_state(payload: Dict[str, Any]) -> Dict[str, Any]:
         now_t = time.time()
         for i, offset_s in enumerate([75, 60, 45, 30, 15, 0]):
             t_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now_t - offset_s))
-            scaling_decisions_ring.appendleft({
-                "timestamp": t_str,
-                "input_rps": 44.5 + round((i % 3) * 2.1, 1),
-                "input_cpu": 1.45 + round((i % 2) * 0.15, 2),
-                "input_p95_ms": 285.0 + round((i % 4) * 15.0, 1),
-                "current_replicas": 2,
-                "predicted_rps_60s": 17.8,  # Under-predicts baseline model: anticipates only 17.8 RPS!
-                "desired_replicas": 2,      # Inadequate replicas allocated!
-                "action": "UNDER_PROVISIONED_ERROR (Drift: Model under-predicted 17.8 vs 44.5+ RPS)",
-                "latency_ms": 11.4,
-            })
+            scaling_decisions_ring.appendleft(
+                {
+                    "timestamp": t_str,
+                    "input_rps": 44.5 + round((i % 3) * 2.1, 1),
+                    "input_cpu": 1.45 + round((i % 2) * 0.15, 2),
+                    "input_p95_ms": 285.0 + round((i % 4) * 15.0, 1),
+                    "current_replicas": 2,
+                    "predicted_rps_60s": 17.8,  # Under-predicts baseline model: anticipates only 17.8 RPS!
+                    "desired_replicas": 2,  # Inadequate replicas allocated!
+                    "action": "UNDER_PROVISIONED_ERROR (Drift: Model under-predicted 17.8 vs 44.5+ RPS)",
+                    "latency_ms": 11.4,
+                }
+            )
         autonomous_drift_coordinator["started_at"] = time.time()
         threading.Thread(target=_run_autonomous_drift_sequence, daemon=True).start()
     elif state in ("STEADY_NORMAL", "IDLE_SILENT"):
@@ -993,7 +1051,7 @@ def trigger_workload_state(payload: Dict[str, Any]) -> Dict[str, Any]:
             "🔄",
             "Workload Reset to Baseline Normal (6 VUs)",
             "VM cp-bcc traffic generator switched back to STEADY_NORMAL (6 VUs, ~8 RPS). Baseline operations restored.",
-            "COMPLETED"
+            "COMPLETED",
         )
 
     return {
@@ -1015,7 +1073,15 @@ def _trigger_k8s_retraining_job() -> Optional[str]:
     if not os.path.exists(token_file):
         try:
             subprocess.Popen(
-                ["kubectl", "create", "job", job_name, "--from=cronjob/mlops-continuous-training", "-n", "mlops"],
+                [
+                    "kubectl",
+                    "create",
+                    "job",
+                    job_name,
+                    "--from=cronjob/mlops-continuous-training",
+                    "-n",
+                    "mlops",
+                ],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
@@ -1177,17 +1243,19 @@ def trigger_event_driven_retraining(payload: Optional[Dict[str, Any]] = None) ->
     now_t = time.time()
     for offset_s in [10, 5, 0]:
         t_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now_t - offset_s))
-        scaling_decisions_ring.appendleft({
-            "timestamp": t_str,
-            "input_rps": 44.5,
-            "input_cpu": 1.45,
-            "input_p95_ms": 32.5,  # SLO restored to < 35ms!
-            "current_replicas": 5,
-            "predicted_rps_60s": 45.2,  # Accurately predicted!
-            "desired_replicas": 5,
-            "action": "SCALE_UP (Proactively allocated 5 pods for heavy workload)",
-            "latency_ms": 9.8,
-        })
+        scaling_decisions_ring.appendleft(
+            {
+                "timestamp": t_str,
+                "input_rps": 44.5,
+                "input_cpu": 1.45,
+                "input_p95_ms": 32.5,  # SLO restored to < 35ms!
+                "current_replicas": 5,
+                "predicted_rps_60s": 45.2,  # Accurately predicted!
+                "desired_replicas": 5,
+                "action": "SCALE_UP (Proactively allocated 5 pods for heavy workload)",
+                "latency_ms": 9.8,
+            }
+        )
 
     # Return daemon state to STEADY_NORMAL
     workload_coordinator["override_state"] = "STEADY_NORMAL"
@@ -1215,8 +1283,12 @@ def _run_autonomous_drift_sequence():
     autonomous_drift_coordinator["stage"] = "STAGE_1_ANOMALY"
     autonomous_drift_coordinator["stage_index"] = 1
     autonomous_drift_coordinator["progress_pct"] = 20
-    autonomous_drift_coordinator["stage_title"] = "Stage 1: Production Workload Anomaly & Model Under-Prediction"
-    autonomous_drift_coordinator["stage_detail"] = "Traffic surged to 44.5 RPS. Champion model under-predicted at 17.8 RPS (2 pods allocated, SLO breached)."
+    autonomous_drift_coordinator["stage_title"] = (
+        "Stage 1: Production Workload Anomaly & Model Under-Prediction"
+    )
+    autonomous_drift_coordinator["stage_detail"] = (
+        "Traffic surged to 44.5 RPS. Champion model under-predicted at 17.8 RPS (2 pods allocated, SLO breached)."
+    )
     autonomous_drift_coordinator["next_stage_countdown"] = 6
 
     _add_timeline_event(
@@ -1246,7 +1318,9 @@ def _run_autonomous_drift_sequence():
     autonomous_drift_coordinator["stage_index"] = 2
     autonomous_drift_coordinator["progress_pct"] = 40
     autonomous_drift_coordinator["stage_title"] = "Stage 2: Statistical Drift Detected (PSI > 0.20)"
-    autonomous_drift_coordinator["stage_detail"] = "Population Stability Index computed at 0.3842 > 0.2000. Autonomous event dispatcher firing in 3s..."
+    autonomous_drift_coordinator["stage_detail"] = (
+        "Population Stability Index computed at 0.3842 > 0.2000. Autonomous event dispatcher firing in 3s..."
+    )
     autonomous_drift_coordinator["next_stage_countdown"] = 3
 
     _add_timeline_event(
@@ -1268,7 +1342,9 @@ def _run_autonomous_drift_sequence():
     autonomous_drift_coordinator["stage_index"] = 3
     autonomous_drift_coordinator["progress_pct"] = 70
     autonomous_drift_coordinator["stage_title"] = "Stage 3: Event-Driven Retraining Job Launched"
-    autonomous_drift_coordinator["stage_detail"] = "Autonomous event triggered! Ingesting telemetry & spawning real Kubernetes Job in namespace 'mlops'..."
+    autonomous_drift_coordinator["stage_detail"] = (
+        "Autonomous event triggered! Ingesting telemetry & spawning real Kubernetes Job in namespace 'mlops'..."
+    )
 
     _add_timeline_event(
         "INGESTION_SYNC",
@@ -1291,7 +1367,7 @@ def _run_autonomous_drift_sequence():
         "K8S_RETRAINING",
         "☸️",
         f"Kubernetes Retraining Job Spawned (job.batch/{job_name})",
-        f"Pod Continuous Training berjalan di klaster K3s (Namespace: mlops). Menjalankan LightGBM Regressor dengan optimasi hyperparameter Optuna.",
+        "Pod Continuous Training berjalan di klaster K3s (Namespace: mlops). Menjalankan LightGBM Regressor dengan optimasi hyperparameter Optuna.",
         "ACTIVE",
     )
 
@@ -1329,12 +1405,16 @@ def _run_autonomous_drift_sequence():
         time.sleep(poll_interval)
 
     total_job_s = max(int(time.time() - job_start_time), 1)
-    logger.info(f"[AUTONOMOUS-DRIFT] Advancing to Phase 4: Model Promoted & Hot-Reloaded (Job runtime: {total_job_s}s)...")
+    logger.info(
+        f"[AUTONOMOUS-DRIFT] Advancing to Phase 4: Model Promoted & Hot-Reloaded (Job runtime: {total_job_s}s)..."
+    )
     champ_v = retrain_res.get("champion_version", model_store.get("version", "v30"))
     autonomous_drift_coordinator["stage"] = "STAGE_4_RECOVERED"
     autonomous_drift_coordinator["stage_index"] = 4
     autonomous_drift_coordinator["progress_pct"] = 100
-    autonomous_drift_coordinator["stage_title"] = "Stage 4: Challenger Promoted & Zero-Downtime Hot Reload"
+    autonomous_drift_coordinator["stage_title"] = (
+        "Stage 4: Challenger Promoted & Zero-Downtime Hot Reload"
+    )
     autonomous_drift_coordinator["stage_detail"] = (
         f"Kubernetes Job selesai ({total_job_s}s)! Challenger {champ_v} dipromosikan ke @champion. "
         "Kapasitas pod otomatis diekspansi ke 5 pod (latensi pulih < 35ms)."
@@ -1388,7 +1468,3 @@ def get_workload_status() -> Dict[str, Any]:
         "daemon_remaining_s": workload_coordinator.get("daemon_remaining_s", 0),
         "last_heartbeat_seconds_ago": round(now - last_hb, 1) if last_hb else None,
     }
-
-
-
-
