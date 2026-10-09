@@ -194,29 +194,39 @@ For complete technical architecture, MD5 Content-Addressable Storage (CAS), and 
 
 ```text
 predictive-autoscaling-mlops/
-├── .devcontainer/              # Reproducible GitHub Codespaces environment
-├── .github/workflows/          # CI/CD pipelines (testing, linting, automation)
-├── api/                        # Model Serving & Inference REST API (FastAPI)
-├── configs/                    # System, exporter, and Grafana dashboard configs
-├── data/                       # DVC-managed datasets (raw, interim, processed)
-├── docs/                       # Comprehensive technical documentation & guides
-│   └── images/                 # Architecture diagrams and calibration graphs
+├── .devcontainer/              # Reproducible GitHub Codespaces environment (Python 3.12, k6, kubectl)
+├── .github/workflows/          # Automated CI/CD pipelines (testing, linting, packaging)
+├── configs/                    # Grafana dashboards and system configurations
+├── data/                       # DVC-tracked datasets (data/raw/, data/processed/, .dvc pointers)
+├── docker/                     # Service Dockerfiles (Dashboard, MinIO, MLflow)
+├── docs/                       # Comprehensive technical documentation library & architecture
+│   ├── coursework/             # Academic laboratory reports (LK-01 s/d LK-14)
+│   ├── images/                 # Architecture diagrams and benchmark visual assets
+│   └── internal/               # Internal engineering notes, dictionary, and directory audit
 ├── infrastructure/             # Infrastructure-as-Code (Kubernetes, Docker, Monitoring)
-│   ├── demo/                   # Demo frontend compose setup (port 3000)
-│   ├── docker/                 # Production Dockerfiles & Compose definitions
-│   ├── kubernetes/             # K3s manifests (Deployments, StatefulSets, HPA)
-│   └── monitoring/             # Prometheus rules, ServiceMonitors, Alertmanager
+│   ├── demo/                   # Demo frontend compose orchestration (port 3000)
+│   ├── docker/                 # Target application compose definition (Laravel, PostgreSQL, Redis)
+│   ├── kubernetes/             # Production K3s manifests (Deployments, HPA, Services, CronJobs)
+│   └── monitoring/             # Prometheus rules, Grafana dashboards, Alertmanager
+├── models/                     # Model registry metadata and champion model manifest
 ├── notebooks/                  # Interactive EDA, feature correlation, and analysis
-├── pipelines/                  # Automated pipeline stage definitions (ingestion, training, CT)
-├── scripts/                    # Utility scripts (exporter, merge, k6 runners)
+├── reports/                    # Automated CI/CD artifacts (Trivy security, SHAP XAI, drift reports)
+├── scripts/                    # Operational automation, benchmarks, and data export utilities
 ├── src/                        # Core Python application modules
-│   ├── data/                   # Ingestion logic, dataset validation, data loaders
-│   ├── features/               # Feature engineering (lags, rolling stats, deltas)
-│   ├── models/                 # Model definitions, training logic, baseline predictors
-│   ├── inference/              # Production model loading & prediction engine
-│   └── scaling/                # Predictive autoscaling policy & pod recommendation
+│   ├── dashboard/              # Streamlit real-time operational control console (app.py)
+│   ├── data/                   # Dataset loaders, demo metrics, and MinIO S3 sync utilities
+│   ├── features/               # Feature engineering definitions and documentation
+│   ├── inference/              # FastAPI model serving engine and K8s adapter (service.py)
+│   ├── models/                 # Model training (Optuna), evaluation, and MLflow registry
+│   ├── monitoring/             # Drift detection (PSI/KS), explainability (SHAP), FinOps calculator
+│   ├── pipeline/               # Continuous training, auto-ingestion, and autonomous retraining
+│   ├── scaling/                # Predictive autoscaler daemon and K8s patcher
+│   ├── ingest_data.py          # Prometheus telemetry window extraction CLI
+│   └── preprocess.py           # Feature matrix construction and missing value cleaner CLI
 ├── tests/                      # Automated quality gates and unit tests (pytest)
-└── workloads/                  # Synthetic workload generation scenarios (k6 scripts)
+└── workloads/                  # Workload generation and traffic simulation suite
+    ├── k6/                     # Synthetic k6 benchmark scenarios (spike, steady, gradual, etc.)
+    └── load-generator/         # Remote VM load daemon systemd service and scenario scripts
 ```
 
 ---

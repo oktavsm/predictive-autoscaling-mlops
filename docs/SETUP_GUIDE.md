@@ -1697,12 +1697,12 @@ k6 version
 
 # 23. k6 Smoke Test
 
-Script sudah tersedia di repository: [`scripts/k6/smoke.js`](../scripts/k6/smoke.js).
+Script sudah tersedia di repository: [`workloads/k6/scenarios/smoke.js`](../workloads/k6/scenarios/smoke.js).
 
 Jalankan dari root repository di laptop kamu:
 
 ```bash
-k6 run scripts/k6/smoke.js
+k6 run workloads/k6/scenarios/smoke.js
 ```
 
 Saat script berjalan (selama 30 detik):
@@ -1713,12 +1713,12 @@ Saat script berjalan (selama 30 detik):
 
 # 24. Calibration Workload
 
-Script sudah tersedia di repository: [`scripts/k6/calibration.js`](../scripts/k6/calibration.js).
+Script sudah tersedia di repository: [`workloads/k6/scenarios/calibration.js`](../workloads/k6/scenarios/calibration.js).
 
 Script ini melakukan *ramping workload* bertahap (1 ➔ 5 ➔ 10 ➔ 15 ➔ 20 req/s):
 
 ```bash
-k6 run scripts/k6/calibration.js
+k6 run workloads/k6/scenarios/calibration.js
 ```
 
 Tujuan kalibrasi ini adalah melihat seberapa besar beban CPU dan respons latency Laravel sebelum menentukan skenario final (*steady, gradual, spike, periodic, bursty*).

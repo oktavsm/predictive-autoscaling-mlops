@@ -13,8 +13,9 @@ mlflow.db*
 .env.*
 !.env.*.example
 
-# Internal / Private operational notes and VM credentials
-docs/internal/
+# Internal / Private operational notes and VM credentials (allow AUDIT_STRUKTUR_DIREKTORI.md)
+docs/internal/*
+!docs/internal/AUDIT_STRUKTUR_DIREKTORI.md
 
 # Academic Coursework & College Assignment Deliverables
 docs/coursework/
