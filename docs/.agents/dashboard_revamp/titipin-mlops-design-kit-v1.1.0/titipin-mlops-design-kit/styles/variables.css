@@ -1,0 +1,147 @@
+@font-face{font-family:Geist;src:url("../assets/fonts/Geist-Variable.woff2") format("woff2");font-weight:100 900;font-display:swap}
+@font-face{font-family:"Geist Mono";src:url("../assets/fonts/GeistMono-Variable.woff2") format("woff2");font-weight:100 900;font-display:swap}
+:root, [data-theme="dark"] {
+  --bg: #101418;
+  --surface: #171C22;
+  --surface-raised: #1D2530;
+  --surface-hover: #252E39;
+  --text: #F3F5FA;
+  --text-secondary: #C5CEDC;
+  --text-muted: #A6B1C2;
+  --border: #28313A;
+  --border-control: #78899F;
+  --accent: #7DA7FF;
+  --accent-soft: #1B2B46;
+  --on-accent: #111A2B;
+  --focus: #97BAFF;
+  --success: #65DBB1;
+  --success-soft: #143129;
+  --warning: #E9BC69;
+  --warning-soft: #332A19;
+  --danger: #FFA5AC;
+  --danger-soft: #38232B;
+  --info: #97BAFF;
+  --info-soft: #1B2B46;
+  --chart-actual: #7DA7FF;
+  --chart-predicted: #57DDD2;
+  --chart-capacity: #ADBCD1;
+  --chart-grid: #28313A;
+  --chart-threshold: #E9BC69;
+  --button-bg: #EDF1F7;
+  --button-text: #131922;
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  --bg: #F4F6F9;
+  --surface: #FFFFFF;
+  --surface-raised: #EDF1F6;
+  --surface-hover: #E6ECF4;
+  --text: #141B27;
+  --text-secondary: #3F4D64;
+  --text-muted: #56657B;
+  --border: #D1D9E4;
+  --border-control: #728197;
+  --accent: #265DB5;
+  --accent-soft: #E8EFFB;
+  --on-accent: #FFFFFF;
+  --focus: #265DB5;
+  --success: #116747;
+  --success-soft: #E6F5ED;
+  --warning: #785000;
+  --warning-soft: #FFF3DA;
+  --danger: #A12641;
+  --danger-soft: #FCE9ED;
+  --info: #265DB5;
+  --info-soft: #E8EFFB;
+  --chart-actual: #265DB5;
+  --chart-predicted: #00766F;
+  --chart-capacity: #5B697D;
+  --chart-grid: #D1D9E4;
+  --chart-threshold: #785000;
+  --button-bg: #172131;
+  --button-text: #FFFFFF;
+  color-scheme: light;
+}
+:root {
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  --space-1: 4px;
+
+  --space-2: 8px;
+
+  --space-3: 12px;
+
+  --space-4: 16px;
+
+  --space-5: 20px;
+
+  --space-6: 24px;
+
+  --space-8: 32px;
+
+  --space-10: 40px;
+
+  --space-12: 48px;
+
+  --space-16: 64px;
+
+  --space-gutter: 18px;
+
+  --space-page: 26px;
+
+  --radius-sm: 4px;
+
+  --radius-control: 6px;
+
+  --radius-panel: 10px;
+
+  --radius-dialog: 12px;
+
+  --size-control: 38px;
+
+  --size-icon: 20px;
+
+  --size-sidebar: 238px;
+
+  --size-touch: 44px;
+
+  --breakpoint-compact: 640px;
+
+  --breakpoint-navigation: 900px;
+
+  --breakpoint-wide: 1120px;
+
+  --font-size-xs: 0.75rem;
+
+  --font-size-sm: 0.8125rem;
+
+  --font-size-body: 0.875rem;
+
+  --font-size-lg: 1rem;
+
+  --font-size-section: 1.0625rem;
+
+  --font-size-title: 1.875rem;
+
+  --font-size-metric: 1.5625rem;
+
+  --font-size-micro: 0.6875rem;
+
+  --duration-state: 120ms;
+
+  --weight-regular: 400;
+
+  --weight-medium: 500;
+
+  --weight-semibold: 600;
+
+  --z-base: 0;
+
+  --z-nav: 20;
+
+  --z-dialog: 40;
+
+  --z-toast: 50;
+
+}

@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "James-Yu.latex-workshop",
+    "tecosaur.latex-utilities",
+    "ms-vscode-remote.remote-containers"
+  ]
+}

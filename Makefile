@@ -1,4 +1,4 @@
-.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess auto-ingest auto-ingest-24h preview dvc-push dvc-pull dvc-status sync-data minio-console train mlflow-ui security-scan xai-audit demo-spike demo-live clean
+.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess auto-ingest auto-ingest-24h preview dvc-push dvc-pull dvc-status sync-data minio-console train mlflow-ui security-scan xai-audit demo-spike demo-live clean latex-build latex-run latex-watch latex-docker-build latex-docker-run latex-clean latex-clean-deps
 
 PYTHON ?= python3
 VENV ?= .venv
@@ -47,6 +47,14 @@ help:
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean              Remove caches and temporary files"
+	@echo ""
+	@echo "LaTeX Proposal Skripsi (docs/metopen/proposal-skripsi-latex):"
+	@echo "  make latex-build        Compile LaTeX proposal to PDF"
+	@echo "  make latex-watch        Auto-compile proposal on save (terminal watch mode)"
+	@echo "  make latex-docker-build Build isolated LaTeX DevContainer/Docker image"
+	@echo "  make latex-docker-run   Compile LaTeX proposal inside Docker container"
+	@echo "  make latex-clean        Clean LaTeX auxiliary build artifacts"
+	@echo "  make latex-clean-deps   Clean LaTeX Docker image & dependencies"
 	@echo "================================================================="
 
 $(VENV)/bin/activate:
@@ -214,3 +222,28 @@ clean:
 	rm -rf .pytest_cache .ruff_cache
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@echo ">>> Cache cleaned."
+
+# -----------------------------------------------------------------------------
+# LaTeX Proposal Skripsi Targets
+# -----------------------------------------------------------------------------
+latex-build:
+	@$(MAKE) -C docs/metopen/proposal-skripsi-latex build
+
+latex-run:
+	@$(MAKE) -C docs/metopen/proposal-skripsi-latex run
+
+latex-watch:
+	@$(MAKE) -C docs/metopen/proposal-skripsi-latex watch
+
+latex-docker-build:
+	@$(MAKE) -C docs/metopen/proposal-skripsi-latex docker-build
+
+latex-docker-run:
+	@$(MAKE) -C docs/metopen/proposal-skripsi-latex docker-run
+
+latex-clean:
+	@$(MAKE) -C docs/metopen/proposal-skripsi-latex clean
+
+latex-clean-deps:
+	@$(MAKE) -C docs/metopen/proposal-skripsi-latex clean-deps
+

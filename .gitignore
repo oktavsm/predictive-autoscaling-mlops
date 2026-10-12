@@ -19,9 +19,11 @@ docs/internal/*
 
 # Academic Coursework & College Assignment Deliverables
 docs/coursework/
+docs/metopen/
 
 # Large binary artifacts
 docker/*-bin
 logs/
+*.zip
 
 

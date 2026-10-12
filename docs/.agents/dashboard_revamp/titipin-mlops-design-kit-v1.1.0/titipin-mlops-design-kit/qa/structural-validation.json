@@ -1,0 +1,5312 @@
+{
+  "status": "PASS",
+  "checks": 1326,
+  "contrast_pairs": 126,
+  "scope": "Structural/data/color checks only. Browser evidence is separate.",
+  "results": [
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.bg"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.surface"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.surface-raised"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.surface-hover"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.text"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.text-secondary"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.text-muted"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.border"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.border-control"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.accent"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.accent-soft"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.on-accent"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.focus"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.success"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.success-soft"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.warning"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.warning-soft"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.danger"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.danger-soft"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.info"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.info-soft"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.chart-actual"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.chart-predicted"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.chart-capacity"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.chart-grid"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.chart-threshold"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.button-bg"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.dark.button-text"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.bg"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.surface"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.surface-raised"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.surface-hover"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.text"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.text-secondary"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.text-muted"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.border"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.border-control"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.accent"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.accent-soft"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.on-accent"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.focus"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.success"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.success-soft"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.warning"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.warning-soft"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.danger"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.danger-soft"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.info"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.info-soft"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.chart-actual"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.chart-predicted"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.chart-capacity"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.chart-grid"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.chart-threshold"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.button-bg"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token color.light.button-text"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.1"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.2"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.3"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.4"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.5"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.6"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.8"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.10"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.12"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.16"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.gutter"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token space.page"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token radius.sm"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token radius.control"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token radius.panel"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token radius.dialog"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token size.control"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token size.icon"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token size.sidebar"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token size.touch"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token breakpoint.compact"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token breakpoint.navigation"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token breakpoint.wide"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token font-size.xs"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token font-size.sm"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token font-size.body"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token font-size.lg"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token font-size.section"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token font-size.title"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token font-size.metric"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token font-size.micro"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token duration.state"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token weight.regular"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token weight.medium"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token weight.semibold"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token z.base"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token z.nav"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token z.dialog"
+    },
+    {
+      "passed": true,
+      "check": "CSS matches token z.toast"
+    },
+    {
+      "passed": true,
+      "check": "24 individually named original icons"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: info.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: info.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: forecast.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: forecast.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: chevron-right.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: chevron-right.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: close.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: close.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: settings.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: settings.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: check.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: check.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: clock.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: clock.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: search.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: search.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: copy.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: copy.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: model.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: model.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: pipeline.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: pipeline.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: warning.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: warning.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: theme.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: theme.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: download.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: download.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: external.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: external.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: replicas.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: replicas.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: events.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: events.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: chevron-down.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: chevron-down.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: pause.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: pause.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: sprite.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: sprite.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: refresh.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: refresh.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: drift.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: drift.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: health.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: health.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: overview.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: overview.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: menu.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: menu.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: mark-light.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: mark-light.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: lockup.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: lockup.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: mark.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: mark.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: lockup-dark.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: lockup-dark.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: mark-accent.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: mark-accent.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: mark-dark.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: mark-dark.svg"
+    },
+    {
+      "passed": true,
+      "check": "Valid SVG XML: lockup-light.svg"
+    },
+    {
+      "passed": true,
+      "check": "SVG has no executable, font or remote resource: lockup-light.svg"
+    },
+    {
+      "passed": true,
+      "check": "Root fixture is labeled synthetic"
+    },
+    {
+      "passed": true,
+      "check": "241 samples across 60 minutes"
+    },
+    {
+      "passed": true,
+      "check": "UTC observations have exact 15-second cadence"
+    },
+    {
+      "passed": true,
+      "check": "Fixture spans exactly 3600 seconds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Every fixture row is synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Fixture numeric values are finite and nonnegative"
+    },
+    {
+      "passed": true,
+      "check": "Fixture recommendation respects capacity and bounds"
+    },
+    {
+      "passed": true,
+      "check": "Overview numbers match latest fixture"
+    },
+    {
+      "passed": true,
+      "check": "All events are synthetic"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "Error joins forecast to actual by target time, never issue time"
+    },
+    {
+      "passed": true,
+      "check": "15m online MAE matches 61 aligned target pairs"
+    },
+    {
+      "passed": true,
+      "check": "Applied event matches observed step"
+    },
+    {
+      "passed": true,
+      "check": "Applied event matches observed step"
+    },
+    {
+      "passed": true,
+      "check": "Applied event matches observed step"
+    },
+    {
+      "passed": true,
+      "check": "Synthetic ready pod census matches current observation"
+    },
+    {
+      "passed": true,
+      "check": "HTTP error fraction matches counts"
+    },
+    {
+      "passed": true,
+      "check": "HTTP success/error percentages complement"
+    },
+    {
+      "passed": true,
+      "check": "Illustrative spark endpoints and provenance agree"
+    },
+    {
+      "passed": true,
+      "check": "User reference PNG preserved byte-for-byte"
+    },
+    {
+      "passed": true,
+      "check": "Standalone placeholders resolved"
+    },
+    {
+      "passed": true,
+      "check": "Both offline variable fonts embedded"
+    },
+    {
+      "passed": true,
+      "check": "Standalone contains no network request implementation"
+    },
+    {
+      "passed": true,
+      "check": "Persistent synthetic labels present"
+    },
+    {
+      "passed": true,
+      "check": "CSV retains synthetic flag and issue/target timestamps"
+    },
+    {
+      "passed": true,
+      "check": "No duplicate static HTML IDs"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #main"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-menu"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #overview"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-overview"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #autoscaling"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-replicas"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #model-lifecycle"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-model"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #infrastructure"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-health"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #evaluation"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-forecast"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #activity-audit"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-events"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #lab-controls"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-settings"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-health"
+    },
+    {
+      "passed": true,
+      "check": "Local document reference resolves: README.md"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-external"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-clock"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-refresh"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-down"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #evaluation"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-health"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #model-lifecycle"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-model"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #infrastructure"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-replicas"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #autoscaling"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-forecast"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-pipeline"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-health"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-theme"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-download"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #lab-controls"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #overview"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-copy"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-theme"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-download"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-chevron-right"
+    },
+    {
+      "passed": true,
+      "check": "Local document reference resolves: docs/DESIGN-SYSTEM.md"
+    },
+    {
+      "passed": true,
+      "check": "Local document reference resolves: docs/AGENT-HANDOFF.md"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #overview"
+    },
+    {
+      "passed": true,
+      "check": "Local anchor or SVG reference resolves: #icon-close"
+    },
+    {
+      "passed": true,
+      "check": "dark text/bg contrast 16.96:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text/surface contrast 15.71:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text/surface-raised contrast 14.16:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text/surface-hover contrast 12.60:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text-secondary/bg contrast 11.66:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text-secondary/surface contrast 10.80:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text-secondary/surface-raised contrast 9.74:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text-secondary/surface-hover contrast 8.66:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text-muted/bg contrast 8.53:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text-muted/surface contrast 7.91:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text-muted/surface-raised contrast 7.13:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark text-muted/surface-hover contrast 6.34:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark success/success-soft contrast 8.21:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark warning/warning-soft contrast 7.98:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark danger/danger-soft contrast 7.78:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark info/info-soft contrast 7.28:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark accent/accent-soft contrast 5.97:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark success/bg contrast 10.85:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark success/surface contrast 10.05:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark success/surface-raised contrast 9.06:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark success/surface-hover contrast 8.06:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark warning/bg contrast 10.45:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark warning/surface contrast 9.68:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark warning/surface-raised contrast 8.72:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark warning/surface-hover contrast 7.76:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark danger/bg contrast 9.89:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark danger/surface contrast 9.16:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark danger/surface-raised contrast 8.26:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark danger/surface-hover contrast 7.35:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark info/bg contrast 9.50:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark info/surface contrast 8.80:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark info/surface-raised contrast 7.93:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark info/surface-hover contrast 7.05:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark accent/bg contrast 7.79:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark accent/surface contrast 7.22:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark accent/surface-raised contrast 6.50:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark accent/surface-hover contrast 5.79:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark on-accent/accent contrast 7.33:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark button-text/button-bg contrast 15.57:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "dark border-control/bg contrast 5.18:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark border-control/surface contrast 4.80:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark border-control/surface-raised contrast 4.32:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark border-control/surface-hover contrast 3.85:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark focus/bg contrast 9.50:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark focus/surface contrast 8.80:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark focus/surface-raised contrast 7.93:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark focus/surface-hover contrast 7.05:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-actual/bg contrast 7.79:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-actual/surface contrast 7.22:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-actual/surface-raised contrast 6.50:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-actual/surface-hover contrast 5.79:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-predicted/bg contrast 11.17:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-predicted/surface contrast 10.34:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-predicted/surface-raised contrast 9.33:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-predicted/surface-hover contrast 8.29:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-capacity/bg contrast 9.59:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-capacity/surface contrast 8.89:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-capacity/surface-raised contrast 8.01:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-capacity/surface-hover contrast 7.12:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-threshold/bg contrast 10.45:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-threshold/surface contrast 9.68:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-threshold/surface-raised contrast 8.72:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "dark chart-threshold/surface-hover contrast 7.76:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light text/bg contrast 15.95:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text/surface contrast 17.27:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text/surface-raised contrast 15.23:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text/surface-hover contrast 14.53:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text-secondary/bg contrast 7.89:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text-secondary/surface contrast 8.55:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text-secondary/surface-raised contrast 7.54:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text-secondary/surface-hover contrast 7.19:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text-muted/bg contrast 5.47:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text-muted/surface contrast 5.93:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text-muted/surface-raised contrast 5.23:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light text-muted/surface-hover contrast 4.99:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light success/success-soft contrast 6.10:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light warning/warning-soft contrast 6.48:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light danger/danger-soft contrast 6.28:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light info/info-soft contrast 5.48:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light accent/accent-soft contrast 5.48:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light success/bg contrast 6.35:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light success/surface contrast 6.87:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light success/surface-raised contrast 6.06:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light success/surface-hover contrast 5.78:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light warning/bg contrast 6.58:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light warning/surface contrast 7.13:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light warning/surface-raised contrast 6.28:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light warning/surface-hover contrast 6.00:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light danger/bg contrast 6.76:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light danger/surface contrast 7.32:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light danger/surface-raised contrast 6.45:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light danger/surface-hover contrast 6.16:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light info/bg contrast 5.85:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light info/surface contrast 6.33:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light info/surface-raised contrast 5.58:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light info/surface-hover contrast 5.33:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light accent/bg contrast 5.85:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light accent/surface contrast 6.33:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light accent/surface-raised contrast 5.58:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light accent/surface-hover contrast 5.33:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light on-accent/accent contrast 6.33:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light button-text/button-bg contrast 16.17:1 >= 4.5:1"
+    },
+    {
+      "passed": true,
+      "check": "light border-control/bg contrast 3.66:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light border-control/surface contrast 3.96:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light border-control/surface-raised contrast 3.49:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light border-control/surface-hover contrast 3.33:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light focus/bg contrast 5.85:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light focus/surface contrast 6.33:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light focus/surface-raised contrast 5.58:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light focus/surface-hover contrast 5.33:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-actual/bg contrast 5.85:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-actual/surface contrast 6.33:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-actual/surface-raised contrast 5.58:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-actual/surface-hover contrast 5.33:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-predicted/bg contrast 5.08:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-predicted/surface contrast 5.50:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-predicted/surface-raised contrast 4.85:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-predicted/surface-hover contrast 4.62:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-capacity/bg contrast 5.16:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-capacity/surface contrast 5.58:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-capacity/surface-raised contrast 4.92:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-capacity/surface-hover contrast 4.70:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-threshold/bg contrast 6.58:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-threshold/surface contrast 7.13:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-threshold/surface-raised contrast 6.28:1 >= 3:1"
+    },
+    {
+      "passed": true,
+      "check": "light chart-threshold/surface-hover contrast 6.00:1 >= 3:1"
+    }
+  ]
+}

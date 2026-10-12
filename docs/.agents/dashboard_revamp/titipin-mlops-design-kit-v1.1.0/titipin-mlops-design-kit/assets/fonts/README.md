@@ -1,0 +1,1 @@
+Geist Sans and Geist Mono variable webfonts, sourced from https://github.com/vercel/geist-font on 2026-10-12. Upstream SIL Open Font License is included in OFL.txt. Keep the license with redistributed fonts. Fonts are embedded in index.html for offline use; originals are provided for implementation. The logo does not use these font files.

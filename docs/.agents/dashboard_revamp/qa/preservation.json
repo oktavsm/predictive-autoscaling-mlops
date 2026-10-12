@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "scope": "Tracked working-tree status/diff and supplied reference bytes. No application commit/deploy was performed.",
+  "checks": {
+    "tracked_status_unchanged": true,
+    "tracked_diff_unchanged": true,
+    "reference_png_unchanged": true
+  },
+  "reference_sha256": "b3b36ebf3a86989f8e365e0b1b0f67c15841532bbde1f3dc15484e286bdc0a18",
+  "tracked_diff_sha256": "d5e31a7e4bde751383edf6c4d2e9bb2e43562de98aa3bdd934f46533101592c8",
+  "tracked_status": " M .gitignore\n M Makefile\n M data/processed.dvc\n M data/raw.dvc\n"
+}

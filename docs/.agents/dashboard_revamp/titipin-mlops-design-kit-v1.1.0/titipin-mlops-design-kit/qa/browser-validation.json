@@ -1,0 +1,694 @@
+{
+  "version": "1.1.0",
+  "status": "PASS",
+  "checks": 158,
+  "viewport_widths": [
+    1448,
+    1024,
+    768,
+    390,
+    320
+  ],
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "views": [
+    "overview",
+    "lab-controls"
+  ],
+  "geometry": {
+    "sidebar": {
+      "x": 0,
+      "y": 0,
+      "width": 238,
+      "height": 1086
+    },
+    "forecast": {
+      "x": 264,
+      "y": 249.75,
+      "width": 729.921875,
+      "height": 314
+    },
+    "scaling": {
+      "x": 264,
+      "y": 581.75,
+      "width": 729.921875,
+      "height": 320
+    },
+    "health": {
+      "x": 1011.921875,
+      "y": 249.75,
+      "width": 410.078125,
+      "height": 222
+    },
+    "cluster": {
+      "x": 1011.921875,
+      "y": 489.75,
+      "width": 410.078125,
+      "height": 234
+    },
+    "events": {
+      "x": 1011.921875,
+      "y": 741.75,
+      "width": 410.078125,
+      "height": 160
+    }
+  },
+  "errors": [],
+  "external_requests": [],
+  "results": [
+    {
+      "passed": true,
+      "check": "1448px dark overview: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "1448px dark overview: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "1448px dark overview: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "1448px dark: actual chart rendered"
+    },
+    {
+      "passed": true,
+      "check": "1448px dark lab-controls: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "1448px dark lab-controls: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "1448px dark lab-controls: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "1448px light overview: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "1448px light overview: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "1448px light overview: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "1448px light: actual chart rendered"
+    },
+    {
+      "passed": true,
+      "check": "1448px light lab-controls: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "1448px light lab-controls: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "1448px light lab-controls: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "1024px dark overview: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "1024px dark overview: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "1024px dark overview: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "1024px dark: actual chart rendered"
+    },
+    {
+      "passed": true,
+      "check": "1024px dark lab-controls: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "1024px dark lab-controls: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "1024px dark lab-controls: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "1024px light overview: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "1024px light overview: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "1024px light overview: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "1024px light: actual chart rendered"
+    },
+    {
+      "passed": true,
+      "check": "1024px light lab-controls: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "1024px light lab-controls: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "1024px light lab-controls: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "768px dark overview: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "768px dark overview: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "768px dark overview: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "768px dark: actual chart rendered"
+    },
+    {
+      "passed": true,
+      "check": "768px dark lab-controls: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "768px dark lab-controls: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "768px dark lab-controls: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "768px light overview: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "768px light overview: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "768px light overview: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "768px light: actual chart rendered"
+    },
+    {
+      "passed": true,
+      "check": "768px light lab-controls: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "768px light lab-controls: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "768px light lab-controls: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "390px dark overview: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "390px dark overview: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "390px dark overview: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "390px dark: actual chart rendered"
+    },
+    {
+      "passed": true,
+      "check": "390px dark lab-controls: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "390px dark lab-controls: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "390px dark lab-controls: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "390px light overview: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "390px light overview: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "390px light overview: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "390px light: actual chart rendered"
+    },
+    {
+      "passed": true,
+      "check": "390px light lab-controls: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "390px light lab-controls: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "390px light lab-controls: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "320px dark overview: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "320px dark overview: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "320px dark overview: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "320px dark: actual chart rendered"
+    },
+    {
+      "passed": true,
+      "check": "320px dark lab-controls: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "320px dark lab-controls: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "320px dark lab-controls: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "320px light overview: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "320px light overview: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "320px light overview: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "320px light: actual chart rendered"
+    },
+    {
+      "passed": true,
+      "check": "320px light lab-controls: no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "320px light lab-controls: panels contain their content"
+    },
+    {
+      "passed": true,
+      "check": "320px light lab-controls: all buttons named"
+    },
+    {
+      "passed": true,
+      "check": "Keyboard first Tab reaches skip link"
+    },
+    {
+      "passed": true,
+      "check": "Skip link moves focus to main"
+    },
+    {
+      "passed": true,
+      "check": "overview navigation resolves to actual visible section"
+    },
+    {
+      "passed": true,
+      "check": "autoscaling navigation resolves to actual visible section"
+    },
+    {
+      "passed": true,
+      "check": "model-lifecycle navigation resolves to actual visible section"
+    },
+    {
+      "passed": true,
+      "check": "infrastructure navigation resolves to actual visible section"
+    },
+    {
+      "passed": true,
+      "check": "evaluation navigation resolves to actual visible section"
+    },
+    {
+      "passed": true,
+      "check": "activity-audit navigation resolves to actual visible section"
+    },
+    {
+      "passed": true,
+      "check": "lab-controls navigation resolves to actual visible section"
+    },
+    {
+      "passed": true,
+      "check": "Metric card 1 navigates to relevant panel"
+    },
+    {
+      "passed": true,
+      "check": "Metric card 2 navigates to relevant panel"
+    },
+    {
+      "passed": true,
+      "check": "Metric card 3 navigates to relevant panel"
+    },
+    {
+      "passed": true,
+      "check": "Metric card 4 navigates to relevant panel"
+    },
+    {
+      "passed": true,
+      "check": "Reference: 238px sidebar"
+    },
+    {
+      "passed": true,
+      "check": "Reference: forecast/scaling height 314/320px"
+    },
+    {
+      "passed": true,
+      "check": "Reference: health/cluster/events in right column"
+    },
+    {
+      "passed": true,
+      "check": "Reference: monitoring column ratio 1.78"
+    },
+    {
+      "passed": true,
+      "check": "environment modal receives focus"
+    },
+    {
+      "passed": true,
+      "check": "environment modal retains keyboard focus"
+    },
+    {
+      "passed": true,
+      "check": "environment modal Escape restores trigger focus"
+    },
+    {
+      "passed": true,
+      "check": "forecast modal receives focus"
+    },
+    {
+      "passed": true,
+      "check": "forecast modal retains keyboard focus"
+    },
+    {
+      "passed": true,
+      "check": "forecast modal Escape restores trigger focus"
+    },
+    {
+      "passed": true,
+      "check": "scaling modal receives focus"
+    },
+    {
+      "passed": true,
+      "check": "scaling modal retains keyboard focus"
+    },
+    {
+      "passed": true,
+      "check": "scaling modal Escape restores trigger focus"
+    },
+    {
+      "passed": true,
+      "check": "model modal receives focus"
+    },
+    {
+      "passed": true,
+      "check": "model modal retains keyboard focus"
+    },
+    {
+      "passed": true,
+      "check": "model modal Escape restores trigger focus"
+    },
+    {
+      "passed": true,
+      "check": "cluster modal receives focus"
+    },
+    {
+      "passed": true,
+      "check": "cluster modal retains keyboard focus"
+    },
+    {
+      "passed": true,
+      "check": "cluster modal Escape restores trigger focus"
+    },
+    {
+      "passed": true,
+      "check": "events modal receives focus"
+    },
+    {
+      "passed": true,
+      "check": "events modal retains keyboard focus"
+    },
+    {
+      "passed": true,
+      "check": "events modal Escape restores trigger focus"
+    },
+    {
+      "passed": true,
+      "check": "decision modal receives focus"
+    },
+    {
+      "passed": true,
+      "check": "decision modal retains keyboard focus"
+    },
+    {
+      "passed": true,
+      "check": "decision modal Escape restores trigger focus"
+    },
+    {
+      "passed": true,
+      "check": "slo modal receives focus"
+    },
+    {
+      "passed": true,
+      "check": "slo modal retains keyboard focus"
+    },
+    {
+      "passed": true,
+      "check": "slo modal Escape restores trigger focus"
+    },
+    {
+      "passed": true,
+      "check": "Node 1 opens census details"
+    },
+    {
+      "passed": true,
+      "check": "Dialog close button works"
+    },
+    {
+      "passed": true,
+      "check": "Node 2 opens census details"
+    },
+    {
+      "passed": true,
+      "check": "Dialog close button works"
+    },
+    {
+      "passed": true,
+      "check": "Node 3 opens census details"
+    },
+    {
+      "passed": true,
+      "check": "Dialog close button works"
+    },
+    {
+      "passed": true,
+      "check": "15m selector filters real fixture rows"
+    },
+    {
+      "passed": true,
+      "check": "30m selector filters real fixture rows"
+    },
+    {
+      "passed": true,
+      "check": "60m selector filters real fixture rows"
+    },
+    {
+      "passed": true,
+      "check": "Replay does not imply live data"
+    },
+    {
+      "passed": true,
+      "check": "CSV contains header plus 241 rows and source/target columns"
+    },
+    {
+      "passed": true,
+      "check": "All exported telemetry rows labeled synthetic"
+    },
+    {
+      "passed": true,
+      "check": "CSV forecast target is issue plus 60 seconds"
+    },
+    {
+      "passed": true,
+      "check": "Overview theme control switches theme"
+    },
+    {
+      "passed": true,
+      "check": "Showcase theme control switches theme"
+    },
+    {
+      "passed": true,
+      "check": "Copy demo policy writes clipboard or opens explicit selectable fallback"
+    },
+    {
+      "passed": true,
+      "check": "Showcase export downloads synthetic CSV"
+    },
+    {
+      "passed": true,
+      "check": "Capacity \"\" gets inline validation"
+    },
+    {
+      "passed": true,
+      "check": "Capacity \"-1\" gets inline validation"
+    },
+    {
+      "passed": true,
+      "check": "Capacity \"2.5\" gets inline validation"
+    },
+    {
+      "passed": true,
+      "check": "Capacity \"1001\" gets inline validation"
+    },
+    {
+      "passed": true,
+      "check": "Local preview respects demo bounds"
+    },
+    {
+      "passed": true,
+      "check": "Valid capacity preview calculation"
+    },
+    {
+      "passed": true,
+      "check": "loading state has useful explanation"
+    },
+    {
+      "passed": true,
+      "check": "Loading state exposes busy semantics"
+    },
+    {
+      "passed": true,
+      "check": "empty state has useful explanation"
+    },
+    {
+      "passed": true,
+      "check": "error state has useful explanation"
+    },
+    {
+      "passed": true,
+      "check": "stale state has useful explanation"
+    },
+    {
+      "passed": true,
+      "check": "unknown state has useful explanation"
+    },
+    {
+      "passed": true,
+      "check": "ready state has useful explanation"
+    },
+    {
+      "passed": true,
+      "check": "Retry demo returns to ready locally"
+    },
+    {
+      "passed": true,
+      "check": "Mobile menu exposes expanded state"
+    },
+    {
+      "passed": true,
+      "check": "Selecting current section closes mobile menu"
+    },
+    {
+      "passed": true,
+      "check": "Mobile navigation changes view and closes"
+    },
+    {
+      "passed": true,
+      "check": "Keyboard Enter/Escape operates mobile menu"
+    },
+    {
+      "passed": true,
+      "check": "Keyboard focus indicator visible"
+    },
+    {
+      "passed": true,
+      "check": "Mobile Overview buttons meet 44px touch targets"
+    },
+    {
+      "passed": true,
+      "check": "1448px overview: 200% text no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "1448px overview: 200% text not clipped in panels"
+    },
+    {
+      "passed": true,
+      "check": "1448px lab-controls: 200% text no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "1448px lab-controls: 200% text not clipped in panels"
+    },
+    {
+      "passed": true,
+      "check": "320px overview: 200% text no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "320px overview: 200% text not clipped in panels"
+    },
+    {
+      "passed": true,
+      "check": "320px lab-controls: 200% text no page overflow"
+    },
+    {
+      "passed": true,
+      "check": "320px lab-controls: 200% text not clipped in panels"
+    },
+    {
+      "passed": true,
+      "check": "No browser JavaScript errors"
+    },
+    {
+      "passed": true,
+      "check": "No HTTP requests: offline artifact"
+    }
+  ]
+}

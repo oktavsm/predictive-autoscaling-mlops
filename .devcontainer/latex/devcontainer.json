@@ -1,0 +1,65 @@
+{
+  "name": "LaTeX Proposal Skripsi (XeLaTeX)",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "James-Yu.latex-workshop",
+        "tecosaur.latex-utilities"
+      ],
+      "settings": {
+        "latex-workshop.latex.autoBuild.run": "onSave",
+        "latex-workshop.latex.outDir": "%DIR%/build",
+        "latex-workshop.latex.recipe.default": "first",
+        "latex-workshop.latex.recipes": [
+          {
+            "name": "latexmk (xelatex)",
+            "tools": ["latexmk-xelatex"]
+          },
+          {
+            "name": "xelatex -> biber -> xelatex*2",
+            "tools": ["xelatex", "biber", "xelatex", "xelatex"]
+          }
+        ],
+        "latex-workshop.latex.tools": [
+          {
+            "name": "latexmk-xelatex",
+            "command": "latexmk",
+            "args": [
+              "-xelatex",
+              "-interaction=nonstopmode",
+              "-synctex=1",
+              "-file-line-error",
+              "-outdir=%OUTDIR%",
+              "%DOC%"
+            ]
+          },
+          {
+            "name": "xelatex",
+            "command": "xelatex",
+            "args": [
+              "-synctex=1",
+              "-interaction=nonstopmode",
+              "-file-line-error",
+              "-output-directory=%OUTDIR%",
+              "%DOC%"
+            ]
+          },
+          {
+            "name": "biber",
+            "command": "biber",
+            "args": [
+              "--input-directory=%DIR%",
+              "--output-directory=%OUTDIR%",
+              "%DOCFILE%"
+            ]
+          }
+        ],
+        "latex-workshop.view.pdf.viewer": "tab",
+        "latex-workshop.latex.clean.subfolder.enabled": true
+      }
+    }
+  }
+}

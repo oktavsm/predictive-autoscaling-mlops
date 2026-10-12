@@ -1,0 +1,146 @@
+[
+  {
+    "id": "overview",
+    "file": "overview.svg",
+    "meaning": "Overview, observed and future workload",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "forecast",
+    "file": "forecast.svg",
+    "meaning": "Forecast, observed trace continuing as prediction",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "replicas",
+    "file": "replicas.svg",
+    "meaning": "Replicas, parallel deployment lanes",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "pipeline",
+    "file": "pipeline.svg",
+    "meaning": "Pipeline, input through validation gate",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "model",
+    "file": "model.svg",
+    "meaning": "Model, feature inputs and one inference output",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "drift",
+    "file": "drift.svg",
+    "meaning": "Drift, distribution shift relative to baseline",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "events",
+    "file": "events.svg",
+    "meaning": "Events, chronological operation records",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "settings",
+    "file": "settings.svg",
+    "meaning": "Settings, control values on independent rails",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "refresh",
+    "file": "refresh.svg",
+    "meaning": "Refresh displayed data",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "download",
+    "file": "download.svg",
+    "meaning": "Download synthetic evidence",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "external",
+    "file": "external.svg",
+    "meaning": "Open external source in new tab",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "chevron-down",
+    "file": "chevron-down.svg",
+    "meaning": "Open a selector",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "chevron-right",
+    "file": "chevron-right.svg",
+    "meaning": "Move to a nested detail",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "check",
+    "file": "check.svg",
+    "meaning": "Successful or selected state",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "close",
+    "file": "close.svg",
+    "meaning": "Dismiss a panel or dialog",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "search",
+    "file": "search.svg",
+    "meaning": "Search operational events",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "clock",
+    "file": "clock.svg",
+    "meaning": "Timestamp and observation age",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "warning",
+    "file": "warning.svg",
+    "meaning": "Attention needed, with text label",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "info",
+    "file": "info.svg",
+    "meaning": "Supplementary explanation",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "pause",
+    "file": "pause.svg",
+    "meaning": "Paused refresh or controller",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "menu",
+    "file": "menu.svg",
+    "meaning": "Show navigation",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "theme",
+    "file": "theme.svg",
+    "meaning": "Switch light or dark appearance",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "copy",
+    "file": "copy.svg",
+    "meaning": "Copy a code or identifier",
+    "viewBox": "0 0 24 24"
+  },
+  {
+    "id": "health",
+    "file": "health.svg",
+    "meaning": "Service health, sampled pulse",
+    "viewBox": "0 0 24 24"
+  }
+]
