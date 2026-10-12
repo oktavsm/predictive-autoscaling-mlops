@@ -95,4 +95,4 @@ docs/
 2. **[`images/`](images/)**:
    Aset grafis, diagram arsitektur mermaid hasil render, tangkapan layar Grafana, perbandingan grafik HPA, dan ilustrasi visual.
 3. **[`internal/`](internal/)**:
-   Catatan teknis internal pengembang, riwayat setup VM, panduan pembagian kerja (*work division*), kamus struktur proyek (`PROJECT_FILE_DICTIONARY.md`), dan laporan audit direktori (`AUDIT_STRUKTUR_DIREKTORI.md`).
+   Catatan teknis internal pengembang, panduan operasional agen AI ([`AGENT_HANDOFF_OPERATIONS.md`](internal/AGENT_HANDOFF_OPERATIONS.md)), riwayat setup VM, panduan pembagian kerja (*work division*), kamus struktur proyek (`PROJECT_FILE_DICTIONARY.md`), dan laporan audit direktori (`AUDIT_STRUKTUR_DIREKTORI.md`).
