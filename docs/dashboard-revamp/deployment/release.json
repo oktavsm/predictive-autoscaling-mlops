@@ -1,0 +1,45 @@
+{
+  "checked_at": "2026-10-12T17:16:46.459Z",
+  "deployment_revision": "22",
+  "image": "docker.io/oktaavsm/predictive-autoscaler-dashboard:revamp-20261012-1642@sha256:60e9adc2d32eeefc058e35f7cecc0c6344907d1e405cc89f4a480804a179681e",
+  "image_id": "docker.io/oktaavsm/predictive-autoscaler-dashboard@sha256:60e9adc2d32eeefc058e35f7cecc0c6344907d1e405cc89f4a480804a179681e",
+  "configmap": "mlops-dashboard-code-revamp-20261012-1642",
+  "pod": "mlops-dashboard-5486fc5fcb-cqf4c",
+  "node": "worker-1",
+  "ready": true,
+  "restarts": 0,
+  "usage_telemetry": false,
+  "health_samples": [
+    {
+      "rollout": "health-during-rollout.log",
+      "samples": 60,
+      "status_counts": {
+        "200": 60
+      },
+      "non_200_samples": [],
+      "start": "2026-10-12T17:06:59Z",
+      "end": "2026-10-12T17:09:05Z"
+    },
+    {
+      "rollout": "health-telemetry-rollout.log",
+      "samples": 40,
+      "status_counts": {
+        "200": 39,
+        "502": 1
+      },
+      "non_200_samples": [
+        "2026-10-12T17:15:55Z 502"
+      ],
+      "start": "2026-10-12T17:15:15Z",
+      "end": "2026-10-12T17:16:40Z"
+    }
+  ],
+  "runtime_source_sha256": {
+    "src/dashboard/app.py": "893d025a3227784905645e10efddc2bcfa146bfa2136d9e6cb23076f37d7869a",
+    "src/dashboard/adapter.py": "b9999a7ba7c6ab899130d498124fcdd9cda80323b2a137be2eeb0f340ebc4b40",
+    "src/dashboard/overview.py": "d7db8056da9d09246e3ba4debef18fd0ad2433da4bdccdd6cf7bcf7f8b2962dc",
+    "src/dashboard/assets/dashboard.css": "9c767b83093dd473f4843b8d8d24503e9310abd4cd3693474934784dca9076e6",
+    ".streamlit/config.toml": "21cade3eb7a05bd9a0f5bda4fbdf7ef8ce361601ddd1489f6234a8c9b1d292ba"
+  },
+  "source_state": "uncommitted working tree"
+}

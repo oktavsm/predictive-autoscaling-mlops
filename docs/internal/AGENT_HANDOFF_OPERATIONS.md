@@ -71,9 +71,12 @@ Host cp-bcc
 ## 🚀 3. Deployment & Hot-Reload Workflows
 
 ### A. Update & Deploy Streamlit Dashboard (`mlops.titipin.me`)
-Di lingkungan K3s produksi, berkas `app.py` pada pod `mlops-dashboard` di-mount secara dinamis melalui Kubernetes ConfigMap `mlops-dashboard-code`. **Anda tidak perlu mem-build ulang image Docker ke Docker Hub** untuk setiap perubahan kode dashboard.
+Di lingkungan K3s produksi, berkas `app.py` pada pod `mlops-dashboard` di-mount melalui Kubernetes ConfigMap yang dirujuk volume `dashboard-code` pada deployment. Nama ConfigMap dapat berversi; baca referensi aktif sebelum hot-deploy. Hot-deploy satu file hanya berlaku jika modul, aset, dan versi dependensi pada image sudah sesuai.
 
-#### ⚡ Alur Hot-Deploy Dashboard (Zero-Downtime, < 30 Detik):
+Revamp Overview memakai `adapter.py`, `overview.py`, `assets/dashboard.css`, `assets/tokens.json`, font lokal, dan `.streamlit/config.toml`. Untuk rilis yang mengubah modul, aset, atau dependensi, build image dengan `docker/Dockerfile.dashboard` dan sertakan seluruh file tersebut; jangan hanya menyalin `app.py` ke image lama. Image mengunci Streamlit 1.65.0 dan Altair 6.3.0 yang dipakai untuk validasi UI. Buat ConfigMap `app.py` berversi, lalu ganti digest image dan referensi ConfigMap dalam satu perubahan pod template. Simpan ConfigMap lama agar rollback mengembalikan kode yang cocok dengan image sebelumnya. Manifest dashboard menyimpan pasangan image/ConfigMap rilis; bukti deployment ada di `docs/dashboard-revamp/`.
+
+#### ⚡ Alur Hot-Deploy Dashboard (Rolling Update):
+Pantau endpoint publik sepanjang rollout. Rilis 13 Oktober mencatat satu sampel HTTP 502 ketika pod berganti; alur ini tidak menjamin tanpa gangguan atau durasi di bawah 30 detik.
 ```bash
 # 1. Pastikan unit tests dashboard lolos di lokal
 pytest tests/test_dashboard_adapter.py -v
@@ -81,8 +84,11 @@ pytest tests/test_dashboard_adapter.py -v
 # 2. Salin app.py lokal ke server Control Plane (cp)
 scp src/dashboard/app.py cp:/tmp/app.py
 
-# 3. Update Kubernetes ConfigMap di namespace mlops
-ssh cp "kubectl create configmap mlops-dashboard-code --from-file=app.py=/tmp/app.py -n mlops --dry-run=client -o yaml | kubectl apply -f -"
+# 3. Update ConfigMap yang benar-benar dipakai deployment (nama dapat berversi)
+ssh cp 'set -eu
+dashboard_map=$(kubectl -n mlops get deployment mlops-dashboard -o jsonpath="{.spec.template.spec.volumes[?(@.name==\"dashboard-code\")].configMap.name}")
+test -n "$dashboard_map"
+kubectl create configmap "$dashboard_map" --from-file=app.py=/tmp/app.py -n mlops --dry-run=client -o yaml | kubectl apply -f -'
 
 # 4. Lakukan rolling restart deployment
 ssh cp "kubectl rollout restart deployment/mlops-dashboard -n mlops"

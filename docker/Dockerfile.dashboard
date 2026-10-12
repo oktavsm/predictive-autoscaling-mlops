@@ -9,9 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir streamlit requests "pandas<3"
+RUN pip install --no-cache-dir streamlit==1.65.0 altair==6.3.0 requests "pandas<3"
 
 COPY src/dashboard/ /app/src/dashboard/
+COPY .streamlit/config.toml /app/.streamlit/config.toml
 
 EXPOSE 8501
 

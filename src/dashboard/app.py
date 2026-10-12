@@ -1,27 +1,21 @@
 #!/usr/bin/env python3
-"""
-Titipin MLOps — Predictive Autoscaling Control Console
-======================================================
-Production observability dashboard for a multi-node AWS K3s cluster.
-Design Kit v1.1.0 token contract: Dark charcoal #101418, surface #171C22,
-blue actual #7DA7FF, teal forecast #57DDD2, green #65DBB1, amber #E9BC69.
-Workload forecasting (t+60 s), pod scaling simulation, drift monitoring,
-FinOps cost analysis, and live traffic injection.
-"""
+"""Titipin MLOps console. Overview is read-only; operational actions stay explicit."""
 
+import base64
+import json
 import math
 import os
 import time
 from datetime import datetime, timedelta, timezone
+from html import escape
+from pathlib import Path
 
-import altair as alt
 import pandas as pd
 import requests
 import streamlit as st
+from adapter import read_resource, runtime_policy
+from overview import render_overview
 
-# ---------------------------------------------------------------------------
-# Service Configuration
-# ---------------------------------------------------------------------------
 INFERENCE_API_URL = (
     os.getenv("INFERENCE_API_URL")
     or os.getenv("INFERENCE_SERVICE_URL")
@@ -33,1174 +27,127 @@ MLFLOW_URL = os.getenv("MLFLOW_URL", "https://mlflow.titipin.me")
 GRAFANA_URL = os.getenv("GRAFANA_URL", "https://grafana.titipin.me")
 MINIO_URL = os.getenv("MINIO_URL", "https://minio.titipin.me")
 API_URL = os.getenv("API_URL", "https://api.titipin.me")
+ASSETS = Path(__file__).parent / "assets"
 
-# ---------------------------------------------------------------------------
-# Page Setup
-# ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Titipin MLOps — Predictive Autoscaling",
-    page_icon="⚡",
+    page_title="Titipin MLOps",
+    page_icon=str(ASSETS / "logo/mark-accent.svg"),
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
-
-# ---------------------------------------------------------------------------
-# Design Kit Token Contract & Global Styling (v1.1.0)
-# Dark charcoal #101418, surface #171C22, border #28313A, accent #7DA7FF,
-# forecast #57DDD2, success #65DBB1, warning #E9BC69, danger #FFA5AC.
-# ---------------------------------------------------------------------------
+# shortcut: Streamlit reports a changed menu theme on rerun; use Refresh now to apply it.
+theme = st.context.theme.type or "dark"
+palette = {
+    key: value["$value"]
+    for key, value in json.loads((ASSETS / "tokens.json").read_text())["color"][theme].items()
+}
+variables = ";".join(f"--{key}:{value}" for key, value in palette.items())
+fonts = ""
+for family, filename in (
+    ("Geist", "Geist-Variable.woff2"),
+    ("Geist Mono", "GeistMono-Variable.woff2"),
+):
+    encoded = base64.b64encode((ASSETS / "fonts" / filename).read_bytes()).decode()
+    fonts += (
+        f'@font-face{{font-family:"{family}";src:url(data:font/woff2;base64,{encoded}) '
+        'format("woff2");font-weight:100 900;font-display:swap;}'
+    )
 st.html(
-    """
-    <style>
-    @import url('https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/font/geist-sans/style.css');
-    @import url('https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/font/geist-mono/style.css');
-
-    :root, [data-theme="dark"], .stApp {
-        --bg: #101418;
-        --surface: #171C22;
-        --surface-raised: #1D2530;
-        --surface-hover: #252E39;
-        --text: #F3F5FA;
-        --text-secondary: #C5CEDC;
-        --text-muted: #A6B1C2;
-        --border: #28313A;
-        --border-control: #78899F;
-        --accent: #7DA7FF;
-        --accent-soft: #1B2B46;
-        --on-accent: #111A2B;
-        --focus: #97BAFF;
-        --success: #65DBB1;
-        --success-soft: #143129;
-        --warning: #E9BC69;
-        --warning-soft: #332A19;
-        --danger: #FFA5AC;
-        --danger-soft: #38232B;
-        --info: #97BAFF;
-        --info-soft: #1B2B46;
-        --chart-actual: #7DA7FF;
-        --chart-predicted: #57DDD2;
-        --chart-capacity: #ADBCD1;
-        --chart-grid: #28313A;
-        --chart-threshold: #E9BC69;
-        --button-bg: #EDF1F7;
-        --button-text: #131922;
-        --font-sans: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        --font-mono: 'Geist Mono', ui-monospace, monospace;
-        color-scheme: dark;
-    }
-
-    html, body, [class*="css"], .stApp {
-        font-family: var(--font-sans);
-        color: var(--text);
-        background-color: var(--bg);
-    }
-    code, pre, .font-mono, .numeric {
-        font-family: var(--font-mono) !important;
-    }
-
-    /* Streamlit Background & Shell Overrides */
-    .stApp, [data-testid="stSidebar"], [data-testid="stSidebarUserContent"], section[data-testid="stSidebar"] {
-        background-color: var(--bg) !important;
-        color: var(--text) !important;
-    }
-    [data-testid="stSidebar"] {
-        border-right: 1px solid var(--border) !important;
-    }
-
-    /* Top Brand Header */
-    .hdr {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 18px 22px;
-        margin-bottom: 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-    }
-    .hdr-title {
-        font-size: 1.1875rem;
-        font-weight: 650;
-        color: var(--text);
-        letter-spacing: -0.4px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-    .hdr-title svg {
-        width: 26px;
-        height: 26px;
-        flex-shrink: 0;
-    }
-    .hdr-sub {
-        font-size: 0.8125rem;
-        color: var(--text-muted);
-        margin-top: 3px;
-        line-height: 1.4;
-    }
-
-    /* Metric Cards */
-    div[data-testid="stMetric"] {
-        background: var(--surface) !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 10px !important;
-        padding: 16px 18px !important;
-        min-height: 110px !important;
-        transition: border-color 0.15s ease;
-    }
-    div[data-testid="stMetric"]:hover {
-        border-color: var(--border-control) !important;
-    }
-    div[data-testid="stMetricLabel"] {
-        color: var(--text-secondary) !important;
-        font-size: 0.75rem !important;
-        font-weight: 600 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.04em !important;
-    }
-    div[data-testid="stMetricValue"] {
-        color: var(--text) !important;
-        font-size: 1.5625rem !important;
-        font-weight: 650 !important;
-        letter-spacing: -0.3px !important;
-    }
-    div[data-testid="stMetricDelta"] {
-        font-size: 0.8125rem !important;
-        font-weight: 500 !important;
-    }
-
-    /* Panel Containers */
-    .panel {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 16px 20px;
-        margin-bottom: 16px;
-        min-width: 0;
-    }
-    .panel-heading {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 12px;
-        margin-bottom: 12px;
-    }
-    .panel-heading h2, .panel-heading h3 {
-        font-size: 1.0625rem;
-        font-weight: 600;
-        color: var(--text);
-        letter-spacing: -0.25px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin: 0;
-    }
-    .panel-heading p {
-        color: var(--text-muted);
-        font-size: 0.8125rem;
-        margin-top: 3px;
-    }
-
-    /* Status Pills */
-    .pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 3px 9px;
-        border-radius: 6px;
-        font-size: 0.6875rem;
-        font-weight: 600;
-        font-family: var(--font-mono);
-        letter-spacing: 0.02em;
-        white-space: nowrap;
-    }
-    .pill-ok, .pill-success {
-        background: var(--success-soft);
-        color: var(--success);
-        border: 1px solid rgba(101, 219, 177, 0.35);
-    }
-    .pill-warn {
-        background: var(--warning-soft);
-        color: var(--warning);
-        border: 1px solid rgba(233, 188, 105, 0.35);
-    }
-    .pill-crit, .pill-danger {
-        background: var(--danger-soft);
-        color: var(--danger);
-        border: 1px solid rgba(255, 165, 172, 0.35);
-    }
-    .pill-accent, .pill-info {
-        background: var(--accent-soft);
-        color: var(--accent);
-        border: 1px solid rgba(125, 167, 255, 0.35);
-    }
-    .pill-mute {
-        background: var(--surface-raised);
-        color: var(--text-muted);
-        border: 1px solid var(--border);
-    }
-
-    /* Status Dots */
-    .dot {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        background: currentColor;
-    }
-    .dot.success { background-color: var(--success); }
-    .dot.warning { background-color: var(--warning); }
-    .dot.danger  { background-color: var(--danger); }
-    .dot.accent  { background-color: var(--accent); }
-    .dot.muted   { background-color: var(--text-muted); }
-
-    /* Cards */
-    .card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 14px 16px;
-        margin-bottom: 12px;
-    }
-    .card-accent-blue {
-        border-left: 3px solid var(--accent);
-    }
-    .card-accent-teal {
-        border-left: 3px solid var(--chart-predicted);
-    }
-    .card-accent-amber {
-        border-left: 3px solid var(--warning);
-    }
-    .card-accent-green {
-        border-left: 3px solid var(--success);
-    }
-
-    /* Hover tooltips */
-    .tt {
-        position: relative;
-        display: inline-block;
-        border-bottom: 1px dotted var(--border-control);
-        cursor: help;
-        color: var(--text);
-        font-weight: 500;
-    }
-    .tt:hover::after {
-        content: attr(data-tip);
-        position: absolute;
-        bottom: 125%;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: var(--surface-raised);
-        color: var(--text-secondary);
-        padding: 8px 12px;
-        border-radius: 6px;
-        border: 1px solid var(--border-control);
-        font-size: 0.75rem;
-        font-weight: 400;
-        white-space: normal;
-        width: 260px;
-        z-index: 1000;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-        line-height: 1.45;
-    }
-
-    /* Sidebar Portal Links */
-    .slink {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        color: var(--text-secondary) !important;
-        text-decoration: none !important;
-        padding: 8px 12px;
-        border-radius: 6px;
-        margin: 5px 0;
-        font-size: 0.75rem;
-        font-weight: 500;
-        transition: all 0.12s ease;
-    }
-    .slink:hover {
-        background: var(--surface-hover);
-        border-color: var(--border-control);
-        color: var(--text) !important;
-    }
-
-    /* Pod Box Visualizer */
-    .pod-box {
-        border-radius: 8px;
-        padding: 12px 8px;
-        text-align: center;
-        margin: 3px 0;
-        border: 1px solid var(--border);
-        background: var(--surface);
-        transition: all 0.15s ease;
-    }
-    .pod-box.active {
-        border-color: var(--success);
-        background: var(--success-soft);
-    }
-    .pod-name {
-        font-size: 0.75rem;
-        font-weight: 600;
-        margin-bottom: 3px;
-        color: var(--text);
-    }
-    .pod-detail {
-        font-size: 0.6875rem;
-        color: var(--text-muted);
-        font-family: var(--font-mono);
-    }
-
-    /* Tabs Bar Styling */
-    div[data-baseweb="tab-list"] {
-        gap: 6px;
-        background-color: transparent !important;
-        border-bottom: 1px solid var(--border) !important;
-        padding-bottom: 2px;
-    }
-    button[data-baseweb="tab"] {
-        color: var(--text-secondary) !important;
-        font-size: 0.8125rem !important;
-        font-weight: 500 !important;
-        padding: 8px 16px !important;
-        border-radius: 6px 6px 0 0 !important;
-        background-color: transparent !important;
-        border: none !important;
-    }
-    button[data-baseweb="tab"]:hover {
-        color: var(--text) !important;
-        background-color: var(--surface) !important;
-    }
-    button[data-baseweb="tab"][aria-selected="true"] {
-        color: var(--accent) !important;
-        font-weight: 600 !important;
-        background-color: var(--surface-raised) !important;
-        border-bottom: 2px solid var(--accent) !important;
-    }
-    div[data-baseweb="tab-highlight"] {
-        background-color: var(--accent) !important;
-    }
-    div[data-baseweb="tab-border"] {
-        background-color: var(--border) !important;
-    }
-
-    /* Table & Dataframe Styling */
-    div[data-testid="stDataFrame"] {
-        background: var(--surface) !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 8px !important;
-        overflow: hidden;
-    }
-
-    /* Native meters */
-    meter {
-        appearance: none;
-        -webkit-appearance: none;
-        display: block;
-        width: 100%;
-        height: 8px;
-        border: 0;
-        background: var(--surface-hover);
-        border-radius: 6px;
-        overflow: hidden;
-    }
-    meter::-webkit-meter-bar {
-        background: var(--surface-hover);
-        border: 0;
-        border-radius: 6px;
-    }
-    meter::-webkit-meter-optimum-value {
-        background: var(--success);
-        border-radius: 6px;
-    }
-    meter::-moz-meter-bar {
-        background: var(--success);
-    }
-    .meter-mem meter::-webkit-meter-optimum-value {
-        background: var(--accent);
-    }
-    .meter-mem meter::-moz-meter-bar {
-        background: var(--accent);
-    }
-    </style>
-    """
+    f"<style>{fonts}:root{{{variables};--font-sans:Geist,system-ui,sans-serif;"
+    f'--font-mono:"Geist Mono",ui-monospace,monospace;}}'
+    f"{(ASSETS / 'dashboard.css').read_text()}</style>"
+)
+st.logo(
+    str(ASSETS / f"logo/lockup-{theme}.svg"),
+    icon_image=str(ASSETS / "logo/mark-accent.svg"),
+    size="large",
 )
 
-# ---------------------------------------------------------------------------
-# Initial Telemetry Fetch: Health, Audit, Policy, Workload
-# ---------------------------------------------------------------------------
-health_data = {}
-try:
-    resp = requests.get(f"{INFERENCE_API_URL}/health", timeout=2.5)
-    if resp.status_code == 200:
-        health_data = resp.json()
-except Exception:
-    pass
-
-audit_data = {}
-try:
-    a_resp = requests.get(f"{INFERENCE_API_URL}/operations/audit", timeout=2.5)
-    if a_resp.status_code == 200:
-        audit_data = a_resp.json()
-except Exception:
-    pass
-
-model_name = health_data.get("model_name", "predictive-autoscaler")
-model_alias = health_data.get("model_alias", "champion")
-active_model_ver = str(
-    health_data.get("model_version")
-    or audit_data.get("retraining", {}).get("latest", {}).get("version", "v40")
-)
-if not active_model_ver.startswith("v"):
-    active_model_ver = f"v{active_model_ver}"
-
-active_algo = str(
-    health_data.get("model_algorithm")
-    or audit_data.get("retraining", {})
-    .get("latest", {})
-    .get("algorithm", "Random Forest Regressor (Optuna)")
-)
-active_algo_short = active_algo.split()[0]
-is_healthy = health_data.get("status") == "healthy"
-load_time_ms = float(health_data.get("load_time_ms", 18.4))
-replica_bounds = health_data.get("replica_bounds", {"min": 1, "max": 6})
-target_rps_cfg = float(health_data.get("target_rps_per_pod", 10.0))
-
-workload_status = {}
-try:
-    w_resp = requests.get(f"{INFERENCE_API_URL}/workload/status", timeout=2)
-    if w_resp.status_code == 200:
-        workload_status = w_resp.json()
-except Exception:
-    pass
-
-daemon_alive = workload_status.get("daemon_alive", False)
-daemon_state = (
-    workload_status.get("daemon_current_state")
-    or workload_status.get("override_state")
-    or "STEADY_NORMAL"
-)
-daemon_vus = workload_status.get("daemon_vus", 6)
-
-# ---------------------------------------------------------------------------
-# Sidebar: Control Plane & Policy
-# ---------------------------------------------------------------------------
+pages = {
+    "Overview": "overview",
+    "Scaling Simulator": "sim",
+    "Drift & Retraining": "retrain",
+    "Model Registry": "registry",
+    "Cluster Architecture": "k8s",
+    "HPA vs Predictive": "benchmark",
+    "Telemetry Audit": "audit",
+    "FinOps & Carbon": "finops",
+    "Workload Injector": "injector",
+}
 with st.sidebar:
-    st.html(
-        """
-        <div style="display:flex;align-items:center;gap:12px;padding:4px 0 10px;">
-            <svg viewBox="0 0 32 32" width="28" height="28" fill="#7DA7FF" aria-hidden="true">
-                <path d="M3 5h18v5H3zM11 10h5v17h-5zM21 2h8v8h-5V7h-3z"/>
-            </svg>
-            <div>
-                <div style="font-size:1.125rem;font-weight:650;color:#F3F5FA;letter-spacing:-0.3px;">Titipin MLOps</div>
-                <div style="font-size:0.6875rem;color:#A6B1C2;">Control Plane v1.1.0</div>
-            </div>
-        </div>
-        """
-    )
-
-    st.html(
-        f'<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;">'
-        f'<span class="pill pill-ok">{"LIVE" if is_healthy else "OFFLINE"}</span>'
-        f'<span style="font-size:11px;color:#A6B1C2;">AWS K3s · 3 nodes</span>'
-        f"</div>"
-    )
-
-    st.markdown("#### Services")
-    st.html(
-        f'<a class="slink" href="{GRAFANA_URL}" target="_blank"><span>Grafana Observability</span><span style="color:#78899F;">↗</span></a>'
-        f'<a class="slink" href="{MLFLOW_URL}" target="_blank"><span>MLflow Model Registry</span><span style="color:#78899F;">↗</span></a>'
-        f'<a class="slink" href="{MINIO_URL}" target="_blank"><span>MinIO S3 / DVC Storage</span><span style="color:#78899F;">↗</span></a>'
-        f'<a class="slink" href="{PUBLIC_INFERENCE_DOCS}" target="_blank"><span>Inference API Docs</span><span style="color:#78899F;">↗</span></a>'
-        f'<a class="slink" href="{API_URL}" target="_blank"><span>Laravel Target API</span><span style="color:#78899F;">↗</span></a>'
-    )
-
+    st.html('<p class="brand-caption">Predictive Autoscaling<br>Control Plane</p>')
+    with st.container(key="workspace"):
+        page_title = st.radio(
+            "Workspace", list(pages), label_visibility="collapsed", width="stretch"
+        )
+    page = pages[page_title]
     st.divider()
-    st.markdown("#### Scaling Policy")
-    cfg_target_rps = st.number_input(
-        "Target RPS per Pod",
-        value=float(target_rps_cfg),
-        min_value=2.0,
-        max_value=30.0,
-        step=1.0,
-        help="Ideal throughput per PHP-FPM replica to keep P95 latency below 100 ms.",
-    )
-    cfg_min_pods = st.number_input(
-        "Min Replicas",
-        value=int(replica_bounds.get("min", 1)),
-        min_value=1,
-        max_value=2,
-    )
-    cfg_max_pods = st.number_input(
-        "Max Replicas",
-        value=int(replica_bounds.get("max", 6)),
-        min_value=2,
-        max_value=8,
-    )
-
-    st.divider()
-    st.markdown("#### Telemetry Refresh")
-    auto_refresh = st.toggle(
-        "Auto-refresh",
-        value=True,
-        help="Periodically poll live cluster endpoints without full page reload.",
-    )
+    auto_refresh = st.toggle("Auto-refresh", value=True)
     refresh_rate = st.select_slider(
-        "Interval",
+        "Read interval",
         options=[5, 10, 15, 30],
-        value=10,
-        format_func=lambda s: f"{s}s",
+        value=15,
+        format_func=lambda seconds: f"{seconds}s",
         disabled=not auto_refresh,
     )
+    if st.button("Refresh now", width="stretch"):
+        st.rerun()
+    with st.expander("Connected services"):
+        for name, url in (
+            ("Grafana Observability", GRAFANA_URL),
+            ("MLflow Model Registry", MLFLOW_URL),
+            ("MinIO / DVC Storage", MINIO_URL),
+            ("Inference API Docs", PUBLIC_INFERENCE_DOCS),
+            ("Laravel Target API", API_URL),
+        ):
+            st.link_button(name, url, width="stretch")
+    st.caption("Design kit v1.1.0 · Change the app menu theme, then Refresh now")
 
-    st.html(
-        """
-        <div style="margin-top:20px;padding-top:10px;border-top:1px solid #28313A;font-size:10px;color:#A6B1C2;">
-            <span>Token Contract: Design Kit v1.1.0</span><br>
-            <span>Connected: production inference service</span>
-        </div>
-        """
-    )
-
-# ---------------------------------------------------------------------------
-# Global Header & Top 4 Metric Cards (Matching Design Kit)
-# ---------------------------------------------------------------------------
-header_html = (
-    '<div class="hdr">'
-    '<div class="hdr-title">'
-    '<svg viewBox="0 0 32 32" fill="#7DA7FF" aria-hidden="true">'
-    '<path d="M3 5h18v5H3zM11 10h5v17h-5zM21 2h8v8h-5V7h-3z"/>'
-    "</svg>"
-    "<div>"
-    "Titipin MLOps &mdash; Predictive Autoscaling Console"
-    '<div class="hdr-sub">Closed-loop telemetry ingestion, workload forecasting (t+60 s), and proactive Kubernetes pod allocation.</div>'
-    "</div>"
-    "</div>"
-    f'<div><span class="pill pill-ok">MODEL @{model_alias} {active_model_ver}</span></div>'
-    "</div>"
+st.html(
+    '<a class="skip-link" href="#workspace-title">Skip to content</a>'
+    f'<h1 id="workspace-title" tabindex="-1">{escape(page_title)}</h1>'
 )
-st.html(header_html)
+if page == "overview":
+    st.caption("Serving evidence, next-minute workload, and recorded scaling decisions.")
+else:
+    st.caption("Titipin MLOps · Operational workspace")
 
-# Top 4 Status Metric Cards
-top_c1, top_c2, top_c3, top_c4 = st.columns(4)
-with top_c1:
-    st.metric(
-        "Serving Engine",
-        "HEALTHY" if is_healthy else "OFFLINE",
-        delta=f"p95 {load_time_ms:.1f} ms" if is_healthy else "Service Unreachable",
-        help="FastAPI inference container status in namespace mlops.",
-    )
-with top_c2:
-    st.metric(
-        "Active Model",
-        f"{active_model_ver} ({active_algo_short})",
-        delta=f"@{model_alias} (Promoted)",
-        help="Currently serving champion model loaded into inference service memory.",
-    )
-with top_c3:
-    st.metric(
-        "Replica Range",
-        f"{cfg_min_pods}–{cfg_max_pods} pods",
-        delta=f"Target: {cfg_target_rps:.0f} req/s/pod",
-        help="Allowed pod scaling bounds enforced by the policy controller.",
-    )
-with top_c4:
-    st.metric(
-        "Traffic Profile",
-        daemon_state,
-        delta=f"{daemon_vus} VUs {'(ONLINE)' if daemon_alive else '(STANDBY)'}",
-        help="Live workload profile running on 24/7 load generator VM cp-bcc.",
-    )
-
-st.html("<div style='height:6px'></div>")
-
-# ---------------------------------------------------------------------------
-# Tabs Navigation: Overview Hero + 8 Operational Tabs
-# ---------------------------------------------------------------------------
-(
-    tab_overview,
-    tab_audit,
-    tab_sim,
-    tab_injector,
-    tab_finops,
-    tab_retrain,
-    tab_benchmark,
-    tab_registry,
-    tab_k8s,
-) = st.tabs(
-    [
-        "🌟 Overview",
-        "📊 Telemetry Audit",
-        "⚙️ Scaling Simulator",
-        "🚀 Workload Injector",
-        "💰 FinOps & Carbon",
-        "🔄 Drift & Retraining",
-        "⚖️ HPA vs Predictive",
-        "🏛️ Model Registry",
-        "🏗️ Cluster Architecture",
-    ]
-)
-
-
-# =========================================================================
-# TAB 0: 🌟 OVERVIEW (Primary Hero Cockpit from Design Kit v1.1.0)
-# =========================================================================
-with tab_overview:
-    refresh_param = int(refresh_rate) if auto_refresh else None
-
-    @st.fragment(run_every=refresh_param)
-    def render_overview():
-        # 1. Fetch live telemetry resources
-        decisions_data = []
-        try:
-            r_d = requests.get(f"{INFERENCE_API_URL}/scaling/decisions", timeout=2.5)
-            if r_d.status_code == 200 and isinstance(r_d.json(), list):
-                decisions_data = r_d.json()
-        except Exception:
-            pass
-
-        actions_data = []
-        try:
-            r_a = requests.get(f"{INFERENCE_API_URL}/scaling/actions", timeout=2.5)
-            if r_a.status_code == 200 and isinstance(r_a.json(), list):
-                actions_data = r_a.json()
-        except Exception:
-            pass
-
-        drift_info = {}
-        try:
-            r_dr = requests.get(f"{INFERENCE_API_URL}/monitoring/drift", timeout=2.5)
-            if r_dr.status_code == 200:
-                drift_info = r_dr.json()
-        except Exception:
-            pass
-
-        # Time representations
-        now_utc = datetime.now(timezone.utc)
-        now_wib = now_utc.astimezone(timezone(timedelta(hours=7))).strftime("%H:%M:%S WIB")
-
-        # Latest decision & metrics
-        latest_dec = decisions_data[0] if decisions_data else {}
-        cur_rps = float(latest_dec.get("input_rps", 10.6))
-        pred_rps = float(latest_dec.get("predicted_rps_60s", 6.0))
-        cur_replicas = int(latest_dec.get("current_replicas", 1))
-        des_replicas = int(latest_dec.get("desired_replicas", 1))
-        latest_action = str(latest_dec.get("action", "MAINTAIN_CAPACITY"))
-        p95_lat = float(latest_dec.get("input_p95_ms", 18.0))
-        inf_lat = float(latest_dec.get("latency_ms", 12.0))
-        cur_cpu = float(latest_dec.get("input_cpu", 0.08))
-
-        # Mathematical calculation breakdown
-        raw_calc = pred_rps / cfg_target_rps if cfg_target_rps > 0 else 1.0
-        calc_pods = math.ceil(raw_calc)
-        clamped_pods = max(cfg_min_pods, min(cfg_max_pods, calc_pods))
-        total_capacity = cur_replicas * cfg_target_rps
-        headroom = (
-            ((total_capacity - cur_rps) / total_capacity * 100.0) if total_capacity > 0 else 0.0
-        )
-
-        # Overview Header Strip
-        st.html(
-            """
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:0 2px;">
-                <div>
-                    <h2 style="font-size:1.375rem;font-weight:650;color:#F3F5FA;margin:0;letter-spacing:-0.3px;">Overview</h2>
-                    <p style="font-size:0.8125rem;color:#A6B1C2;margin:2px 0 0;">
-                        Production telemetry, forecasting, and scaling decisions · <span style="color:#65DBB1;">Live telemetry stream</span>
-                    </p>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;">
-                    <span class="pill pill-ok"><span class="dot success"></span> LIVE STREAM</span>
-                    <span style="font-size:0.75rem;color:#A6B1C2;font-family:monospace;">60 cycles · 15m window</span>
-                </div>
-            </div>
-            """
-        )
-
-        # -------------------------------------------------------------------
-        # 1.78 : 1 Monitoring Columns (Primary Column vs Secondary Column)
-        # -------------------------------------------------------------------
-        col_primary, col_secondary = st.columns([1.78, 1.0])
-
-        with col_primary:
-            # 1. Workload Forecast Panel
-            st.html(
-                """
-                <div class="panel" style="margin-bottom:16px;">
-                    <div class="panel-heading">
-                        <div>
-                            <h2>Workload Forecast</h2>
-                            <p>Actual vs predicted requests per second</p>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:16px;font-size:0.75rem;color:#C5CEDC;">
-                            <span><span style="display:inline-block;width:16px;height:2px;background:#7DA7FF;vertical-align:middle;margin-right:6px;"></span>Actual</span>
-                            <span><span style="display:inline-block;width:16px;height:2px;border-top:2px dashed #57DDD2;vertical-align:middle;margin-right:6px;"></span>Predicted (t+60s)</span>
-                            <span><span style="display:inline-block;width:16px;height:2px;border-top:2px dotted #ADBCD1;vertical-align:middle;margin-right:6px;"></span>Capacity</span>
-                        </div>
-                    </div>
-                """
+# Existing workspaces consume these values; Overview reads its own current snapshot.
+health_data = {}
+audit_data = {}
+if page != "overview":
+    health_data = read_resource(INFERENCE_API_URL, "/health", dict)["data"]
+    audit_data = read_resource(INFERENCE_API_URL, "/operations/audit", dict)["data"]
+model_name = str(health_data.get("model_name") or "Unknown")
+model_alias = str(health_data.get("model_alias") or "Unknown")
+active_model_ver = str(health_data.get("model_version") or "Unknown")
+if active_model_ver != "Unknown" and not active_model_ver.startswith("v"):
+    active_model_ver = f"v{active_model_ver}"
+active_algo = str(health_data.get("model_algorithm") or "Unknown")
+policy = runtime_policy(health_data)
+cfg_target_rps = policy["capacity"] if policy else 10.0
+cfg_min_pods = policy["minimum"] if policy else 1
+cfg_max_pods = policy["maximum"] if policy else 6
+if page == "sim":
+    with st.sidebar:
+        with st.expander("Local simulation policy", expanded=True):
+            st.caption("Preview only. These controls do not update the controller policy.")
+            cfg_target_rps = st.number_input(
+                "Target req/s per pod", min_value=0.1, value=float(cfg_target_rps), step=1.0
+            )
+            cfg_min_pods = st.number_input("Min replicas", min_value=1, value=cfg_min_pods)
+            cfg_max_pods = st.number_input(
+                "Max replicas", min_value=cfg_min_pods, value=max(cfg_min_pods, cfg_max_pods)
             )
 
-            if decisions_data:
-                df_chron = pd.DataFrame(decisions_data[::-1])
-                df_chron["time"] = pd.to_datetime(df_chron["timestamp"])
-                df_chron["capacity_rps"] = df_chron["current_replicas"] * cfg_target_rps
-
-                base_fc = alt.Chart(df_chron).encode(
-                    x=alt.X(
-                        "time:T",
-                        title=None,
-                        axis=alt.Axis(
-                            format="%H:%M",
-                            gridColor="#28313A",
-                            labelColor="#A6B1C2",
-                            tickColor="#28313A",
-                        ),
-                    )
-                )
-
-                line_actual = base_fc.mark_line(color="#7DA7FF", strokeWidth=2).encode(
-                    y=alt.Y(
-                        "input_rps:Q",
-                        title="Requests / sec",
-                        axis=alt.Axis(
-                            gridColor="#28313A",
-                            labelColor="#A6B1C2",
-                            titleColor="#A6B1C2",
-                            tickColor="#28313A",
-                        ),
-                    ),
-                    tooltip=[
-                        alt.Tooltip("time:T", format="%H:%M:%S", title="Timestamp (UTC)"),
-                        alt.Tooltip("input_rps:Q", title="Actual RPS", format=".2f"),
-                    ],
-                )
-
-                line_pred = base_fc.mark_line(
-                    color="#57DDD2", strokeWidth=2, strokeDash=[5, 4]
-                ).encode(
-                    y=alt.Y("predicted_rps_60s:Q"),
-                    tooltip=[
-                        alt.Tooltip("time:T", format="%H:%M:%S", title="Target t+60s"),
-                        alt.Tooltip("predicted_rps_60s:Q", title="Predicted RPS", format=".2f"),
-                    ],
-                )
-
-                line_cap = base_fc.mark_line(
-                    color="#ADBCD1", strokeWidth=1, strokeDash=[2, 2]
-                ).encode(
-                    y=alt.Y("capacity_rps:Q"),
-                    tooltip=[
-                        alt.Tooltip("capacity_rps:Q", title="Allocated Capacity", format=".1f"),
-                    ],
-                )
-
-                chart_forecast = (
-                    (line_actual + line_pred + line_cap)
-                    .properties(height=216)
-                    .configure_view(strokeWidth=0)
-                    .configure(background="#171C22")
-                )
-                st.altair_chart(chart_forecast, use_container_width=True)
-            else:
-                st.info("Awaiting telemetry decision records from inference API...")
-
-            st.html(
-                """
-                    <div style="font-size:0.6875rem;color:#A6B1C2;margin-top:4px;">
-                        Point forecast strictly at t+60s horizon. Updated every 15s proactive controller cycle.
-                    </div>
-                </div>
-                """
-            )
-
-            # 2. Scaling Decisions Panel
-            st.html(
-                f"""
-                <div class="panel">
-                    <div class="panel-heading">
-                        <div>
-                            <h2>Scaling Decisions</h2>
-                            <p>Replicas over time with applied scaling events</p>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <span class="pill pill-ok">{cur_replicas} pod(s) · {latest_action}</span>
-                            <div style="display:flex;align-items:center;gap:12px;font-size:0.75rem;color:#C5CEDC;">
-                                <span><span style="display:inline-block;width:14px;height:2px;background:#7DA7FF;vertical-align:middle;margin-right:6px;"></span>Pods Now</span>
-                                <span><span style="display:inline-block;width:14px;height:2px;border-top:2px dashed #57DDD2;vertical-align:middle;margin-right:6px;"></span>Target</span>
-                                <span><span style="display:inline-block;width:14px;height:2px;border-top:2px dashed #E9BC69;vertical-align:middle;margin-right:6px;"></span>Max (6)</span>
-                            </div>
-                        </div>
-                    </div>
-                """
-            )
-
-            if decisions_data:
-                base_sc = alt.Chart(df_chron).encode(
-                    x=alt.X(
-                        "time:T",
-                        title=None,
-                        axis=alt.Axis(
-                            format="%H:%M",
-                            gridColor="#28313A",
-                            labelColor="#A6B1C2",
-                            tickColor="#28313A",
-                        ),
-                    )
-                )
-
-                line_cur_rep = base_sc.mark_line(
-                    interpolate="step-after", color="#7DA7FF", strokeWidth=2.5
-                ).encode(
-                    y=alt.Y(
-                        "current_replicas:Q",
-                        title="Replicas",
-                        scale=alt.Scale(domain=[0, cfg_max_pods + 1]),
-                        axis=alt.Axis(
-                            gridColor="#28313A",
-                            labelColor="#A6B1C2",
-                            titleColor="#A6B1C2",
-                            tickMinStep=1,
-                        ),
-                    ),
-                    tooltip=[
-                        alt.Tooltip("time:T", format="%H:%M:%S", title="Timestamp"),
-                        alt.Tooltip("current_replicas:Q", title="Current Pods"),
-                        alt.Tooltip("action:N", title="Scaling Action"),
-                    ],
-                )
-
-                line_des_rep = base_sc.mark_line(
-                    interpolate="step-after", color="#57DDD2", strokeWidth=2, strokeDash=[4, 4]
-                ).encode(
-                    y=alt.Y("desired_replicas:Q"),
-                    tooltip=[
-                        alt.Tooltip("desired_replicas:Q", title="Recommended Pods"),
-                    ],
-                )
-
-                max_rule = (
-                    alt.Chart(pd.DataFrame([{"bound": cfg_max_pods}]))
-                    .mark_rule(color="#E9BC69", strokeDash=[3, 3], strokeWidth=1)
-                    .encode(y="bound:Q")
-                )
-
-                chart_scaling = (
-                    (line_cur_rep + line_des_rep + max_rule)
-                    .properties(height=216)
-                    .configure_view(strokeWidth=0)
-                    .configure(background="#171C22")
-                )
-                st.altair_chart(chart_scaling, use_container_width=True)
-            else:
-                st.info("Awaiting scaling decisions buffer...")
-
-            st.html(
-                """
-                    <div style="font-size:0.6875rem;color:#A6B1C2;margin-top:4px;">
-                        Formula: ceil(predicted_rps / target_rps_per_pod) clamped to [1, 6]. 30s cooldown on scale-down.
-                    </div>
-                </div>
-                """
-            )
-
-        with col_secondary:
-            # 1. Model Health Panel
-            psi_score = float(drift_info.get("psi_score", 0.08))
-            val_mae_str = (
-                audit_data.get("retraining", {}).get("latest", {}).get("val_mae", "0.0880 RPS")
-            )
-
-            dot_cls = (
-                "success" if psi_score < 0.20 else ("warning" if psi_score < 0.25 else "danger")
-            )
-            psi_label = (
-                "Stable" if psi_score < 0.20 else ("Moderate" if psi_score < 0.25 else "Drift")
-            )
-
-            st.html(
-                f"""
-                <div class="panel" style="margin-bottom:16px;">
-                    <div class="panel-heading">
-                        <h2>Model Health</h2>
-                        <span class="pill pill-ok">EVALUATED</span>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 0;border-bottom:1px solid #28313A;">
-                        <div style="border-right:1px solid #28313A;padding-right:6px;">
-                            <span style="font-size:0.6875rem;color:#C5CEDC;display:block;">PSI (Drift)</span>
-                            <strong style="font-size:1.125rem;color:#F3F5FA;display:flex;align-items:center;gap:6px;margin-top:2px;">
-                                {psi_score:.3f} <span class="dot {dot_cls}"></span>
-                            </strong>
-                            <small style="font-size:0.625rem;color:#A6B1C2;">{psi_label}</small>
-                        </div>
-                        <div style="border-right:1px solid #28313A;padding-right:6px;">
-                            <span style="font-size:0.6875rem;color:#C5CEDC;display:block;">Validation MAE</span>
-                            <strong style="font-size:1.125rem;color:#F3F5FA;display:block;margin-top:2px;">
-                                {val_mae_str.split()[0]}
-                            </strong>
-                            <small style="font-size:0.625rem;color:#A6B1C2;">Offline val</small>
-                        </div>
-                        <div>
-                            <span style="font-size:0.6875rem;color:#C5CEDC;display:block;">Latency P95</span>
-                            <strong style="font-size:1.125rem;color:#65DBB1;display:block;margin-top:2px;">
-                                {p95_lat:.0f} ms
-                            </strong>
-                            <small style="font-size:0.625rem;color:#A6B1C2;">Target &lt;100ms</small>
-                        </div>
-                    </div>
-                    <div style="margin-top:10px;">
-                        <div style="font-size:0.6875rem;color:#C5CEDC;display:flex;justify-content:space-between;">
-                            <span>Recent Latency Trend</span>
-                            <span style="color:#A6B1C2;">avg {inf_lat:.1f} ms</span>
-                        </div>
-                """
-            )
-
-            # Mini sparkline of recent latency
-            if decisions_data:
-                spark = (
-                    alt.Chart(df_chron.tail(20))
-                    .mark_area(
-                        color="#7DA7FF", opacity=0.2, line={"color": "#7DA7FF", "width": 1.5}
-                    )
-                    .encode(
-                        x=alt.X("time:T", axis=None),
-                        y=alt.Y("latency_ms:Q", axis=None),
-                        tooltip=[
-                            alt.Tooltip("time:T", format="%H:%M:%S", title="Time"),
-                            alt.Tooltip("latency_ms:Q", title="Latency (ms)", format=".1f"),
-                        ],
-                    )
-                    .properties(height=54)
-                    .configure_view(strokeWidth=0)
-                    .configure(background="#171C22")
-                )
-                st.altair_chart(spark, use_container_width=True)
-
-            st.html("</div></div>")
-
-            # 2. Cluster Status Panel
-            pod_capsules = []
-            for i in range(1, 7):
-                if i <= cur_replicas:
-                    pod_capsules.append(
-                        f'<div title="Pod {i} (Active - {cfg_target_rps:.0f} RPS)" '
-                        f'style="flex:1;height:14px;background:#65DBB1;border:2px solid #143129;border-radius:8px;outline:1px solid #65DBB1;"></div>'
-                    )
-                else:
-                    pod_capsules.append(
-                        f'<div title="Pod {i} (Standby)" '
-                        f'style="flex:1;height:14px;border:1px dashed #78899F;border-radius:8px;background:transparent;"></div>'
-                    )
-
-            cpu_pct = min(100, max(5, int(cur_cpu * 100)))
-            mem_pct = 34
-
-            st.html(
-                f"""
-                <div class="panel" style="margin-bottom:16px;">
-                    <div class="panel-heading">
-                        <h2>Cluster Status</h2>
-                        <span class="pill pill-ok">AWS K3s</span>
-                    </div>
-                    <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin:10px 0;">
-                        <div style="background:#1D2530;border:1px solid #78899F;border-radius:7px;padding:7px 8px;font-size:0.6875rem;line-height:1.2;">
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <span class="dot success"></span>
-                                <b style="color:#F3F5FA;">master</b>
-                            </div>
-                            <div style="font-size:0.625rem;color:#65DBB1;margin-top:2px;">Control Plane</div>
-                        </div>
-                        <div style="background:#1D2530;border:1px solid #78899F;border-radius:7px;padding:7px 8px;font-size:0.6875rem;line-height:1.2;">
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <span class="dot success"></span>
-                                <b style="color:#F3F5FA;">worker-1</b>
-                            </div>
-                            <div style="font-size:0.625rem;color:#65DBB1;margin-top:2px;">Ready · 4 vCPU</div>
-                        </div>
-                        <div style="background:#1D2530;border:1px solid #78899F;border-radius:7px;padding:7px 8px;font-size:0.6875rem;line-height:1.2;">
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <span class="dot success"></span>
-                                <b style="color:#F3F5FA;">worker-2</b>
-                            </div>
-                            <div style="font-size:0.625rem;color:#65DBB1;margin-top:2px;">Ready · 4 vCPU</div>
-                        </div>
-                    </div>
-                    <div style="margin:12px 0 10px;">
-                        <div style="display:flex;justify-content:space-between;font-size:0.6875rem;color:#C5CEDC;margin-bottom:5px;">
-                            <span>Pod Allocation ({cur_replicas}/6 active)</span>
-                            <span style="color:#A6B1C2;">Max 6</span>
-                        </div>
-                        <div style="display:flex;gap:6px;">{"".join(pod_capsules)}</div>
-                    </div>
-                    <div style="margin-top:10px;">
-                        <div style="display:grid;grid-template-columns:50px 1fr 38px;align-items:center;gap:8px;font-size:0.6875rem;color:#C5CEDC;margin-bottom:6px;">
-                            <span>CPU</span>
-                            <meter min="0" max="100" value="{cpu_pct}"></meter>
-                            <span style="text-align:right;font-family:monospace;">{cpu_pct}%</span>
-                        </div>
-                        <div class="meter-mem" style="display:grid;grid-template-columns:50px 1fr 38px;align-items:center;gap:8px;font-size:0.6875rem;color:#C5CEDC;">
-                            <span>RAM</span>
-                            <meter min="0" max="100" value="{mem_pct}"></meter>
-                            <span style="text-align:right;font-family:monospace;">{mem_pct}%</span>
-                        </div>
-                    </div>
-                </div>
-                """
-            )
-
-            # 3. Recent Events Panel
-            event_rows = []
-            if actions_data:
-                for act in actions_data[:4]:
-                    ts_raw = act.get("timestamp", "")
-                    ts_short = (
-                        ts_raw.split("T")[-1].replace("Z", "")[:8] if "T" in ts_raw else ts_raw[-8:]
-                    )
-                    action_type = act.get("action", "SCALE")
-                    dot_t = (
-                        "warning"
-                        if "UP" in action_type
-                        else ("info" if "DOWN" in action_type else "success")
-                    )
-                    from_r = act.get("from_replicas", 1)
-                    to_r = act.get("to_replicas", 1)
-                    event_rows.append(
-                        f'<li style="display:flex;align-items:center;gap:10px;font-size:0.75rem;line-height:1.4;">'
-                        f'<span class="dot {dot_t}"></span>'
-                        f'<time style="color:#A6B1C2;font-family:monospace;flex-shrink:0;">{ts_short}</time>'
-                        f'<span style="color:#F3F5FA;font-weight:500;">{action_type}</span>'
-                        f'<span style="color:#C5CEDC;">({from_r} &rarr; {to_r} pods)</span>'
-                        f"</li>"
-                    )
-            elif decisions_data:
-                for dec in decisions_data[:4]:
-                    ts_raw = dec.get("timestamp", "")
-                    ts_short = (
-                        ts_raw.split("T")[-1].replace("Z", "")[:8] if "T" in ts_raw else ts_raw[-8:]
-                    )
-                    dec_act = dec.get("action", "MAINTAIN_CAPACITY")
-                    dot_t = "success" if "MAINTAIN" in dec_act else "warning"
-                    event_rows.append(
-                        f'<li style="display:flex;align-items:center;gap:10px;font-size:0.75rem;line-height:1.4;">'
-                        f'<span class="dot {dot_t}"></span>'
-                        f'<time style="color:#A6B1C2;font-family:monospace;flex-shrink:0;">{ts_short}</time>'
-                        f'<span style="color:#F3F5FA;font-weight:500;">{dec_act}</span>'
-                        f'<span style="color:#C5CEDC;">({dec.get("current_replicas", 1)} pod @ {dec.get("input_rps", 0):.1f} RPS)</span>'
-                        f"</li>"
-                    )
-
-            if not event_rows:
-                event_rows.append(
-                    '<li style="color:#A6B1C2;font-size:0.75rem;">No scaling events in current buffer</li>'
-                )
-
-            st.html(
-                f"""
-                <div class="panel">
-                    <div class="panel-heading">
-                        <h2>Recent Events</h2>
-                        <span class="pill pill-mute">AUDIT</span>
-                    </div>
-                    <ul style="list-style:none;padding:0;margin:6px 0 0;display:flex;flex-direction:column;gap:8px;">
-                        {"".join(event_rows)}
-                    </ul>
-                </div>
-                """
-            )
-
-        # -------------------------------------------------------------------
-        # Bottom Grid: Autonomous Decision Summary & SLO Snapshot
-        # -------------------------------------------------------------------
-        bot_c1, bot_c2 = st.columns([1.0, 1.0])
-
-        with bot_c1:
-            dec_time = latest_dec.get("timestamp", "now").replace("T", " ").replace("Z", " UTC")
-            action_pill = (
-                "pill-ok"
-                if "MAINTAIN" in latest_action
-                else ("pill-warn" if "UP" in latest_action else "pill-accent")
-            )
-
-            st.html(
-                f"""
-                <div class="panel" style="min-height:140px;">
-                    <div class="panel-heading">
-                        <h2>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7DA7FF" stroke-width="2">
-                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                            </svg>
-                            Autonomous Decision Summary
-                        </h2>
-                        <span class="pill {action_pill}">{latest_action}</span>
-                    </div>
-                    <p style="font-size:0.8125rem;line-height:1.75;color:#C5CEDC;margin:8px 0 0;">
-                        Recommend <b>{cur_replicas} &rarr; {des_replicas} replicas</b> at <code style="color:#F3F5FA;">{dec_time}</code> for the next 60s horizon:
-                        <b>{pred_rps:.1f} req/s &divide; {cfg_target_rps:.1f} req/s/pod</b> = {raw_calc:.2f} &rarr; ceiling = <b>{calc_pods} pods</b> &rarr; clamped = <b>{clamped_pods} pods</b>
-                        (bounds [{cfg_min_pods}, {cfg_max_pods}]).
-                        Inference latency: <code style="color:#F3F5FA;">{inf_lat:.1f} ms</code>.
-                        K8s action status: <span style="color:#65DBB1;">Target capacity maintained without SLA violation</span>.
-                    </p>
-                </div>
-                """
-            )
-
-        with bot_c2:
-            st.html(
-                f"""
-                <div class="panel" style="min-height:140px;">
-                    <div class="panel-heading">
-                        <h2>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#65DBB1" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 6v6l4 2"/>
-                            </svg>
-                            SLO & Reliability Snapshot
-                        </h2>
-                        <span class="pill pill-ok">100% SLO COMPLIANT</span>
-                    </div>
-                    <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-top:10px;">
-                        <div style="border-right:1px solid #28313A;padding-right:10px;">
-                            <span style="font-size:0.6875rem;color:#A6B1C2;display:block;">P95 Latency</span>
-                            <strong style="font-size:1.1875rem;color:#F3F5FA;display:block;margin-top:2px;">{p95_lat:.1f} ms</strong>
-                            <small style="font-size:0.625rem;color:#65DBB1;">Target &lt; 100 ms</small>
-                        </div>
-                        <div style="border-right:1px solid #28313A;padding-right:10px;">
-                            <span style="font-size:0.6875rem;color:#A6B1C2;display:block;">Success Rate</span>
-                            <strong style="font-size:1.1875rem;color:#65DBB1;display:block;margin-top:2px;">100.0%</strong>
-                            <small style="font-size:0.625rem;color:#A6B1C2;">0 HTTP 5xx errors</small>
-                        </div>
-                        <div>
-                            <span style="font-size:0.6875rem;color:#A6B1C2;display:block;">Capacity Headroom</span>
-                            <strong style="font-size:1.1875rem;color:#7DA7FF;display:block;margin-top:2px;">+{headroom:.0f}%</strong>
-                            <small style="font-size:0.625rem;color:#A6B1C2;">{total_capacity:.0f} RPS ceiling</small>
-                        </div>
-                    </div>
-                </div>
-                """
-            )
-
-        # Overview Footer
-        st.html(
-            f"""
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid #28313A;color:#A6B1C2;font-size:0.6875rem;">
-                <span>Autonomous Control Plane · Production AWS K3s · Real-time live telemetry</span>
-                <span style="font-family:monospace;">Model: {active_model_ver} (@{model_alias}) · Refreshed: {now_wib}</span>
-            </div>
-            """
-        )
-
-    render_overview()
+if page == "overview":
+    render_overview(INFERENCE_API_URL, palette, int(refresh_rate) if auto_refresh else None)
 
 
 # =========================================================================
 # TAB 1: 📊 Telemetry Audit
 # =========================================================================
-with tab_audit:
+if page == "audit":
     refresh_param = int(refresh_rate) if auto_refresh else None
 
     @st.fragment(run_every=refresh_param)
@@ -1292,7 +239,7 @@ with tab_audit:
             st.html(
                 f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
                 f'<span class="pill {pill_cls}">{pill_txt}</span>'
-                f'<span style="font-size:12px;color:#A6B1C2;">Last sync: <b style="color:#F3F5FA;">{now_wib}</b></span>'
+                f'<span style="font-size:12px;color:var(--text-muted);">Last sync: <b style="color:var(--text);">{now_wib}</b></span>'
                 f"</div>"
             )
         with cb2:
@@ -1363,10 +310,10 @@ with tab_audit:
             st.html(
                 f'<div class="card card-accent-green">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-                f'<span style="font-size:13px;font-weight:600;color:#F3F5FA;">Ingestion Status</span>'
+                f'<span style="font-size:13px;font-weight:600;color:var(--text);">Ingestion Status</span>'
                 f'<span class="pill pill-ok">{ing.get("status", "HEALTHY_INGESTED")}</span>'
                 f"</div>"
-                f'<ul style="font-size:12px;color:#C5CEDC;line-height:1.8;margin:0;padding-left:16px;">'
+                f'<ul style="font-size:12px;color:var(--text-secondary);line-height:1.8;margin:0;padding-left:16px;">'
                 f"<li><b>Timestamp:</b> <code>{ing.get('timestamp', now_ts_str)}</code></li>"
                 f"<li><b>Records:</b> <code>{ing.get('records_count', 5760):,}</code> telemetry rows</li>"
                 f"<li><b>Window:</b> <code>{ing.get('window_minutes', 1440)} minutes (24h continuous scrape)</code></li>"
@@ -1378,10 +325,10 @@ with tab_audit:
             st.html(
                 f'<div class="card card-accent-amber">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-                f'<span style="font-size:13px;font-weight:600;color:#F3F5FA;">Feature Store & MinIO S3 DVC</span>'
+                f'<span style="font-size:13px;font-weight:600;color:var(--text);">Feature Store & MinIO S3 DVC</span>'
                 f'<span class="pill pill-ok">Synced (s3://mlops-dvc)</span>'
                 f"</div>"
-                f'<ul style="font-size:12px;color:#C5CEDC;line-height:1.8;margin:0;padding-left:16px;">'
+                f'<ul style="font-size:12px;color:var(--text-secondary);line-height:1.8;margin:0;padding-left:16px;">'
                 f"<li><b>Processed Dataset:</b> <code>{ing.get('target_dataset', f'data/processed/metrics_processed_{now_tag}_020017.csv')}</code></li>"
                 f"<li><b>MinIO CAS MD5:</b> <code>{ing.get('md5', 'live_cas_synced')}</code></li>"
                 f"<li><b>Bucket:</b> <code>{ing.get('bucket', 's3://mlops-dvc')}</code></li>"
@@ -1429,10 +376,10 @@ with tab_audit:
                 f'<div class="card card-accent-green">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
                 f'<span class="pill pill-ok">CHAMPION — PRODUCTION</span>'
-                f'<span style="font-size:11px;color:#65DBB1;font-family:monospace;">@champion</span>'
+                f'<span style="font-size:11px;color:var(--success);font-family:monospace;">@champion</span>'
                 f"</div>"
-                f'<div style="font-size:14px;font-weight:600;color:#F3F5FA;margin-bottom:4px;">Version {latest.get("version", active_model_ver.lstrip("v"))} — {latest.get("algorithm", active_algo)}</div>'
-                f'<ul style="font-size:12px;color:#C5CEDC;line-height:1.8;margin:4px 0 0;padding-left:16px;">'
+                f'<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">Version {latest.get("version", active_model_ver.lstrip("v"))} — {latest.get("algorithm", active_algo)}</div>'
+                f'<ul style="font-size:12px;color:var(--text-secondary);line-height:1.8;margin:4px 0 0;padding-left:16px;">'
                 f"<li><b>Trained:</b> <code>{latest.get('timestamp', now_ts_str)}</code></li>"
                 f"<li><b>Trigger:</b> {latest.get('trigger', 'Scheduled Continuous Training (K8s CronJob)')}</li>"
                 f"<li><b>Validation MAE:</b> <b>{latest.get('val_mae', '0.0880 RPS')}</b></li>"
@@ -1445,10 +392,10 @@ with tab_audit:
                 f'<div class="card card-accent-amber">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
                 f'<span class="pill pill-warn">CHALLENGER — STAGING</span>'
-                f'<span style="font-size:11px;color:#E9BC69;font-family:monospace;">@challenger</span>'
+                f'<span style="font-size:11px;color:var(--warning);font-family:monospace;">@challenger</span>'
                 f"</div>"
-                f'<div style="font-size:14px;font-weight:600;color:#F3F5FA;margin-bottom:4px;">Version {challenger.get("version", "39")} — {challenger.get("algorithm", "LightGBM Regressor (Optuna)")}</div>'
-                f'<ul style="font-size:12px;color:#C5CEDC;line-height:1.8;margin:4px 0 0;padding-left:16px;">'
+                f'<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">Version {challenger.get("version", "39")} — {challenger.get("algorithm", "LightGBM Regressor (Optuna)")}</div>'
+                f'<ul style="font-size:12px;color:var(--text-secondary);line-height:1.8;margin:4px 0 0;padding-left:16px;">'
                 f"<li><b>Trained:</b> <code>{challenger.get('timestamp', now_ts_str)}</code></li>"
                 f"<li><b>Trigger:</b> {challenger.get('trigger', 'Autonomous Evaluation Gate')}</li>"
                 f"<li><b>Validation MAE:</b> {challenger.get('val_mae', '0.1246 RPS')} (inference: 2.8 ms)</li>"
@@ -1554,7 +501,7 @@ with tab_audit:
 # =========================================================================
 # TAB 2: ⚙️ Scaling Simulator
 # =========================================================================
-with tab_sim:
+if page == "sim":
     st.markdown("### Workload Forecast & Pod Allocation Simulator")
     st.info(
         "ℹ️ **Simulation Mode (Dry Run)**: This interactive simulator executes model inference in-memory via `POST /predict`. "
@@ -1708,7 +655,7 @@ with tab_sim:
                 if i < pods_v:
                     st.html(
                         f'<div class="pod-box active">'
-                        f'<div style="width:8px;height:8px;border-radius:50%;background:#65DBB1;margin:0 auto 6px;"></div>'
+                        f'<div style="width:8px;height:8px;border-radius:50%;background:var(--success);margin:0 auto 6px;"></div>'
                         f'<div class="pod-name">Pod {i + 1}</div>'
                         f'<span class="pill pill-ok" style="font-size:9px;">RUNNING</span>'
                         f'<div class="pod-detail" style="margin-top:4px;">{cfg_target_rps:.0f} RPS</div>'
@@ -1717,9 +664,9 @@ with tab_sim:
                 else:
                     st.html(
                         f'<div class="pod-box">'
-                        f'<div style="width:8px;height:8px;border-radius:50%;background:#78899F;margin:0 auto 6px;"></div>'
-                        f'<div class="pod-name" style="color:#A6B1C2;">Pod {i + 1}</div>'
-                        f'<span style="font-size:9px;color:#78899F;font-weight:600;">STANDBY</span>'
+                        f'<div style="width:8px;height:8px;border-radius:50%;background:var(--border-control);margin:0 auto 6px;"></div>'
+                        f'<div class="pod-name" style="color:var(--text-muted);">Pod {i + 1}</div>'
+                        f'<span style="font-size:9px;color:var(--border-control);font-weight:600;">STANDBY</span>'
                         f'<div class="pod-detail" style="margin-top:4px;">Scaled down</div>'
                         f"</div>"
                     )
@@ -1728,13 +675,13 @@ with tab_sim:
 # =========================================================================
 # TAB 3: 🚀 Workload Injector
 # =========================================================================
-with tab_injector:
+if page == "injector":
     st.markdown("### Live Workload Injector & Autonomous Traffic Control")
     st.markdown(
         f"""
         Controls the synthetic k6 load generator running 24/7 on remote VM <code>cp-bcc</code> (<code>proxy.bccdev.id</code>).
         Selecting a profile below changes the real traffic pattern hitting the cluster within seconds,
-        visible live on <a href="{GRAFANA_URL}" target="_blank" style="color:#7DA7FF;text-decoration:none;"><b>Grafana Observability ↗</b></a>.
+        visible live on <a href="{GRAFANA_URL}" target="_blank" style="color:var(--accent);text-decoration:none;"><b>Grafana Observability ↗</b></a>.
         """,
         unsafe_allow_html=True,
     )
@@ -1782,7 +729,7 @@ with tab_injector:
             subtitle: str,
             is_active: bool,
             in_transition: bool = False,
-            accent_color: str = "#7DA7FF",
+            accent_color: str = "var(--accent)",
         ):
             if is_active and in_transition:
                 badge = '<span class="pill pill-warn" style="margin-bottom:6px;display:inline-block;">SWITCHING (~2s)...</span>'
@@ -1801,8 +748,8 @@ with tab_injector:
                 f'<div style="background:{bg_c};border:1px solid {border_c};border-radius:8px;'
                 f'padding:12px 14px;min-height:92px;margin-bottom:8px;">'
                 f"{badge}"
-                f'<div style="font-size:13px;font-weight:600;color:#F3F5FA;">{title}</div>'
-                f'<div style="font-size:11px;color:#A6B1C2;margin-top:2px;line-height:1.4;">{subtitle}</div>'
+                f'<div style="font-size:13px;font-weight:600;color:var(--text);">{title}</div>'
+                f'<div style="font-size:11px;color:var(--text-muted);margin-top:2px;line-height:1.4;">{subtitle}</div>'
                 f"</div>"
             )
             st.html(card_html)
@@ -1810,15 +757,15 @@ with tab_injector:
         # Status Banner
         hb_color = "#65DBB1" if last_hb < 15 else ("#E9BC69" if last_hb < 45 else "#FFA5AC")
         st.html(
-            f'<div style="background:#171C22;border:1px solid #28313A;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">'
+            f'<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">'
             f'<div style="display:flex;align-items:center;gap:12px;">'
             f'<span style="width:10px;height:10px;border-radius:50%;background:{hb_color};display:inline-block;"></span>'
-            f'<div><span style="font-size:13px;font-weight:600;color:#F3F5FA;">k6 Workload Daemon: <code>{w_curr_state}</code> ({w_vus_val} VUs)</span>'
-            f'<div style="font-size:11px;color:#A6B1C2;">Target: <code>api.titipin.me</code> · Generator: <code>cp-bcc (proxy.bccdev.id)</code></div></div>'
+            f'<div><span style="font-size:13px;font-weight:600;color:var(--text);">k6 Workload Daemon: <code>{w_curr_state}</code> ({w_vus_val} VUs)</span>'
+            f'<div style="font-size:11px;color:var(--text-muted);">Target: <code>api.titipin.me</code> · Generator: <code>cp-bcc (proxy.bccdev.id)</code></div></div>'
             f"</div>"
             f'<div style="text-align:right;">'
             f'<span class="pill pill-ok">{"CONNECTED (Heartbeat " + str(last_hb) + "s ago)" if w_daemon_alive else "STANDBY / OFFLINE"}</span>'
-            f'<div style="font-size:10px;color:#A6B1C2;margin-top:3px;">Window: {w_rem_min}m {w_rem_sec}s remaining</div>'
+            f'<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Window: {w_rem_min}m {w_rem_sec}s remaining</div>'
             f"</div>"
             f"</div>"
         )
@@ -1974,7 +921,7 @@ with tab_injector:
 # =========================================================================
 # TAB 4: 💰 FinOps & Carbon
 # =========================================================================
-with tab_finops:
+if page == "finops":
     st.markdown("### FinOps & Sustainable Computing")
     st.markdown(
         """
@@ -2075,7 +1022,7 @@ with tab_finops:
 # =========================================================================
 # TAB 5: 🔄 Drift & Retraining
 # =========================================================================
-with tab_retrain:
+if page == "retrain":
     st.markdown("### Autonomous Drift Detection & Continuous Training")
     st.markdown(
         """
@@ -2173,7 +1120,7 @@ with tab_retrain:
 # =========================================================================
 # TAB 6: ⚖️ HPA vs Predictive Benchmark
 # =========================================================================
-with tab_benchmark:
+if page == "benchmark":
     st.markdown("### Reactive HPA vs Predictive Scaler — Benchmark Results")
     st.markdown("Empirical comparison under identical 65-VU flash-sale traffic spike:")
 
@@ -2263,7 +1210,7 @@ with tab_benchmark:
 # =========================================================================
 # TAB 7: 🏛️ Model Registry
 # =========================================================================
-with tab_registry:
+if page == "registry":
     st.markdown("### MLflow Model Registry & DVC Data Lineage")
     st.markdown(
         "Centralized model lifecycle management with dataset provenance tracking in MinIO S3."
@@ -2292,10 +1239,10 @@ with tab_registry:
         st.html(
             f'<div class="card card-accent-green">'
             f'<span class="pill pill-ok">CHAMPION — PRODUCTION</span>'
-            f'<div style="font-size:14px;font-weight:600;color:#F3F5FA;margin:6px 0 4px;">predictive-autoscaler {champ_ver}</div>'
-            f'<div style="font-size:12px;color:#A6B1C2;margin-bottom:8px;">{champ_algo}</div>'
-            f'<ul style="font-size:12px;color:#C5CEDC;line-height:1.8;margin:0;padding-left:16px;">'
-            f'<li><b>Status:</b> <code style="color:#65DBB1;">Serving Active (@{model_alias})</code></li>'
+            f'<div style="font-size:14px;font-weight:600;color:var(--text);margin:6px 0 4px;">predictive-autoscaler {champ_ver}</div>'
+            f'<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">{champ_algo}</div>'
+            f'<ul style="font-size:12px;color:var(--text-secondary);line-height:1.8;margin:0;padding-left:16px;">'
+            f'<li><b>Status:</b> <code style="color:var(--success);">Serving Active (@{model_alias})</code></li>'
             f"<li><b>Validation MAE:</b> <code>{champ_mae}</code></li>"
             f"<li><b>Dataset:</b> <code>{champ_dataset}</code></li>"
             f"<li><b>Serving:</b> Active in production memory, scaling 1–6 pods</li>"
@@ -2306,9 +1253,9 @@ with tab_registry:
         st.html(
             f'<div class="card card-accent-amber">'
             f'<span class="pill pill-warn">CHALLENGER — STAGING</span>'
-            f'<div style="font-size:14px;font-weight:600;color:#F3F5FA;margin:6px 0 4px;">predictive-autoscaler {challenger_ver}</div>'
-            f'<div style="font-size:12px;color:#A6B1C2;margin-bottom:8px;">{challenger_algo}</div>'
-            f'<ul style="font-size:12px;color:#C5CEDC;line-height:1.8;margin:0;padding-left:16px;">'
+            f'<div style="font-size:14px;font-weight:600;color:var(--text);margin:6px 0 4px;">predictive-autoscaler {challenger_ver}</div>'
+            f'<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">{challenger_algo}</div>'
+            f'<ul style="font-size:12px;color:var(--text-secondary);line-height:1.8;margin:0;padding-left:16px;">'
             f"<li><b>Status:</b> <code>Staging Candidate (@challenger)</code></li>"
             f"<li><b>Validation MAE:</b> <code>{challenger_mae}</code></li>"
             f"<li><b>Inference:</b> <code>2.8 ms</code></li>"
@@ -2380,7 +1327,7 @@ with tab_registry:
 # =========================================================================
 # TAB 8: 🏗️ Cluster Architecture
 # =========================================================================
-with tab_k8s:
+if page == "k8s":
     st.markdown("### Kubernetes Cluster Architecture — AWS K3s")
     st.markdown("The system runs on a multi-node cluster with decoupled namespace separation:")
     st.code(

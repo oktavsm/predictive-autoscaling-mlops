@@ -1,92 +1,108 @@
-#!/usr/bin/env python3
-"""
-Unit tests for Dashboard Telemetry & Decision Adapter
-======================================================
-Verifies data transformation, scaling calculation, and fallback handling
-per Design Kit v1.1.0 specifications and AGENT-HANDOFF.md.
-"""
+from datetime import datetime, timedelta, timezone
 
-import math
-from datetime import datetime, timezone
+import pytest
+import requests
 
-
-def compute_desired_replicas(
-    predicted_rps: float, target_rps_per_pod: float, min_pods: int, max_pods: int
-) -> int:
-    """Computes desired pod allocation clamped to bounds."""
-    if target_rps_per_pod <= 0:
-        return min_pods
-    calc = math.ceil(predicted_rps / target_rps_per_pod)
-    return max(min_pods, min(max_pods, calc))
+from src.dashboard.adapter import (
+    decision_state,
+    normalize_decisions,
+    read_resource,
+    runtime_policy,
+)
 
 
-def normalize_decision_record(row: dict) -> dict:
-    """Normalizes decision telemetry record per AGENT-HANDOFF.md."""
-    issued_at = row.get("timestamp")
-    actual_rps = float(row.get("input_rps", 0.0))
-    forecast_rps = float(row.get("predicted_rps_60s", 0.0))
-    current_replicas = int(row.get("current_replicas", 1))
-    desired_replicas = int(row.get("desired_replicas", 1))
-    p95_latency_ms = float(row.get("input_p95_ms", 0.0))
-
+@pytest.fixture
+def decision():
     return {
-        "issued_at_utc": issued_at,
-        "actual_rps": actual_rps,
-        "forecast_rps": forecast_rps,
-        "observed_replicas": current_replicas,
-        "recommended_replicas": desired_replicas,
-        "p95_latency_ms": p95_latency_ms,
-    }
-
-
-def test_scaling_formula_clamping():
-    """Test scaling recommendation bounds clamping."""
-    # Under-load: 3 RPS / 10 RPS per pod = 1 pod
-    assert compute_desired_replicas(3.0, 10.0, 1, 6) == 1
-
-    # Moderate load: 25 RPS / 10 RPS per pod = 3 pods
-    assert compute_desired_replicas(25.0, 10.0, 1, 6) == 3
-
-    # Heavy surge: 55 RPS / 10 RPS per pod = 6 pods
-    assert compute_desired_replicas(55.0, 10.0, 1, 6) == 6
-
-    # Extreme chaos load: 120 RPS / 10 RPS per pod = clamped to 6 pods max
-    assert compute_desired_replicas(120.0, 10.0, 1, 6) == 6
-
-    # Zero load: clamped to 1 pod min
-    assert compute_desired_replicas(0.0, 10.0, 1, 6) == 1
-
-
-def test_decision_record_normalization():
-    """Verify field mapping and unit integrity."""
-    raw_row = {
         "timestamp": "2026-10-12T14:15:47Z",
         "input_rps": 10.62,
-        "input_cpu": 0.079,
         "input_p95_ms": 23.9,
         "current_replicas": 1,
         "predicted_rps_60s": 5.94,
-        "desired_replicas": 1,
-        "action": "MAINTAIN_CAPACITY",
-        "latency_ms": 12.46,
+        "desired_replicas": 2,
     }
 
-    norm = normalize_decision_record(raw_row)
-    assert norm["issued_at_utc"] == "2026-10-12T14:15:47Z"
-    assert norm["actual_rps"] == 10.62
-    assert norm["forecast_rps"] == 5.94
-    assert norm["observed_replicas"] == 1
-    assert norm["recommended_replicas"] == 1
-    # P95 latency must remain in milliseconds, not multiplied by 1000
-    assert norm["p95_latency_ms"] == 23.9
+
+def test_real_adapter_units_target_sorting_and_duplicates(decision):
+    older = {**decision, "timestamp": "2026-10-12T21:14:47+07:00"}
+    rows, rejected = normalize_decisions([decision, older, {**decision, "input_rps": 999}])
+    assert rejected == 0
+    assert len(rows) == 2
+    latest = rows[-1]
+    assert latest["actual_rps"] == 10.62
+    assert latest["forecast_rps"] == 5.94
+    assert latest["p95_latency_ms"] == 23.9
+    assert latest["observed_replicas"] == 1
+    assert latest["recommended_replicas"] == 2
+    assert latest["forecast_target_utc"] - latest["issued_at_utc"] == timedelta(seconds=60)
+    assert rows[0]["issued_at_utc"].hour == 14
 
 
-def test_forecast_horizon_timestamp():
-    """Verify that forecast target is explicitly +60s."""
-    issued_iso = "2026-10-12T14:15:00Z"
-    dt = datetime.fromisoformat(issued_iso.replace("Z", "+00:00"))
-    target_dt = dt.timestamp() + 60.0
-    expected_iso = (
-        datetime.fromtimestamp(target_dt, tz=timezone.utc).isoformat().replace("+00:00", "Z")
-    )
-    assert expected_iso == "2026-10-12T14:16:00Z"
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("input_rps", None),
+        ("input_rps", -1),
+        ("input_rps", float("nan")),
+        ("predicted_rps_60s", float("inf")),
+        ("current_replicas", 1.5),
+        ("desired_replicas", True),
+        ("timestamp", "2026-10-12T14:15:47"),
+        ("timestamp", "pending"),
+    ],
+)
+def test_invalid_observations_do_not_become_healthy_zeroes(decision, field, value):
+    assert normalize_decisions([{**decision, field: value}]) == ([], 1)
+
+
+def test_missing_fields_and_non_objects(decision):
+    assert normalize_decisions([{}, None, "invalid"]) == ([], 3)
+    rows, _ = normalize_decisions([{**decision, "synthetic": True}])
+    assert rows[0]["synthetic"] is True
+
+
+def test_states_keep_empty_failed_and_stale_distinct(decision):
+    now = datetime(2026, 10, 12, 14, 16, tzinfo=timezone.utc)
+    rows, _ = normalize_decisions([decision])
+    assert decision_state(rows, 0, None, now, 15) == "ready"
+    assert decision_state(rows, 0, None, now + timedelta(minutes=1), 15) == "stale"
+    assert decision_state(rows, 0, None, now - timedelta(minutes=2), 15) == "error"
+    assert decision_state([], 0, None, now, 15) == "empty"
+    assert decision_state([], 1, None, now, 15) == "error"
+    assert decision_state([], 0, "unavailable", now, 15) == "error"
+
+
+def test_runtime_policy_uses_source_and_rejects_invalid_bounds():
+    health = {"target_rps_per_pod": 65, "replica_bounds": {"min": 2, "max": 8}}
+    assert runtime_policy(health) == {"capacity": 65, "minimum": 2, "maximum": 8}
+    assert runtime_policy({**health, "target_rps_per_pod": 0}) is None
+    assert runtime_policy({**health, "replica_bounds": {"min": 8, "max": 2}}) is None
+    assert runtime_policy({}) is None
+
+
+def test_read_client_preserves_timeout_shape_and_safe_errors():
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"model_ready": True}
+
+    def get(url, **kwargs):
+        calls.append((url, kwargs))
+        return Response()
+
+    result = read_resource("http://internal/", "/health", dict, get)
+    assert result["data"]["model_ready"] is True
+    assert result["source"] == "/health"
+    assert calls == [("http://internal/health", {"timeout": 2.5})]
+    assert read_resource("http://internal", "/decisions", list, get)["error"]
+
+    def fail(*args, **kwargs):
+        raise requests.Timeout("private URL and credentials")
+
+    result = read_resource("http://internal", "/health", dict, fail)
+    assert result["data"] == {}
+    assert "private" not in result["error"]
