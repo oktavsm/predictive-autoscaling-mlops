@@ -127,7 +127,7 @@ spec:
       volumes:
         - name: inference-code
           configMap:
-            name: mlops-inference-code-remediation-20261013-0308
+            name: mlops-inference-code-cluster-20261013-0404
         - name: drift-reference
           configMap:
             name: mlops-training-data

@@ -1,0 +1,23 @@
+{
+  "checked_at_utc": "2026-10-13T04:06:27Z",
+  "url": "https://model.titipin.me/cluster/status",
+  "scope": "Three public GETs; includes network, DNS/TLS and proxy; not p95, load test or SLO",
+  "samples": [
+    {
+      "elapsed_ms": 177.26,
+      "status": 200,
+      "bytes": 21133
+    },
+    {
+      "elapsed_ms": 176.7,
+      "status": 200,
+      "bytes": 21133
+    },
+    {
+      "elapsed_ms": 183.86,
+      "status": 200,
+      "bytes": 21133
+    }
+  ],
+  "median_ms": 177.26
+}

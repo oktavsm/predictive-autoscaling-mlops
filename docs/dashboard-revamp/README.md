@@ -1,5 +1,7 @@
 # Dashboard revamp implementation
 
+Latest cluster work: [dashboard/API audit and interactive Cluster Explorer](DASHBOARD_AUDIT_CLUSTER_EXPLORER.md). Includes observed node/pod/service detail, three selectable system flows, hover explanations, priorities with acceptance criteria, and the multi-file ConfigMap release procedure. Local validation uses `.venv`; container packaging belongs to cloud CI, with no local Docker build.
+
 Implemented 12 October 2026 against the v1.1.0 kit in `docs/.agents/dashboard_revamp`; deployed 13 October 2026 WIB after the user authorized Docker activation and deployment. Live: https://mlops.titipin.me. See `deployment/RELEASE.md` for image, runtime verification and rollback.
 
 The Overview answers three questions: what was observed, what workload is forecast at +60s, and what replica recommendation was recorded. Its two main charts remain above the summary; model, cluster and action evidence occupy the support column. Charcoal/blue/teal, Geist, 10px panel corners and restrained spacing follow the supplied kit. Design dials: ENERGY 1 / RHYTHM 2 / MOTION 1.
@@ -46,6 +48,6 @@ This is bounded browser and source validation, not a WCAG certification or evide
 
 ## Release boundary and audit
 
-Releases that change modules, assets or dependencies need a new dashboard image containing both Python modules, all assets and the theme configuration. The `app.py` ConfigMap mount must match that image; the old single-file hot-deploy cannot install new modules or assets. This release changed the image digest and a versioned ConfigMap reference together, retaining the old ConfigMap for rollback. See `docs/internal/AGENT_HANDOFF_OPERATIONS.md` for this boundary.
+The initial revamp changed the image digest and a versioned ConfigMap reference together, retaining the old ConfigMap for rollback. The latest user instruction prohibits local Docker builds: validate in `.venv`, leave image packaging to cloud CI, and hot-deploy code through ConfigMaps. Cluster Explorer keeps the compatible image and mounts all five changed dashboard files individually; copying only `app.py` cannot install its new module/assets. Dependency changes still require cloud packaging and compatibility validation. See the [current multi-file release procedure](DASHBOARD_AUDIT_CLUSTER_EXPLORER.md#operasional-rilis).
 
-The post-implementation audit is `anti-slop/audit-001-2026-10-12.md`. The 13 October follow-up removes UI-generated audit/prediction fallbacks, fixed benchmark scores and fabricated retraining success, and applies kit glyphs and theme-aware panels across operational views. Backend seeded history and drift/retraining orchestration remain limitations; the affected actions are disabled with reasons. See `FUNCTIONALITY.md` and `anti-slop/audit-002-2026-10-13.md` for control coverage and unresolved functions. No new history endpoint, node census, online-error calculation, framework migration or retry/visibility subsystem was added.
+Historical audits record earlier releases and disabled controls. The subsequent [functional remediation](REMEDIATION_IMPLEMENTATION.md) restores verified live operations, and [Cluster Explorer audit](DASHBOARD_AUDIT_CLUSTER_EXPLORER.md) records the current node census, interactive architecture and remaining API/operations work. Earlier findings must be read against their release date.

@@ -175,6 +175,20 @@ def test_five_feature_psi_uses_real_reference_and_observations(state, monkeypatc
 
 def test_cluster_inventory_reads_actual_readiness_without_addresses(state, monkeypatch):
     def request(path):
+        if path.endswith("services"):
+            return {
+                "items": [
+                    {
+                        "metadata": {"name": "serving", "namespace": "mlops"},
+                        "spec": {
+                            "type": "NodePort",
+                            "clusterIP": "private-service",
+                            "selector": {"app": "serving"},
+                            "ports": [{"port": 8000, "targetPort": 8000, "nodePort": 30800}],
+                        },
+                    }
+                ]
+            }
         if path.endswith("nodes"):
             return {
                 "items": [
@@ -183,6 +197,8 @@ def test_cluster_inventory_reads_actual_readiness_without_addresses(state, monke
                         "status": {
                             "conditions": [{"type": "Ready", "status": "False"}],
                             "addresses": [{"address": "private"}],
+                            "capacity": {"cpu": "2", "memory": "4000000Ki"},
+                            "allocatable": {"cpu": "1900m"},
                         },
                     }
                 ]
@@ -190,9 +206,38 @@ def test_cluster_inventory_reads_actual_readiness_without_addresses(state, monke
         return {
             "items": [
                 {
-                    "metadata": {"name": "serving", "namespace": "mlops"},
-                    "spec": {"nodeName": "worker", "containers": [{}]},
-                    "status": {"phase": "Running", "containerStatuses": [{"ready": False}]},
+                    "metadata": {
+                        "name": "serving",
+                        "namespace": "mlops",
+                        "labels": {"app": "serving", "private": "hidden-label"},
+                    },
+                    "spec": {
+                        "nodeName": "worker",
+                        "containers": [
+                            {
+                                "name": "api",
+                                "env": [{"value": "hidden-secret"}],
+                                "resources": {"requests": {"cpu": "100m"}},
+                            }
+                        ],
+                    },
+                    "status": {
+                        "phase": "Running",
+                        "podIP": "private-pod",
+                        "containerStatuses": [
+                            {
+                                "name": "api",
+                                "ready": False,
+                                "restartCount": 3,
+                                "state": {
+                                    "waiting": {
+                                        "reason": "CrashLoopBackOff",
+                                        "message": "hidden-log",
+                                    }
+                                },
+                            }
+                        ],
+                    },
                 }
             ]
         }
@@ -201,7 +246,27 @@ def test_cluster_inventory_reads_actual_readiness_without_addresses(state, monke
     result = api.cluster_status()
     assert result["nodes"][0]["ready"] is False
     assert result["pods"][0]["ready"] == 0
+    assert result["pods"][0]["restarts"] == 3
+    assert result["pods"][0]["container_details"][0]["requests"]["cpu"] == "100m"
+    assert (
+        result["pods"][0]["container_details"][0]["state"]["waiting"]["reason"]
+        == "CrashLoopBackOff"
+    )
+    assert result["nodes"][0]["allocatable"]["cpu"] == "1900m"
+    assert result["services"][0]["ports"][0]["nodePort"] == 30800
+    assert result["scope"] == ["mlops", "monitoring", "titipin"]
     assert "private" not in json.dumps(result)
+    assert "hidden" not in json.dumps(result)
+
+
+def test_cluster_inventory_failure_is_explicit(monkeypatch):
+    monkeypatch.setattr(
+        api, "kubernetes_request", Mock(side_effect=RuntimeError("private server details"))
+    )
+    with pytest.raises(HTTPException) as exc:
+        api.cluster_status()
+    assert exc.value.status_code == 503
+    assert exc.value.detail == "Cluster inventory unavailable"
 
 
 @pytest.mark.parametrize("candidate_error,champion_error,promote", [(1, 2, True), (3, 2, False)])

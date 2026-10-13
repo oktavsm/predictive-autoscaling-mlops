@@ -1173,12 +1173,16 @@ def get_autonomous_status() -> Dict[str, Any]:
 
 @app.get("/cluster/status")
 def cluster_status() -> Dict[str, Any]:
-    """Read node readiness, pod placement and public routing without inferring readiness."""
+    """Return sanitized node, workload and routing inventory from Kubernetes."""
+    namespaces = ("mlops", "monitoring", "titipin")
     try:
         nodes = kubernetes_request("/api/v1/nodes")["items"]
         pods = kubernetes_request("/api/v1/pods")["items"]
+        services = kubernetes_request("/api/v1/services")["items"]
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            "scope": list(namespaces),
+            "source": "Kubernetes API inventory",
             "nodes": [
                 {
                     "name": n["metadata"]["name"],
@@ -1189,6 +1193,28 @@ def cluster_status() -> Dict[str, Any]:
                     "role": "control-plane"
                     if "node-role.kubernetes.io/control-plane" in n["metadata"].get("labels", {})
                     else "worker",
+                    "unschedulable": n.get("spec", {}).get("unschedulable", False),
+                    "capacity": {
+                        k: n["status"].get("capacity", {}).get(k) for k in ("cpu", "memory", "pods")
+                    },
+                    "allocatable": {
+                        k: n["status"].get("allocatable", {}).get(k)
+                        for k in ("cpu", "memory", "pods")
+                    },
+                    "info": {
+                        k: n["status"].get("nodeInfo", {}).get(k)
+                        for k in (
+                            "architecture",
+                            "osImage",
+                            "kernelVersion",
+                            "kubeletVersion",
+                            "containerRuntimeVersion",
+                        )
+                    },
+                    "conditions": [
+                        {k: c.get(k) for k in ("type", "status", "reason", "lastTransitionTime")}
+                        for c in n["status"].get("conditions", [])
+                    ],
                 }
                 for n in nodes
             ],
@@ -1197,14 +1223,92 @@ def cluster_status() -> Dict[str, Any]:
                     "name": p["metadata"]["name"],
                     "namespace": p["metadata"]["namespace"],
                     "node": p["spec"].get("nodeName"),
-                    "phase": p["status"]["phase"],
+                    "phase": p["status"].get("phase", "Unknown"),
                     "ready": sum(
                         c.get("ready", False) for c in p["status"].get("containerStatuses", [])
                     ),
                     "containers": len(p["spec"]["containers"]),
+                    "created_at": p["metadata"].get("creationTimestamp"),
+                    "owner": [
+                        {"kind": o.get("kind"), "name": o.get("name")}
+                        for o in p["metadata"].get("ownerReferences", [])
+                        if o.get("controller")
+                    ],
+                    "labels": {
+                        k: v
+                        for k, v in p["metadata"].get("labels", {}).items()
+                        if k
+                        in (
+                            "app",
+                            "app.kubernetes.io/name",
+                            "app.kubernetes.io/component",
+                            "job-name",
+                        )
+                    },
+                    "restarts": sum(
+                        c.get("restartCount", 0) for c in p["status"].get("containerStatuses", [])
+                    ),
+                    "container_details": [
+                        {
+                            "name": c["name"],
+                            "requests": {
+                                k: c.get("resources", {}).get("requests", {}).get(k)
+                                for k in ("cpu", "memory")
+                            },
+                            "limits": {
+                                k: c.get("resources", {}).get("limits", {}).get(k)
+                                for k in ("cpu", "memory")
+                            },
+                            "ready": next(
+                                (
+                                    x.get("ready", False)
+                                    for x in p["status"].get("containerStatuses", [])
+                                    if x["name"] == c["name"]
+                                ),
+                                False,
+                            ),
+                            "state": next(
+                                (
+                                    {
+                                        state: {
+                                            k: details.get(k)
+                                            for k in (
+                                                "reason",
+                                                "exitCode",
+                                                "startedAt",
+                                                "finishedAt",
+                                            )
+                                        }
+                                        for state, details in x.get("state", {}).items()
+                                    }
+                                    for x in p["status"].get("containerStatuses", [])
+                                    if x["name"] == c["name"]
+                                ),
+                                {},
+                            ),
+                        }
+                        for c in p["spec"]["containers"]
+                    ],
                 }
                 for p in pods
-                if p["metadata"]["namespace"] in ("mlops", "monitoring", "titipin")
+                if p["metadata"]["namespace"] in namespaces
+            ],
+            "services": [
+                {
+                    "name": service["metadata"]["name"],
+                    "namespace": service["metadata"]["namespace"],
+                    "type": service["spec"].get("type"),
+                    "selector": service["spec"].get("selector", {}),
+                    "ports": [
+                        {
+                            k: port.get(k)
+                            for k in ("name", "port", "targetPort", "nodePort", "protocol")
+                        }
+                        for port in service["spec"].get("ports", [])
+                    ],
+                }
+                for service in services
+                if service["metadata"]["namespace"] in namespaces
             ],
         }
     except Exception:

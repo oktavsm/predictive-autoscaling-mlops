@@ -14,6 +14,7 @@ import pandas as pd
 import requests
 import streamlit as st
 from adapter import normalize_decisions, number, read_resource, runtime_policy
+from cluster import render_cluster
 from overview import facts, mapping, render_overview
 
 INFERENCE_API_URL = (
@@ -692,7 +693,7 @@ def operational_view():
         heading(
             "Cluster topology",
             "replicas",
-            "Live Kubernetes node readiness and pod placement, plus configured public routes.",
+            "Select a node, workload or system component to inspect its role and operational evidence.",
         )
         health, cluster = read("/health"), read("/cluster/status")
         with st.container(key="operation-metrics"):
@@ -702,64 +703,34 @@ def operational_view():
             )
             cols[1].metric("Active model", str(health.get("model_version", "Unknown")))
             cols[2].metric("Predictive loop", str(health.get("predictive_loop", "Unknown")))
-        nodes, pods = cluster.get("nodes", []), cluster.get("pods", [])
-        if isinstance(nodes, list) and isinstance(pods, list):
-            with st.container(key="operation-profiles"):
-                columns = st.columns(3)
-                for i, node in enumerate(n for n in nodes if isinstance(n, dict)):
-                    with columns[i % 3], st.container(key=f"panel-node-{i}"):
-                        heading(
-                            str(node.get("name", "Node")),
-                            "replicas",
-                            str(node.get("role", "Unknown")),
-                        )
-                        st.caption("Ready" if node.get("ready") else "Not ready")
-                        table(
-                            [
-                                {
-                                    "Component": p.get("name"),
-                                    "Namespace": p.get("namespace"),
-                                    "Ready": f"{p.get('ready', 0)}/{p.get('containers', 0)}",
-                                    "Phase": p.get("phase"),
-                                }
-                                for p in pods
-                                if isinstance(p, dict) and p.get("node") == node.get("name")
-                            ]
-                        )
-        with st.container(key="panel-remote-generator"):
-            heading(
-                "Remote VM · cp-bcc", "pipeline", "k6 traffic generation outside the AWS cluster"
-            )
-            generator = read("/workload/status")
-            facts(
+        render_cluster(
+            cluster,
+            health,
+            read("/workload/status"),
+            palette,
+            {
+                "dashboard": "https://mlops.titipin.me",
+                "inference": PUBLIC_INFERENCE_DOCS,
+                "api": API_URL,
+                "mlflow": MLFLOW_URL,
+                "grafana": GRAFANA_URL,
+                "minio": MINIO_URL,
+            },
+        )
+        with st.expander("Inspect pod inventory as a table"):
+            table(
                 [
-                    ("Connection", "Connected" if generator.get("daemon_alive") else "Offline"),
-                    ("Profile", generator.get("daemon_current_state", "Unknown")),
-                    ("VUs", generator.get("daemon_vus", "Unknown")),
+                    {
+                        "Component": p.get("name"),
+                        "Namespace": p.get("namespace"),
+                        "Node": p.get("node"),
+                        "Ready": f"{p.get('ready', 0)}/{p.get('containers', 0)}",
+                        "Phase": p.get("phase"),
+                    }
+                    for p in cluster.get("pods", [])
+                    if isinstance(p, dict)
                 ]
             )
-        heading(
-            "Public routing",
-            "settings",
-            "Caddy HTTPS routes and service NodePorts from the operational handoff.",
-        )
-        table(
-            [
-                {"Service": label, "Public URL": url, "Service port": port, "NodePort": nodeport}
-                for label, url, port, nodeport in (
-                    ("Dashboard", "https://mlops.titipin.me", 8501, 30851),
-                    ("Inference", PUBLIC_INFERENCE_DOCS, 8000, 30800),
-                    ("MLflow", MLFLOW_URL, 5000, 30500),
-                    ("Grafana", GRAFANA_URL, 3000, 30300),
-                    ("MinIO console", MINIO_URL, 9001, 30901),
-                    ("MinIO S3", "https://storage.titipin.me", 9000, 30900),
-                    ("Laravel API", API_URL, 80, 30080),
-                )
-            ]
-        )
-        st.caption(
-            "Control-plane host services: Caddy :80/:443, K3s API :6443, PostgreSQL and Redis. Kubernetes components above reflect their current node placement."
-        )
 
 
 if page not in ("overview", "sim"):

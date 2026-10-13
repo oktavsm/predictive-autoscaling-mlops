@@ -69,7 +69,24 @@ spec:
             - name: dashboard-code
               mountPath: /app/src/dashboard/app.py
               subPath: app.py
+              readOnly: true
+            - name: dashboard-code
+              mountPath: /app/src/dashboard/cluster.py
+              subPath: cluster.py
+              readOnly: true
+            - name: dashboard-code
+              mountPath: /app/src/dashboard/assets/cluster.js
+              subPath: cluster.js
+              readOnly: true
+            - name: dashboard-code
+              mountPath: /app/src/dashboard/assets/cluster.css
+              subPath: cluster.css
+              readOnly: true
+            - name: dashboard-code
+              mountPath: /app/src/dashboard/assets/cluster-catalog.json
+              subPath: cluster-catalog.json
+              readOnly: true
       volumes:
         - name: dashboard-code
           configMap:
-            name: mlops-dashboard-code-remediation-20261013-0126
+            name: mlops-dashboard-code

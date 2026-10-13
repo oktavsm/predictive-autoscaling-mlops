@@ -73,22 +73,30 @@ Host cp-bcc
 ### A. Update & Deploy Streamlit Dashboard (`mlops.titipin.me`)
 Di lingkungan K3s produksi, berkas `app.py` pada pod `mlops-dashboard` di-mount melalui Kubernetes ConfigMap yang dirujuk volume `dashboard-code` pada deployment. Nama ConfigMap dapat berversi; baca referensi aktif sebelum hot-deploy. Hot-deploy satu file hanya berlaku jika modul, aset, dan versi dependensi pada image sudah sesuai.
 
-Revamp Overview memakai `adapter.py`, `overview.py`, `assets/dashboard.css`, `assets/tokens.json`, font lokal, dan `.streamlit/config.toml`. Untuk rilis yang mengubah modul, aset, atau dependensi, build image dengan `docker/Dockerfile.dashboard` dan sertakan seluruh file tersebut; jangan hanya menyalin `app.py` ke image lama. Image mengunci Streamlit 1.65.0 dan Altair 6.3.0 yang dipakai untuk validasi UI. Buat ConfigMap `app.py` berversi, lalu ganti digest image dan referensi ConfigMap dalam satu perubahan pod template. Simpan ConfigMap lama agar rollback mengembalikan kode yang cocok dengan image sebelumnya. Manifest dashboard menyimpan pasangan image/ConfigMap rilis; bukti deployment ada di `docs/dashboard-revamp/`.
+Kebijakan operasional terbaru dari pengguna (13 Oktober 2026): **jangan menyalakan Docker daemon, menjalankan docker build atau Compose lokal**. Validasi lokal lewat `.venv`; packaging container dijalankan GitHub Actions ketika push diotorisasi. Jangan push hanya untuk mencoba build tanpa instruksi pengguna.
+
+Revamp Overview memakai `adapter.py`, `overview.py`, tokens, font dan stylesheet yang sudah tersedia pada image aktif (Streamlit 1.65.0 / Altair 6.3.0). Cluster Explorer menambah `cluster.py`, `assets/cluster.js`, `assets/cluster.css`, dan `assets/cluster-catalog.json`. Hot-deploy rilis explorer memasang kelima file termasuk `app.py` dari ConfigMap `mlops-dashboard-code` melalui subPath individual, agar asset lain dalam image tetap tersedia. Mount baru memerlukan satu perubahan pod template; sesudah itu update kelima key dan rolling restart. Jangan hanya mengganti app.py bila import/asset berubah. Lihat `docs/dashboard-revamp/DASHBOARD_AUDIT_CLUSTER_EXPLORER.md` untuk audit, bukti dan rollback.
 
 #### ⚡ Alur Hot-Deploy Dashboard (Rolling Update):
 Pantau endpoint publik sepanjang rollout. Rilis 13 Oktober mencatat satu sampel HTTP 502 ketika pod berganti; alur ini tidak menjamin tanpa gangguan atau durasi di bawah 30 detik.
 ```bash
-# 1. Pastikan unit tests dashboard lolos di lokal
-pytest tests/test_dashboard_adapter.py -v
+# 1. Pastikan unit tests dashboard lolos di virtual environment lokal
+.venv/bin/pytest tests/test_dashboard_adapter.py tests/test_dashboard_ui.py -v
 
-# 2. Salin app.py lokal ke server Control Plane (cp)
-scp src/dashboard/app.py cp:/tmp/app.py
+# 2. Salin seluruh kode explorer lokal ke server Control Plane (cp)
+scp src/dashboard/app.py src/dashboard/cluster.py \
+  src/dashboard/assets/cluster.js src/dashboard/assets/cluster.css \
+  src/dashboard/assets/cluster-catalog.json cp:/tmp/
 
 # 3. Update ConfigMap yang benar-benar dipakai deployment (nama dapat berversi)
 ssh cp 'set -eu
 dashboard_map=$(kubectl -n mlops get deployment mlops-dashboard -o jsonpath="{.spec.template.spec.volumes[?(@.name==\"dashboard-code\")].configMap.name}")
 test -n "$dashboard_map"
-kubectl create configmap "$dashboard_map" --from-file=app.py=/tmp/app.py -n mlops --dry-run=client -o yaml | kubectl apply -f -'
+kubectl create configmap "$dashboard_map" -n mlops \
+  --from-file=app.py=/tmp/app.py --from-file=cluster.py=/tmp/cluster.py \
+  --from-file=cluster.js=/tmp/cluster.js --from-file=cluster.css=/tmp/cluster.css \
+  --from-file=cluster-catalog.json=/tmp/cluster-catalog.json \
+  --dry-run=client -o yaml | kubectl apply -f -'
 
 # 4. Lakukan rolling restart deployment
 ssh cp "kubectl rollout restart deployment/mlops-dashboard -n mlops"
