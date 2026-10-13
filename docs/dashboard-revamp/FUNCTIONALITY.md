@@ -2,6 +2,8 @@
 
 13 October 2026 WIB. Implements [REMEDIATION_PLAN_CODEX.md](REMEDIATION_PLAN_CODEX.md). The earlier restricted UI audit is preserved in [FUNCTIONALITY_PRE_REMEDIATION.md](FUNCTIONALITY_PRE_REMEDIATION.md).
 
+For the complete current inventory of all nine workspaces, sections, cards, charts, tables, inputs and buttons, see [Panduan Lengkap Dashboard](../DASHBOARD_GUIDE.md). The [A–E hardening](OPERATIONS_HARDENING.md) adds authenticated write controls, persistent operational history and measured pod usage to this remediation.
+
 | Workspace | Current behavior |
 |---|---|
 | Overview | Live controller decisions, forecast horizon, workload, latency, replica recommendations and applied scaling events. Empty, stale and failed sources stay distinguishable. |
@@ -12,7 +14,7 @@
 | Telemetry Audit | Ingestion, registry history, controller decisions and executed scaling actions in formatted tables. |
 | HPA vs Predictive | Six-row 65 VU reference comparison from the remediation plan, with its source identified; separate live SLO/replica/forecast cards. |
 | FinOps & Carbon | Mean desired replicas from current validated decisions drives four estimate cards and cost/carbon charts. Rates, period, baseline and carbon assumptions remain explicit. No-data fallback is labeled a preview. |
-| Cluster Architecture | Actual Kubernetes node readiness and pod placement, serving health and controller activity, remote generator heartbeat and configured public routes. No IP addresses exposed. |
+| Cluster Architecture | Interactive node/pod placement and configured system flows, component inspectors, measured pod CPU/RAM versus limits, inventory table, serving health and generator heartbeat. Read-only exploration; no IP addresses exposed. |
 
 Every read workspace supports the selected 5/10/15/30-second refresh interval. Polling and navigation do not issue writes. Light/dark theme selection applies on Refresh now, preserving the supplied kit, Geist fonts and SVG assets.
 
@@ -32,6 +34,6 @@ MinIO dataset metadata records actual row counts, raw source and content hash. A
 
 The benchmark reference is not a new experiment. FinOps/carbon outputs are estimates from a recent decision window, not invoices or whole-month measurements. PSI uses the configured demo reference, so a shift from that reference alone is not proof of production model degradation. Drift traffic sends a bounded 2 KiB header; its measured effect depends on the application.
 
-Decision buffers and lifecycle status are process-local and reset on inference restart. Keep one inference replica for this coordinator. Kubernetes Jobs, MLflow metadata and S3 artifacts persist independently. The MLflow PVC uses local-path storage on one node, so it still needs external backup for node loss. Runtime dependency installation requires package-index availability at pod startup.
+With `OPERATIONS_DB_PATH` configured, decisions, actions and lifecycle snapshots persist in SQLite on `mlops-operations-state`; recent buffers are hydrated after inference restart, and recorded owned Jobs are reattached. The UI reads recent subsets rather than the full retained database. Keep one inference replica/process with Recreate for this single-writer coordinator; updates have an API interruption. Without the configured store, history remains process-local. Kubernetes Jobs, MLflow metadata and S3 artifacts persist independently. The operations and MLflow PVCs use local-path storage and still need external backup for node loss. Pending workload overrides and heartbeat state remain process-local. Runtime dependency installation requires package-index availability at pod startup. See [Operations Hardening](OPERATIONS_HARDENING.md) for retention, recovery and rollback limits.
 
 See [REMEDIATION_IMPLEMENTATION.md](REMEDIATION_IMPLEMENTATION.md) for deployment, verification and recovery evidence.

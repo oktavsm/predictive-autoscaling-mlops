@@ -297,6 +297,7 @@ predictive-autoscaling-mlops/
 - **[Operational Telemetry & Audit Log](docs/PANDUAN_AUDIT_LOG_DAN_TELEMETRI_OPERASIONAL.md):** Real-time cluster audit, API call tracking, and pod scaling history.
 - **[DVC Lineage & MinIO Storage Guide](docs/PANDUAN_DVC_DAN_MINIO_STORAGE.md):** Content-addressable storage (CAS), MD5 hashing, and time-travel versioning.
 - **[Autonomous Drift Retraining Pipeline](docs/AUTONOMOUS_DRIFT_RETRAINING.md):** Closed-loop PSI monitoring, event-driven CT triggers, and zero-downtime hot reloads.
+- **[Panduan Lengkap Dashboard](docs/DASHBOARD_GUIDE.md):** Inventaris 9 workspace, section, card, grafik, tabel, tombol dan input; fungsi, efek aksi, akses operator, sumber data, serta alur penggunaan.
 - **[Dashboard Remediation & Live Verification](docs/dashboard-revamp/REMEDIATION_IMPLEMENTATION.md):** Functional controls, real training lifecycle, persistent artifacts, deployment evidence and rollback.
 - **[Dashboard Audit & Cluster Explorer](docs/dashboard-revamp/DASHBOARD_AUDIT_CLUSTER_EXPLORER.md):** API findings and improvement priorities, interactive node/pod inspection, system flows, validation and ConfigMap hot-deploy.
 - **[Dashboard Operations Hardening A–E](docs/dashboard-revamp/OPERATIONS_HARDENING.md):** Actual pod usage, SQLite/PVC history, operator/service tokens, inventory cache, frozen lifecycle duration and verified restart recovery.

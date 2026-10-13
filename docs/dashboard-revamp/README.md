@@ -1,5 +1,7 @@
 # Dashboard revamp implementation
 
+User guide: [Panduan Lengkap Dashboard](../DASHBOARD_GUIDE.md), the current inventory of all nine workspaces, sections, cards, charts, tables, inputs and buttons, including their purpose, side effects, authentication and data limits.
+
 Current operations release: [improvements A–E](OPERATIONS_HARDENING.md), covering actual pod usage, persistent history, authenticated write controls, inventory cache and terminal timing. Write controls now require **Operator access** unlock; readers can inspect all workspaces without a token.
 
 Latest cluster work: [dashboard/API audit and interactive Cluster Explorer](DASHBOARD_AUDIT_CLUSTER_EXPLORER.md). Includes observed node/pod/service detail, three selectable system flows, hover explanations, priorities with acceptance criteria, and the multi-file ConfigMap release procedure. Local validation uses `.venv`; container packaging belongs to cloud CI, with no local Docker build.
@@ -12,7 +14,7 @@ The 13 October operational cleanup is also deployed. It removes emoji/fabricated
 
 ## Changes
 
-- Sidebar workspace selection preserves all eight operational workspaces and renders only the selected workspace. Their supported action handlers remain explicit button actions. The 13 October follow-up corrects profile states and disables unsupported lifecycle/retraining actions; see `FUNCTIONALITY.md`.
+- Sidebar workspace selection preserves all eight operational workspaces plus Overview and renders only the selected workspace. Their action handlers remain explicit button actions. The early 13 October cleanup disabled unsupported lifecycle/retraining actions; subsequent remediation restored real Job-backed controls, and A–E hardening requires operator unlock. See [current control behavior](FUNCTIONALITY.md).
 - `src/dashboard/overview.py` renders owned Streamlit panel containers, native inspectors, CSV export, status states, and a responsive chart/support layout. Below 1120px panels stack; metrics use two columns on compact layouts.
 - `src/dashboard/adapter.py` reads only health, decisions, actions, audit and drift resources. It validates decision units and timestamps, sorts/deduplicates observations, shifts forecast targets by exactly 60s, and rejects invalid rates and replica counts.
 - The Overview uses runtime policy from health. Simulator controls are explicitly local previews and do not change Overview policy or the controller.
