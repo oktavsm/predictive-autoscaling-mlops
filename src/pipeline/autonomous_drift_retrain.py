@@ -182,7 +182,10 @@ def hot_reload_inference_service(api_url: str = DEFAULT_MODEL_API) -> bool:
         req = urllib.request.Request(
             reload_url,
             data=b"{}",
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + os.getenv("INFERENCE_API_TOKEN", ""),
+            },
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=10.0) as resp:

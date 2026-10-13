@@ -1,5 +1,7 @@
 # Audit dashboard dan Cluster Explorer
 
+Update setelah audit ini: [implementasi A–E](OPERATIONS_HARDENING.md) menambahkan actual pod usage, SQLite/PVC, Bearer role tokens, cache delapan detik dan frozen terminal duration. A01 sudah ditangani pada tingkat shared role tokens; A02 untuk decision/action/lifecycle history; A03 untuk terminal state; A10 untuk cache/parallel inventory; A15 untuk pod usage. Per-user auth, pending override durability, workspace-wide deadlines dan role-label discovery tetap belum selesai. Bukti di bawah merupakan snapshot audit awal, bukan klaim bahwa seluruh backlog masih belum dikerjakan.
+
 Tanggal: 13 Oktober 2026. Ruang lingkup: dashboard Streamlit, API inference, hubungan dengan controller/training, dan inventori Kubernetes. Dokumen ini memisahkan kondisi yang terverifikasi, perubahan pada rilis explorer, serta pekerjaan berikutnya. Audit kode dan pembacaan endpoint bukan penetration test, uji beban, atau sertifikasi aksesibilitas.
 
 ## Kesimpulan

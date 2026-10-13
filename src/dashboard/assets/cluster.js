@@ -58,6 +58,13 @@ export default function ({ data, parentElement }) {
   const facts = pairs => `<dl class="details">${pairs.map(([k,v]) => `<div class="detail"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
   const tooltip = (id, text) => `<span class="hover-note" role="tooltip" id="tip-${esc(id)}">${esc(text)}</span>`;
   const caption = (text, cls='scope-note') => `<p class="${cls}">${esc(text)}</p>`;
+  const measured = (value, kind) => Number.isFinite(value) ? (kind==='cpu' ? `${(value*1000).toFixed(1)}m` : `${(value/1048576).toFixed(1)} MiB`) : 'Unavailable';
+  function usageMarkup(usage={}) {
+    return `<span class="usage">${[['cpu','CPU','cpu_cores'],['memory','RAM','memory_bytes']].map(([kind,label,key])=>{
+      const pct=usage[kind+'_limit_pct'], present=Number.isFinite(pct) && pct>=0;
+      return `<span class="usage-line"><span>${label} ${esc(measured(usage[key],kind))}</span><span>${present ? pct.toFixed(1)+'% of limit' : 'No limit comparison'}</span></span>${present ? `<span class="usage-meter ${kind}" aria-hidden="true"><span style="width:${Math.min(100,pct)}%"></span></span>` : ''}`;
+    }).join('')}</span>`;
+  }
   root.innerHTML = `<div class="toolbar"><div class="tabs" role="group" aria-label="Cluster view"><button class="tab" data-view="placement">Workload placement</button><button class="tab" data-view="flow">System flow</button></div><label class="search">${icon('search')}<input aria-label="Search cluster" placeholder="Find node, pod or component" type="search" value="${esc(state.search)}"></label></div><div class="layout"><section class="map-panel" aria-label="Cluster map"></section><aside class="inspector" aria-label="Component inspector" aria-live="polite"></aside></div>`;
   const map = root.querySelector('.map-panel'), inspector = root.querySelector('.inspector');
   function choose(id) {
@@ -71,12 +78,18 @@ export default function ({ data, parentElement }) {
     const filtered = pods.filter(p => (state.namespace === 'All' || p.namespace === state.namespace) && `${p.name} ${p.namespace} ${p.node || ''}`.toLowerCase().includes(query));
     const visibleNodes = nodes.filter(n => n.name?.toLowerCase().includes(query) || filtered.some(p => p.node === n.name));
     map.innerHTML = `<div class="eyebrow">K3s / AWS · observed placement</div><h2>Where the workloads run</h2>${caption(`${nodes.filter(n=>n.ready === true).length}/${nodes.length} nodes Ready · ${pods.filter(p=>podStatus(p)[0] === 'Ready').length} Ready pods · ${services.length} services`)}<div class="filters" role="group" aria-label="Namespace filter">${['All','mlops','monitoring','titipin'].map(ns=>`<button class="filter" data-namespace="${ns}" aria-pressed="${ns === state.namespace}">${ns}</button>`).join('')}</div><div class="node-grid">${visibleNodes.map(n => {
-      const found = filtered.filter(p => p.node === n.name), expanded = state.expanded.includes(n.name), shown = expanded || query ? found : found.slice(0,6);
+      const terminal = pod => ['Succeeded','Failed'].includes(pod.phase);
+      const found = filtered.filter(p => p.node === n.name).sort((a,b)=>Number(terminal(a))-Number(terminal(b)) || String(a.name).localeCompare(String(b.name))), expanded = state.expanded.includes(n.name), shown = expanded || query ? found : found.slice(0,6);
       return `<article class="node"><button class="node-head" data-select="${esc('node:'+n.name)}" ${selected('node:'+n.name)} aria-describedby="tip-node-${esc(n.name)}"><span class="node-title">${icon('server')}${esc(n.name)}</span><span class="node-summary">${badge(n.ready === true ? ['Ready','good'] : ['Not ready','warn'])}<small>${esc(n.role)}</small></span><span class="node-capacity">${esc(n.allocatable?.cpu || '?')} CPU · ${esc(memory(n.allocatable?.memory))} allocatable</span>${tooltip('node-'+n.name, `${n.name}: ${n.role}. Select for conditions, capacity and Kubernetes version.`)}</button><div class="pods">${shown.map(p=>`<button class="pod" data-select="${esc('pod:'+p.namespace+'/'+p.name)}" ${selected('pod:'+p.namespace+'/'+p.name)} aria-label="Inspect ${esc(p.name)}" aria-describedby="tip-pod-${esc(p.name)}">${icon('pod')}<span class="pod-text"><span class="pod-name">${esc(p.name)}</span><span class="pod-meta">${esc(p.namespace)} · ${esc(p.ready)}/${esc(p.containers)} containers</span></span>${badge(podStatus(p))}${tooltip('pod-'+p.name, `${p.name} · ${p.phase}. Select for resource requests, limits and restart details.`)}</button>`).join('') || caption('No matching pods on this node.','empty')}${found.length > 6 && !query ? `<button class="more" data-expand="${esc(n.name)}">${expanded ? 'Show fewer pods' : `Show ${found.length-6} more pods`}</button>` : ''}</div></article>`;
     }).join('')}</div>${!visibleNodes.length ? caption(nodes.length ? 'No nodes or pods match the current filter.' : 'Node inventory unavailable. No placement is assumed.','empty') : ''}`;
     const unplaced = filtered.filter(p => !p.node || !nodes.some(n => n.name === p.node));
     if (unplaced.length) map.insertAdjacentHTML('beforeend', `<h3 style="margin-top:18px">Unplaced / node outside snapshot</h3><div class="related">${unplaced.map(p=>button('pod:'+p.namespace+'/'+p.name,p.name)).join('')}</div>`);
-    map.insertAdjacentHTML('beforeend', `<div class="remote">${icon('traffic')}<div class="body">${button('component:k6','Remote VM · cp-bcc')}${caption('Traffic source outside the AWS Kubernetes cluster.')}${badge(status(components.k6))}</div></div>${caption('CPU and memory are declared allocatable capacity, not measured utilization. Pod counts cover mlops, monitoring and titipin only.')}`);
+    map.insertAdjacentHTML('beforeend', `<div class="remote">${icon('traffic')}<div class="body">${button('component:k6','Remote VM · cp-bcc')}${caption('Traffic source outside the AWS Kubernetes cluster.')}${badge(status(components.k6))}</div></div>${caption('Node CPU and memory are declared allocatable capacity, not measured utilization. Pod counts cover mlops, monitoring and titipin only.')}`);
+    for(const element of map.querySelectorAll('.pod')) {
+      const pod=pods.find(p=>'pod:'+p.namespace+'/'+p.name===element.dataset.select);
+      element.querySelector('.pod-text').insertAdjacentHTML('beforeend',usageMarkup(pod?.usage));
+    }
+    map.insertAdjacentHTML('beforeend',caption('Pod usage: Prometheus CPU rate over 2 minutes and memory working set. Bars compare usage with configured limits; missing, stale or incomplete samples stay unavailable.'));
   }
   let observer;
   function flow() {
@@ -134,6 +147,7 @@ export default function ({ data, parentElement }) {
       const url=data.links?.[item.link];
       if(url && /^https:\/\//.test(url)) body+=`<a class="inspect-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open ${esc(item.name)} ${icon('external')}</a>`;
     }
+    if(type==='pod' && item?.namespace) body+=`<h3>Observed pod usage</h3>${usageMarkup(item.usage)}${facts([['CPU sample coverage',item.usage?.cpu_cores_coverage],['RAM sample coverage',item.usage?.memory_bytes_coverage],['Usage queried (UTC)',cluster.usage_source?.queried_at]])}${caption('CPU is a 2-minute average in cores; memory is working set. Requests and limits above remain declarations. Percentages are unavailable if any container has a missing metric or limit.','description')}`;
     inspector.innerHTML=`<div class="eyebrow">Component inspector</div><div class="inspect-top">${icon(glyph)}${observed}</div><h2 tabindex="-1" class="inspect-heading">${esc(title)}</h2><div class="subtitle">${esc(subtitle)}</div>${body}`;
   }
   function render() {
@@ -142,6 +156,7 @@ export default function ({ data, parentElement }) {
     if(state.view==='placement') placement(); else flow();
     const parsed=Date.parse(cluster.timestamp), age=Number.isFinite(parsed) ? Math.max(0,(Date.now()-parsed)/1000) : null;
     map.insertAdjacentHTML('beforeend',caption(`Source: ${cluster.source || 'Kubernetes inventory unavailable'} · Snapshot: ${cluster.timestamp || 'Not reported'}${age !== null && age > 45 ? ' · Older than 45s' : ''}`));
+    if(Number.isFinite(cluster.cache_age_seconds)) map.insertAdjacentHTML('beforeend',caption(`Inventory cache: ${cluster.cached ? 'hit' : 'fresh fetch'} · age ${cluster.cache_age_seconds.toFixed(1)}s / ${cluster.cache_ttl_seconds}s TTL · Usage: ${cluster.usage_source?.status || 'Unavailable'}`));
     inspect();
   }
   const click = event => {

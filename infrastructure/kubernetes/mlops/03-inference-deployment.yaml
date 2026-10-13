@@ -9,6 +9,8 @@ metadata:
     app.kubernetes.io/part-of: predictive-autoscaling-mlops
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: mlops-inference
@@ -32,6 +34,8 @@ spec:
               pip install --no-cache-dir minio boto3 && \
               mkdir -p /app/src/inference && \
               cp /config/inference/service.py /app/src/inference/service.py && \
+              cp /config/inference/cluster_metrics.py /app/src/inference/cluster_metrics.py && \
+              cp /config/inference/operational_store.py /app/src/inference/operational_store.py && \
               cp /config/inference/minio_sync.py /app/src/data/minio_sync.py && \
               exec uvicorn src.inference.service:app --host 0.0.0.0 --port 8000
           ports:
@@ -44,9 +48,23 @@ spec:
             - secretRef:
                 name: mlops-object-storage
           env:
+            - name: OPERATIONS_DB_PATH
+              value: "/var/lib/mlops/operations.sqlite"
+            - name: OPERATOR_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mlops-api-auth
+                  key: operator-token
+            - name: SERVICE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mlops-api-auth
+                  key: service-token
             - name: MLFLOW_S3_ENDPOINT_URL
               value: "https://storage.titipin.me"
           volumeMounts:
+            - name: operations-state
+              mountPath: /var/lib/mlops
             - name: inference-code
               mountPath: /config/inference
             - name: drift-reference
@@ -98,6 +116,11 @@ spec:
             - secretRef:
                 name: mlops-object-storage
           env:
+            - name: INFERENCE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mlops-api-auth
+                  key: service-token
             - name: INFERENCE_URL
               value: "http://127.0.0.1:8000"
           volumeMounts:
@@ -125,9 +148,12 @@ spec:
               cpu: 300m
               memory: 256Mi
       volumes:
+        - name: operations-state
+          persistentVolumeClaim:
+            claimName: mlops-operations-state
         - name: inference-code
           configMap:
-            name: mlops-inference-code-cluster-20261013-0404
+            name: mlops-inference-code-hardening-20261013-0518
         - name: drift-reference
           configMap:
             name: mlops-training-data

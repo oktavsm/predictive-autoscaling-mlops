@@ -147,8 +147,23 @@ def read(path, shape=dict):
 
 
 def post(path, payload):
+    token = st.session_state.get("operator_token")
+    if not token:
+        st.error("Unlock operator access in the sidebar before sending a request.")
+        return None
     try:
-        response = requests.post(f"{INFERENCE_API_URL.rstrip('/')}{path}", json=payload, timeout=5)
+        response = requests.post(
+            f"{INFERENCE_API_URL.rstrip('/')}{path}",
+            json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=5,
+        )
+        if response.status_code in (401, 403):
+            lock_operator()
+            st.session_state["operator_notice"] = (
+                "Operator access expired or was rejected. Unlock access again."
+            )
+            st.rerun()
         response.raise_for_status()
         data = response.json()
         if not isinstance(data, dict) or not data:
@@ -159,6 +174,46 @@ def post(path, payload):
             "Request failed or returned an invalid response. No success was confirmed. Refresh status before retrying."
         )
         return None
+
+
+def lock_operator():
+    st.session_state.pop("operator_token", None)
+    st.session_state.pop("operator_token_input", None)
+
+
+if page in ("sim", "retrain", "injector"):
+    with (
+        st.sidebar,
+        st.expander("Operator access", expanded=not st.session_state.get("operator_token")),
+    ):
+        if st.session_state.get("operator_token"):
+            st.caption("Operator access unlocked for this session.")
+            st.button("Lock operator access", on_click=lock_operator)
+        else:
+            st.text_input("Operator token", type="password", key="operator_token_input")
+            if st.button("Unlock operator access"):
+                candidate = st.session_state.get("operator_token_input", "").strip()
+                try:
+                    response = requests.post(
+                        f"{INFERENCE_API_URL.rstrip('/')}/auth/operator",
+                        json={},
+                        headers={"Authorization": f"Bearer {candidate}"},
+                        timeout=5,
+                    )
+                    response.raise_for_status()
+                    if response.json().get("authenticated") is not True:
+                        raise ValueError()
+                    st.session_state["operator_token"] = candidate
+                    st.rerun()
+                except (requests.RequestException, ValueError, TypeError):
+                    st.error("Access was not unlocked. Check the token or service availability.")
+            st.caption("Read-only views stay public. Tokens are never shared with the cluster map.")
+
+operator_ready = bool(st.session_state.get("operator_token"))
+if notice := st.session_state.pop("operator_notice", None):
+    st.warning(notice)
+if page in ("sim", "retrain", "injector") and not operator_ready:
+    st.info("Read-only mode. Unlock Operator access in the sidebar to use write controls.")
 
 
 def table(rows):
@@ -226,7 +281,9 @@ if page == "sim":
         cpu = left.slider("CPU usage (cores)", 0.0, 2.5, step=0.01, key="sim_cpu")
         p95 = right.slider("P95 latency (s)", 0.010, 0.400, step=0.001, key="sim_p95")
         memory = right.slider("PHP-FPM memory (MB)", 50.0, 500.0, step=1.0, key="sim_mem")
-        if st.button("Compute forecast", type="primary", width="stretch"):
+        if st.button(
+            "Compute forecast", type="primary", width="stretch", disabled=not operator_ready
+        ):
             st.session_state.pop("sim_result", None)
             now = datetime.now(timezone.utc)
             result = post(
@@ -294,7 +351,12 @@ def lifecycle(state):
             ("Stage", f"{state.get('stage_index', 0)}/5 · {state.get('stage_title', 'Standby')}"),
             ("Kubernetes job", state.get("job_name") or "Not dispatched"),
             ("Active model", state.get("champion_version") or "Unknown"),
-            ("Elapsed", f"{state.get('elapsed_seconds', 0)} s"),
+            (
+                "Elapsed",
+                f"{state['elapsed_seconds']} s"
+                if state.get("elapsed_seconds") is not None
+                else "End time not recorded",
+            ),
         ]
     )
     if state.get("stage") == "COMPLETED":
@@ -326,6 +388,27 @@ def lifecycle(state):
                 if isinstance(row, dict)
             ]
         )
+    with st.expander("Persisted lifecycle history"):
+        history = read("/operations/history")
+        if history.get("persistent"):
+            table(
+                [
+                    {
+                        key: item.get(key)
+                        for key in (
+                            "operation_id",
+                            "stage",
+                            "started_at",
+                            "finished_at",
+                            "champion_version",
+                        )
+                    }
+                    for item in history.get("operations", [])
+                    if isinstance(item, dict)
+                ]
+            )
+        else:
+            st.caption("Persistent history is unavailable on this source.")
 
 
 @st.fragment(run_every=interval)
@@ -380,7 +463,7 @@ def operational_view():
                         f"Request {label.lower()}",
                         key=f"request_{state}",
                         width="stretch",
-                        disabled=not alive,
+                        disabled=not alive or not operator_ready,
                     ):
                         st.session_state.pop("workload_feedback", None)
                         ack = post("/workload/trigger", {"state": state})
@@ -404,7 +487,7 @@ def operational_view():
             )
             state = read("/monitoring/autonomous-status")
             if state.get("active"):
-                if st.button("Stop Running Scenario", width="stretch"):
+                if st.button("Stop Running Scenario", width="stretch", disabled=not operator_ready):
                     result = post("/monitoring/autonomous-scenario/stop", {})
                     if result and result.get("status") == "ok":
                         st.session_state["lifecycle_notice"] = (
@@ -415,7 +498,7 @@ def operational_view():
                 "Launch Autonomous Lifecycle Simulation",
                 type="primary",
                 width="stretch",
-                disabled=not alive,
+                disabled=not alive or not operator_ready,
             ):
                 result = post("/monitoring/autonomous-scenario/start", {})
                 if result and result.get("status") == "ACCEPTED":
@@ -476,7 +559,10 @@ def operational_view():
                 "Dispatch a real training job. Completion follows the job result, validation gate and verified model reload.",
             )
             if st.button(
-                "Trigger Event-Driven Retraining Pipeline", type="primary", width="stretch"
+                "Trigger Event-Driven Retraining Pipeline",
+                type="primary",
+                width="stretch",
+                disabled=not operator_ready,
             ):
                 st.session_state.pop("retrain_notice", None)
                 result = post("/monitoring/retrain/trigger", {})

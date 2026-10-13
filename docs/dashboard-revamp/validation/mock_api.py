@@ -18,8 +18,17 @@ class Handler(BaseHTTPRequestHandler):
         global lifecycle_active, lifecycle_completed
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
         calls.append({"method": "POST", "path": self.path, "body": body})
-        if state == "write_error":
-            self.send_response(503)
+        if self.path == "/auth/operator":
+            valid = self.headers.get("Authorization") == "Bearer qa-operator"
+            blob = json.dumps({"authenticated": valid}).encode()
+            self.send_response(200 if valid else 401)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(blob)))
+            self.end_headers()
+            self.wfile.write(blob)
+            return
+        if state in ("write_error", "auth_expired"):
+            self.send_response(401 if state == "auth_expired" else 503)
             self.end_headers()
             return
         if self.path in ("/monitoring/retrain/trigger", "/monitoring/autonomous-scenario/start"):
@@ -242,6 +251,26 @@ class Handler(BaseHTTPRequestHandler):
                     ],
                 },
             }
+            data["/cluster/status"]["usage_source"] = {
+                "source": "Synthetic QA usage",
+                "status": "AVAILABLE",
+                "queried_at": now.isoformat(),
+            }
+            data["/cluster/status"].update(cached=True, cache_age_seconds=2, cache_ttl_seconds=8)
+            for pod in data["/cluster/status"]["pods"]:
+                if pod["phase"] == "Running":
+                    pod["usage"] = {
+                        "cpu_cores": 0.125,
+                        "memory_bytes": 67108864,
+                        "cpu_limit_pct": 25.0,
+                        "memory_limit_pct": 50.0,
+                        "cpu_cores_coverage": "1/1",
+                        "memory_bytes_coverage": "1/1",
+                    }
+            if state == "usage_unavailable":
+                for pod in data["/cluster/status"]["pods"]:
+                    pod.pop("usage", None)
+                data["/cluster/status"]["usage_source"]["status"] = "UNAVAILABLE"
             if state == "cluster_empty":
                 data["/cluster/status"] = {
                     "nodes": [],

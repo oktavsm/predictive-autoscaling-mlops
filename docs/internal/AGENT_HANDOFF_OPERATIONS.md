@@ -71,6 +71,8 @@ Host cp-bcc
 ## 🚀 3. Deployment & Hot-Reload Workflows
 
 ### A. Update & Deploy Streamlit Dashboard (`mlops.titipin.me`)
+Rilis hardening A–E menambahkan utilisasi pod Prometheus, PVC `mlops-operations-state`, SQLite lifecycle/history, Bearer token role operator/service, cache 8 detik dan waktu terminal yang tetap. Backend sekarang satu replika dengan strategi Recreate; jadwalkan jeda API saat update. Code map API harus menyertakan `operational_store.py` dan `cluster_metrics.py` selain service/scaler/minio helper. Secret `mlops-api-auth` memasok credential API/scaler/CT; daemon membaca environment file mode 0600. Dashboard write controls perlu unlock **Operator access**, memakai token lokal `~/.config/titipin-mlops/operator-token`; jangan menaruh operator token sebagai shared environment credential dashboard. Lihat `docs/dashboard-revamp/OPERATIONS_HARDENING.md` untuk kontrak route, handoff, bukti restart/cancel dan batas rollback ke rilis sebelum auth. Tidak ada nilai token di dokumentasi.
+
 Di lingkungan K3s produksi, berkas `app.py` pada pod `mlops-dashboard` di-mount melalui Kubernetes ConfigMap yang dirujuk volume `dashboard-code` pada deployment. Nama ConfigMap dapat berversi; baca referensi aktif sebelum hot-deploy. Hot-deploy satu file hanya berlaku jika modul, aset, dan versi dependensi pada image sudah sesuai.
 
 Kebijakan operasional terbaru dari pengguna (13 Oktober 2026): **jangan menyalakan Docker daemon, menjalankan docker build atau Compose lokal**. Validasi lokal lewat `.venv`; packaging container dijalankan GitHub Actions ketika push diotorisasi. Jangan push hanya untuk mencoba build tanpa instruksi pengguna.
@@ -107,19 +109,26 @@ curl -sI https://mlops.titipin.me
 ```
 
 ### B. Update Inference & Predictive Scaler (`model.titipin.me`)
-Manifest deployment berada di `infrastructure/kubernetes/mlops/03-inference-deployment.yaml`.
-Jika memperbarui konfigurasi atau image inference:
+Manifest deployment berada di `infrastructure/kubernetes/mlops/03-inference-deployment.yaml`. Hot-deploy kode memakai ConfigMap immutable baru dengan lima file: `service.py`, `operational_store.py`, `cluster_metrics.py`, `predictive_scaler.py`, `minio_sync.py`. Salin dari repository ke staging private pada `cp`, buat map berversi dengan seluruh key, lalu ganti hanya volume `inference-code` melalui strategic patch. Command API yang sudah terpasang menyalin kedua helper sebelum Uvicorn. Jangan mencoba menimpa map immutable aktif atau hanya mengganti service.py.
+
+Pertahankan PVC `mlops-operations-state`, Secret refs `mlops-api-auth`, satu replika dan strategi Recreate; restart memiliki jeda API. Backend code map aktif dan image yang tetap tercatat pada `docs/dashboard-revamp/validation/hardening/release.json`. Jika dependency berubah, packaging harus melalui cloud CI, tanpa Docker lokal. Simpan snapshot template/code map dan backup SQLite yang konsisten sebelum perubahan; jangan menghapus PVC ketika rollback.
+
 ```bash
-# Terapkan perubahan manifest
-ssh cp "kubectl apply -f /path/to/manifest.yaml -n mlops"
-
-# Atau restart deployment untuk memuat model baru dari S3 / MLflow
-ssh cp "kubectl rollout restart deployment/mlops-inference -n mlops"
-ssh cp "kubectl rollout status deployment/mlops-inference -n mlops"
-
-# Uji health check endpoint
-curl -s https://model.titipin.me/health
+# Verifikasi rollout setelah perubahan pod template
+ssh cp "kubectl rollout status deployment/mlops-inference -n mlops --timeout=300s"
+curl --fail --silent https://model.titipin.me/health
 ```
+
+Untuk hanya memuat champion yang sama dari registry, gunakan service token pada header dan endpoint reload, tanpa mengganti pod. Credential lokal tersedia pada file private yang disebut di runbook; jangan menyalin nilainya ke chat atau Git.
+
+```bash
+source ~/.config/titipin-mlops/credentials.env
+curl --fail --silent -X POST https://model.titipin.me/model/reload \
+  -H "Authorization: Bearer ${INFERENCE_API_TOKEN}" \
+  -H "Content-Type: application/json" -d '{}'
+```
+
+Uji durability/recovery/cancel sudah dilakukan dengan Job tersuspensi dan penggantian pod aktual. Baca `docs/dashboard-revamp/OPERATIONS_HARDENING.md` untuk batas exactly-once, writer tunggal, backup dan rollback aman ke versi sebelum auth.
 
 ---
 

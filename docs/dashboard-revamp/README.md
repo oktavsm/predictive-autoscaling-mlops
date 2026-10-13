@@ -1,5 +1,7 @@
 # Dashboard revamp implementation
 
+Current operations release: [improvements A–E](OPERATIONS_HARDENING.md), covering actual pod usage, persistent history, authenticated write controls, inventory cache and terminal timing. Write controls now require **Operator access** unlock; readers can inspect all workspaces without a token.
+
 Latest cluster work: [dashboard/API audit and interactive Cluster Explorer](DASHBOARD_AUDIT_CLUSTER_EXPLORER.md). Includes observed node/pod/service detail, three selectable system flows, hover explanations, priorities with acceptance criteria, and the multi-file ConfigMap release procedure. Local validation uses `.venv`; container packaging belongs to cloud CI, with no local Docker build.
 
 Implemented 12 October 2026 against the v1.1.0 kit in `docs/.agents/dashboard_revamp`; deployed 13 October 2026 WIB after the user authorized Docker activation and deployment. Live: https://mlops.titipin.me. See `deployment/RELEASE.md` for image, runtime verification and rollback.

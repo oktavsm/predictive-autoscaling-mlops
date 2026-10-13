@@ -243,7 +243,7 @@ def test_cluster_inventory_reads_actual_readiness_without_addresses(state, monke
         }
 
     monkeypatch.setattr(api, "kubernetes_request", request)
-    result = api.cluster_status()
+    result = api._read_cluster_inventory()
     assert result["nodes"][0]["ready"] is False
     assert result["pods"][0]["ready"] == 0
     assert result["pods"][0]["restarts"] == 3
@@ -264,7 +264,7 @@ def test_cluster_inventory_failure_is_explicit(monkeypatch):
         api, "kubernetes_request", Mock(side_effect=RuntimeError("private server details"))
     )
     with pytest.raises(HTTPException) as exc:
-        api.cluster_status()
+        api._read_cluster_inventory()
     assert exc.value.status_code == 503
     assert exc.value.detail == "Cluster inventory unavailable"
 

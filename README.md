@@ -299,6 +299,7 @@ predictive-autoscaling-mlops/
 - **[Autonomous Drift Retraining Pipeline](docs/AUTONOMOUS_DRIFT_RETRAINING.md):** Closed-loop PSI monitoring, event-driven CT triggers, and zero-downtime hot reloads.
 - **[Dashboard Remediation & Live Verification](docs/dashboard-revamp/REMEDIATION_IMPLEMENTATION.md):** Functional controls, real training lifecycle, persistent artifacts, deployment evidence and rollback.
 - **[Dashboard Audit & Cluster Explorer](docs/dashboard-revamp/DASHBOARD_AUDIT_CLUSTER_EXPLORER.md):** API findings and improvement priorities, interactive node/pod inspection, system flows, validation and ConfigMap hot-deploy.
+- **[Dashboard Operations Hardening A–E](docs/dashboard-revamp/OPERATIONS_HARDENING.md):** Actual pod usage, SQLite/PVC history, operator/service tokens, inventory cache, frozen lifecycle duration and verified restart recovery.
 - **[HPA vs Predictive Autoscaler Benchmark](docs/BENCHMARK_HPA_VS_PREDICTIVE.md):** Empirical head-to-head performance under flash-sale spikes.
 - **[FinOps & Carbon Efficiency Analysis](docs/FINOPS_DAN_COST_EFFICIENCY.md):** Cloud cost calculations, vCPU savings, and carbon footprint reduction.
 - **[Integrated Alerting & Incident Management](docs/ALERTING_DAN_INCIDENT_MANAGEMENT.md):** Discord and Telegram dispatchers for operational anomalies.

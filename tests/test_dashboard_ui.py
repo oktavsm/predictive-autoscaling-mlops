@@ -112,6 +112,10 @@ def operational(render, monkeypatch):
     writes = {"status": 200, "body": None, "error": None, "calls": []}
 
     class Response:
+        @property
+        def status_code(self):
+            return writes["status"]
+
         def raise_for_status(self):
             if writes["status"] >= 400:
                 raise requests.HTTPError("Private response detail")
@@ -131,6 +135,7 @@ def operational(render, monkeypatch):
         return Response()
 
     monkeypatch.setattr(requests, "post", post)
+    app.session_state["operator_token"] = "qa-operator"
     app.run()
     app.toggle[0].set_value(False).run()
     return app, data, writes
@@ -514,3 +519,44 @@ def test_all_existing_workspaces_remain_accessible_without_automatic_writes(rend
         app.radio[0].set_value(page).run()
         assert not app.exception, page
     assert all(method == "GET" for method, _ in calls)
+
+
+def test_public_session_cannot_send_operations_and_operator_can_lock(render, monkeypatch):
+    app, data, calls = render
+    app.run()
+    select_page(app, "Scaling Simulator")
+    assert next(b for b in app.button if b.label == "Compute forecast").disabled
+    sent = []
+
+    class AuthResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"authenticated": True}
+
+    def auth(url, **kwargs):
+        sent.append((url, kwargs))
+        return AuthResponse()
+
+    monkeypatch.setattr(requests, "post", auth)
+    app.text_input(key="operator_token_input").set_value("qa-operator")
+    click(app, "Unlock operator access")
+    assert sent[0][0].endswith("/auth/operator")
+    assert sent[0][1]["headers"]["Authorization"] == "Bearer qa-operator"
+    assert not next(b for b in app.button if b.label == "Compute forecast").disabled
+    click(app, "Lock operator access")
+    assert next(b for b in app.button if b.label == "Compute forecast").disabled
+    assert len(sent) == 1
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_rejected_operator_action_relocks_controls_and_clears_input(operational, status):
+    app, data, writes = operational
+    select_page(app, "Scaling Simulator")
+    writes["status"] = status
+    click(app, "Compute forecast")
+    assert next(button for button in app.button if button.label == "Compute forecast").disabled
+    assert app.text_input(key="operator_token_input").value == ""
+    assert any("Operator access expired" in item.value for item in app.warning)
+    assert len(writes["calls"]) == 1

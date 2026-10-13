@@ -49,6 +49,11 @@ spec:
                 - secretRef:
                     name: mlops-object-storage
               env:
+                - name: INFERENCE_API_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: mlops-api-auth
+                      key: service-token
                 - name: AWS_REQUEST_CHECKSUM_CALCULATION
                   value: "when_required"
                 - name: AWS_RESPONSE_CHECKSUM_VALIDATION
@@ -78,7 +83,7 @@ spec:
           volumes:
             - name: ct-code
               configMap:
-                name: mlops-ct-code-remediation-20261013-0308
+                name: mlops-ct-code-hardening-20261013-0458
             - name: ct-data
               configMap:
                 name: mlops-training-data

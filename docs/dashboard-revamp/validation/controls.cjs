@@ -8,7 +8,7 @@ fs.mkdirSync(output,{recursive:true});
 const checks=(pass,label)=>{assert.ok(pass,label);results.push(label)};
 const mock='http://127.0.0.1:18766';
 async function state(value){await fetch(`${mock}/__state?value=${value}`)}
-async function calls(){return (await(await fetch(`${mock}/__calls`)).json()).filter(c=>c.method==='POST')}
+async function calls(){return (await(await fetch(`${mock}/__calls`)).json()).filter(c=>c.method==='POST'&&c.path!=='/auth/operator')}
 async function settle(page,title){
  await page.waitForTimeout(650);
  await page.getByRole('heading',{name:title,exact:true}).waitFor();
@@ -54,6 +54,9 @@ async function select(page,title){
  }
  checks((await calls()).length===0,'Workspace navigation, theme changes and resize never issue operational writes');
  await page.setViewportSize({width:1448,height:1086});await select(page,'Scaling Simulator');
+ checks(!await page.getByRole('button',{name:'Compute forecast',exact:true}).isEnabled(),'Public session cannot compute or write before unlock');
+ await page.getByLabel('Operator token',{exact:true}).fill('qa-operator');await page.getByRole('button',{name:'Unlock operator access',exact:true}).click();await settle(page,'Scaling Simulator');
+ checks(await page.getByRole('button',{name:'Compute forecast',exact:true}).isEnabled(),'Verified operator session unlocks write controls');
  await page.getByRole('button',{name:'Flash sale (65 RPS)',exact:true}).click();await settle(page,'Scaling Simulator');
  await page.getByRole('button',{name:'Compute forecast',exact:true}).click();await page.getByTestId('stMetricValue').filter({hasText:'35.0 RPS'}).waitFor();await settle(page,'Scaling Simulator');
  checks((await calls()).at(-1).path==='/predict'&&(await calls()).at(-1).body.request_rate===65,'Preset and compute submit the selected telemetry');

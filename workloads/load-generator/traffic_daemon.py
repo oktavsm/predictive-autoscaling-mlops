@@ -136,6 +136,7 @@ def send_heartbeat(current_state: str, vus: int, remaining_s: int):
             headers={
                 "Content-Type": "application/json",
                 "User-Agent": "TitipinTrafficDaemon/1.0",
+                "Authorization": "Bearer " + os.getenv("INFERENCE_API_TOKEN", ""),
             },
             method="POST",
         )

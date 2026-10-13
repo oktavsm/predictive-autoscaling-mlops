@@ -22,6 +22,8 @@ const live=process.argv.includes('--live');
  await page.getByTestId('stSidebar').getByText('Cluster Architecture',{exact:true}).click();await settle();
  check(await root.locator('.node').count()===3,'three nodes from inventory');
  check((await root.innerText()).includes('not measured utilization'),'capacity is not utilization');
+ check(await root.locator('.usage-meter').count()>0,'observed usage bars available');
+ check((await root.innerText()).includes('CPU rate over 2 minutes'),'usage window and source labelled');
  check(await page.getByTestId('stException').count()===0,'no Streamlit exception');
  const first=root.locator('.node-head').first();
  await first.hover();check(await first.getByRole('tooltip').isVisible(),'node hover explanation');
@@ -39,7 +41,7 @@ const live=process.argv.includes('--live');
   await root.getByRole('button',{name:'<img src=x onerror=window.clusterInjected=true>',exact:true}).click();
   check((await root.locator('.inspector h2').innerText()).includes('<img'),'hostile name is literal text');
   check((await root.locator('.inspector').innerText()).includes('Unscheduled'),'unscheduled pod explicit');
-  await root.locator('[data-select="pod:mlops/drift-retrain-qa"]').first().click();check((await root.locator('.inspector').innerText()).includes('Completed'),'completed job is distinct from ready');
+  await root.getByRole('searchbox',{name:'Search cluster'}).fill('drift-retrain-qa');await root.locator('[data-select="pod:mlops/drift-retrain-qa"]').first().click();check((await root.locator('.inspector').innerText()).includes('Completed'),'completed job is distinct from ready');await root.getByRole('searchbox',{name:'Search cluster'}).fill('');
  }
  await root.getByRole('button',{name:'System flow',exact:true}).click();
  for(const flow of ['serving','training','observability']){
@@ -81,6 +83,9 @@ const live=process.argv.includes('--live');
    check(await root.locator('.node').count()===0,state+' has no fabricated nodes');
    check((await root.innerText()).includes('Node inventory unavailable'),state+' explanation');
   }
+  await page.request.get('http://127.0.0.1:18766/__state?value=usage_unavailable');await refresh();
+  check(await root.locator('.usage-meter').count()===0,'missing usage does not become a zero percent bar');
+  check((await root.innerText()).includes('CPU Unavailable'),'missing usage is explicit');
   await page.request.get('http://127.0.0.1:18766/__state?value=ready');await refresh();
   const calls=await(await page.request.get('http://127.0.0.1:18766/__calls')).json();check(calls.every(c=>c.method==='GET'),'component uses read-only sources');
  }

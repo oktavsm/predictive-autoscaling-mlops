@@ -1,0 +1,54 @@
+{
+  "checked_at_utc": "2026-10-13T05:02:08Z",
+  "checks": [
+    "model ready",
+    "anonymous write denied",
+    "wrong token denied",
+    "operator verified",
+    "service cannot unlock operator actions",
+    "operator reaches validation without changing workload",
+    "service cannot trigger traffic",
+    "every POST declares authentication",
+    "GET reads remain public",
+    "inventory cache hits observed",
+    "cache preserves observation timestamp",
+    "real pod memory attached",
+    "SQLite history enabled",
+    "authenticated daemon heartbeat connected",
+    "service token can reload the same champion for training delivery"
+  ],
+  "cache_samples": [
+    {
+      "timestamp": "2026-10-13T05:02:08.100918+00:00",
+      "cached": false,
+      "cache_age_seconds": 0.001,
+      "elapsed_ms": 217.89
+    },
+    {
+      "timestamp": "2026-10-13T05:02:08.100918+00:00",
+      "cached": true,
+      "cache_age_seconds": 0.158,
+      "elapsed_ms": 158.99
+    },
+    {
+      "timestamp": "2026-10-13T05:02:08.100918+00:00",
+      "cached": true,
+      "cache_age_seconds": 0.294,
+      "elapsed_ms": 135.44
+    }
+  ],
+  "model": "v43",
+  "inventory": {
+    "nodes": 3,
+    "pods": 22,
+    "services": 15
+  },
+  "usage_source": {
+    "source": "Prometheus /api/v1/query",
+    "cpu_window_seconds": 120,
+    "max_sample_age_seconds": 45,
+    "status": "AVAILABLE",
+    "unavailable_queries": [],
+    "queried_at": "2026-10-13T05:02:08Z"
+  }
+}
