@@ -14,6 +14,7 @@
 # ==============================================================================
 
 set -euo pipefail
+: "${INFERENCE_API_TOKEN:?Set the service API token before running this operational workflow}"
 
 # ANSI Color Codes
 CYAN='\033[0;36m'
@@ -176,10 +177,10 @@ echo -e "${CYAN}${BOLD}━━━━━━━━━━━━━━━━━━━
 echo -e "${CYAN}${BOLD}[TAHAP 5/5] Closed-Loop Validation: Menguji Model Champion Baru...${NC}"
 echo -e "${CYAN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "Memanggil endpoint /model/reload untuk memuat bobot model baru..."
-curl -s -X POST "${INFERENCE_API}/model/reload" > /dev/null 2>&1 || true
+curl -fsS -X POST "${INFERENCE_API}/model/reload" -H "Authorization: Bearer ${INFERENCE_API_TOKEN}" > /dev/null
 
 echo -e "Menguji inferensi peramalan beban flash-sale (65 RPS)..."
-INFER_RESP=$(curl -s -X POST "${INFERENCE_API}/scale-decision" -H "Content-Type: application/json" -d '{
+INFER_RESP=$(curl -fsS -X POST "${INFERENCE_API}/scale-decision" -H "Authorization: Bearer ${INFERENCE_API_TOKEN}" -H "Content-Type: application/json" -d '{
   "request_rate": 65.0,
   "php_cpu_cores": 0.95,
   "p95_latency_seconds": 0.14,

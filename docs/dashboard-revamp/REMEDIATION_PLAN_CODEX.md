@@ -49,6 +49,7 @@ Backend FastAPI di [`src/inference/service.py`](../../src/inference/service.py) 
          """Explicit trigger to start the 5-phase autonomous drift & retraining sequence."""
          return trigger_workload_state({"state": "DRIFT_ANOMALY"})
 
+
      @app.post("/monitoring/autonomous-scenario/stop")
      def stop_autonomous_scenario() -> Dict[str, Any]:
          """Explicit trigger to reset autonomous sequence back to steady baseline."""
@@ -67,9 +68,9 @@ Backend FastAPI di [`src/inference/service.py`](../../src/inference/service.py) 
      - Ubah properti `disabled` tombol:
        ```python
        # SEBELUM:
-       disabled=not alive or state == "DRIFT_ANOMALY"
+       disabled = not alive or state == "DRIFT_ANOMALY"
        # SESUDAH:
-       disabled=not alive
+       disabled = not alive
        ```
   2. Kembalikan kontrol **Full Autonomous Retraining Lifecycle Runner**:
      - Tambahkan tombol **"Launch Autonomous Lifecycle Simulation"** (panggil `POST /monitoring/autonomous-scenario/start` atau `POST /workload/trigger` dengan `{"state": "DRIFT_ANOMALY"}`).

@@ -111,9 +111,10 @@ def register_model_version(
     run_id: str,
     description: str,
     tags: Dict[str, str],
+    model_source: str | None = None,
 ) -> str:
     """Mendaftarkan versi baru dari run_id tertentu."""
-    model_source = find_model_artifact_path(run_id, REPO_ROOT)
+    model_source = model_source or find_model_artifact_path(run_id, REPO_ROOT)
     log.info("Mendaftarkan versi model dari sumber: %s", model_source)
 
     mv = client.create_model_version(

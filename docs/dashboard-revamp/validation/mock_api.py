@@ -6,6 +6,8 @@ from urllib.parse import parse_qs, urlparse
 
 state = "ready"
 calls = []
+lifecycle_active = False
+lifecycle_completed = False
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -13,22 +15,38 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_POST(self):
+        global lifecycle_active, lifecycle_completed
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
         calls.append({"method": "POST", "path": self.path, "body": body})
-        if state == "write_error":
-            self.send_response(503)
+        if self.path == "/auth/operator":
+            valid = self.headers.get("Authorization") == "Bearer qa-operator"
+            blob = json.dumps({"authenticated": valid}).encode()
+            self.send_response(200 if valid else 401)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(blob)))
+            self.end_headers()
+            self.wfile.write(blob)
+            return
+        if state in ("write_error", "auth_expired"):
+            self.send_response(401 if state == "auth_expired" else 503)
             self.end_headers()
             return
-        value = (
-            {"status": "ok", "override_state": body.get("state")}
-            if self.path == "/workload/trigger"
-            else {
+        if self.path in ("/monitoring/retrain/trigger", "/monitoring/autonomous-scenario/start"):
+            lifecycle_active = True
+            lifecycle_completed = False
+            value = {"status": "ACCEPTED", "operation_id": "qa-operation"}
+        elif self.path == "/monitoring/autonomous-scenario/stop":
+            lifecycle_active = False
+            value = {"status": "ok", "stage": "STOPPED"}
+        elif self.path == "/workload/trigger":
+            value = {"status": "ok", "override_state": body.get("state")}
+        else:
+            value = {
                 "status": "SUCCESS",
                 "predicted_workload_rps_60s": 35,
                 "recommended_replicas": 4,
                 "inference_latency_ms": 1.7,
             }
-        )
         blob = json.dumps(value).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -37,10 +55,16 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(blob)
 
     def do_GET(self):
-        global state
+        global state, lifecycle_active, lifecycle_completed
         path = urlparse(self.path).path
         if path == "/__state":
             state = parse_qs(urlparse(self.path).query).get("value", ["ready"])[0]
+            if state == "completed":
+                lifecycle_active = False
+                lifecycle_completed = True
+            else:
+                lifecycle_active = False
+                lifecycle_completed = False
             calls.clear()
             value = {"state": state}
         elif path == "/__calls":
@@ -113,8 +137,151 @@ class Handler(BaseHTTPRequestHandler):
                     "daemon_remaining_s": 450,
                     "override_state": None,
                 },
-                "/monitoring/autonomous-status": {"active": False, "stage": "IDLE", "timeline": []},
+                "/monitoring/autonomous-status": {
+                    "active": lifecycle_active,
+                    "stage": "COMPLETED"
+                    if lifecycle_completed
+                    else ("TRAINING" if lifecycle_active else "IDLE"),
+                    "stage_index": 5 if lifecycle_completed else 3,
+                    "progress_pct": 100 if lifecycle_completed else 60,
+                    "champion_version": "qa-v8",
+                    "quality_gate": "PASSED",
+                    "hot_reload": "SUCCESS",
+                    "timeline": [],
+                },
+                "/cluster/status": {
+                    "timestamp": now.isoformat(),
+                    "scope": ["mlops", "monitoring", "titipin"],
+                    "source": "Synthetic QA Kubernetes fixture",
+                    "nodes": [
+                        {
+                            "name": name,
+                            "role": "control-plane" if i == 0 else "worker",
+                            "ready": i != 2,
+                            "capacity": {"cpu": "2", "memory": "4000000Ki"},
+                            "allocatable": {"cpu": "1900m", "memory": "3500000Ki", "pods": "110"},
+                            "info": {
+                                "kubeletVersion": "v1.33-QA",
+                                "osImage": "QA Linux",
+                                "containerRuntimeVersion": "containerd://QA",
+                            },
+                            "conditions": [
+                                {
+                                    "type": "Ready",
+                                    "status": "True" if i != 2 else "False",
+                                    "reason": "QACondition",
+                                }
+                            ],
+                        }
+                        for i, name in enumerate(["qa-cp", "qa-worker-1", "qa-worker-2"])
+                    ],
+                    "pods": [
+                        {
+                            "name": name,
+                            "namespace": ns,
+                            "node": node,
+                            "phase": phase,
+                            "ready": ready,
+                            "containers": 2 if "inference" in name else 1,
+                            "restarts": 3 if not ready else 0,
+                            "created_at": now.isoformat(),
+                            "labels": {"app": "mlops-inference" if "inference" in name else name},
+                            "owner": [
+                                {
+                                    "kind": "Job" if phase == "Succeeded" else "ReplicaSet",
+                                    "name": "qa-owner",
+                                }
+                            ],
+                            "container_details": [
+                                {
+                                    "name": "qa-container",
+                                    "ready": bool(ready),
+                                    "requests": {"cpu": "100m", "memory": "64Mi"},
+                                    "limits": {"cpu": "1", "memory": "256Mi"},
+                                    "state": {"running": {}}
+                                    if ready
+                                    else {"waiting": {"reason": "CrashLoopBackOff"}},
+                                }
+                            ],
+                        }
+                        for name, ns, node, phase, ready in [
+                            ("mlops-inference-qa", "mlops", "qa-worker-1", "Running", 2),
+                            ("mlops-dashboard-qa", "mlops", "qa-worker-1", "Running", 1),
+                            ("mlops-mlflow-qa", "mlops", "qa-worker-1", "Running", 1),
+                            ("drift-retrain-qa", "mlops", "qa-worker-1", "Succeeded", 0),
+                            ("laravel-backend-qa", "titipin", "qa-worker-2", "Running", 0),
+                            ("minio-qa", "titipin", "qa-cp", "Running", 1),
+                            ("monitoring-grafana-qa", "monitoring", "qa-cp", "Running", 1),
+                            (
+                                "monitoring-kube-prometheus-prometheus-qa",
+                                "monitoring",
+                                "qa-cp",
+                                "Running",
+                                1,
+                            ),
+                            (
+                                "<img src=x onerror=window.clusterInjected=true>",
+                                "mlops",
+                                None,
+                                "Pending",
+                                0,
+                            ),
+                            *[
+                                ("qa-extra-" + str(i), "mlops", "qa-worker-1", "Running", 1)
+                                for i in range(5)
+                            ],
+                        ]
+                    ],
+                    "services": [
+                        {
+                            "name": "mlops-inference-svc",
+                            "namespace": "mlops",
+                            "type": "NodePort",
+                            "selector": {"app": "mlops-inference"},
+                            "ports": [
+                                {
+                                    "name": "http",
+                                    "port": 8000,
+                                    "targetPort": 8000,
+                                    "nodePort": 30800,
+                                    "protocol": "TCP",
+                                }
+                            ],
+                        }
+                    ],
+                },
             }
+            data["/cluster/status"]["usage_source"] = {
+                "source": "Synthetic QA usage",
+                "status": "AVAILABLE",
+                "queried_at": now.isoformat(),
+            }
+            data["/cluster/status"].update(cached=True, cache_age_seconds=2, cache_ttl_seconds=8)
+            for pod in data["/cluster/status"]["pods"]:
+                if pod["phase"] == "Running":
+                    pod["usage"] = {
+                        "cpu_cores": 0.125,
+                        "memory_bytes": 67108864,
+                        "cpu_limit_pct": 25.0,
+                        "memory_limit_pct": 50.0,
+                        "cpu_cores_coverage": "1/1",
+                        "memory_bytes_coverage": "1/1",
+                    }
+            if state == "usage_unavailable":
+                for pod in data["/cluster/status"]["pods"]:
+                    pod.pop("usage", None)
+                data["/cluster/status"]["usage_source"]["status"] = "UNAVAILABLE"
+            if state == "cluster_empty":
+                data["/cluster/status"] = {
+                    "nodes": [],
+                    "pods": [],
+                    "services": [],
+                    "source": "Synthetic QA empty inventory",
+                }
+            if state == "cluster_error" and path == "/cluster/status":
+                self.send_response(503)
+                self.end_headers()
+                return
             if state == "empty":
                 data["/scaling/decisions"] = []
                 data["/scaling/actions"] = []

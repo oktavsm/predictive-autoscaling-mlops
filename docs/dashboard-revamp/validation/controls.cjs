@@ -8,7 +8,7 @@ fs.mkdirSync(output,{recursive:true});
 const checks=(pass,label)=>{assert.ok(pass,label);results.push(label)};
 const mock='http://127.0.0.1:18766';
 async function state(value){await fetch(`${mock}/__state?value=${value}`)}
-async function calls(){return (await(await fetch(`${mock}/__calls`)).json()).filter(c=>c.method==='POST')}
+async function calls(){return (await(await fetch(`${mock}/__calls`)).json()).filter(c=>c.method==='POST'&&c.path!=='/auth/operator')}
 async function settle(page,title){
  await page.waitForTimeout(650);
  await page.getByRole('heading',{name:title,exact:true}).waitFor();
@@ -54,6 +54,9 @@ async function select(page,title){
  }
  checks((await calls()).length===0,'Workspace navigation, theme changes and resize never issue operational writes');
  await page.setViewportSize({width:1448,height:1086});await select(page,'Scaling Simulator');
+ checks(!await page.getByRole('button',{name:'Compute forecast',exact:true}).isEnabled(),'Public session cannot compute or write before unlock');
+ await page.getByLabel('Operator token',{exact:true}).fill('qa-operator');await page.getByRole('button',{name:'Unlock operator access',exact:true}).click();await settle(page,'Scaling Simulator');
+ checks(await page.getByRole('button',{name:'Compute forecast',exact:true}).isEnabled(),'Verified operator session unlocks write controls');
  await page.getByRole('button',{name:'Flash sale (65 RPS)',exact:true}).click();await settle(page,'Scaling Simulator');
  await page.getByRole('button',{name:'Compute forecast',exact:true}).click();await page.getByTestId('stMetricValue').filter({hasText:'35.0 RPS'}).waitFor();await settle(page,'Scaling Simulator');
  checks((await calls()).at(-1).path==='/predict'&&(await calls()).at(-1).body.request_rate===65,'Preset and compute submit the selected telemetry');
@@ -62,23 +65,31 @@ async function select(page,title){
  checks(await page.getByTestId('stAlert').filter({hasText:'No success was confirmed'}).isVisible(),'Prediction HTTP failure is visible');
  checks(await page.getByTestId('stMetricValue').count()===0,'Prediction failure removes previous result');
  await state('ready');await select(page,'Workload Injector');
- for(const label of ['steady normal','rush hour','flash sale','cooling down','quiet night']){
+ for(const label of ['steady normal','rush hour','flash sale','cooling down','quiet night','drift anomaly']){
   const before=(await calls()).length;
   await page.getByRole('button',{name:`Request ${label}`,exact:true}).click();await page.getByText('execution is not yet confirmed.',{exact:false}).waitFor();await settle(page,'Workload Injector');
   checks((await calls()).length===before+1,`${label}: one write per explicit click`);
   checks(await page.getByText('execution is not yet confirmed.',{exact:false}).count()===1,`${label}: acknowledgement is separate from execution`);
  }
- checks(await page.getByRole('button',{name:'Request drift anomaly',exact:true}).isDisabled(),'Drift injection is disabled with explanation');
+ checks(await page.getByRole('button',{name:'Request drift anomaly',exact:true}).isEnabled(),'All six traffic profiles are available');
  await state('write_error');await page.getByRole('button',{name:'Request rush hour',exact:true}).click();await page.getByTestId('stAlert').filter({hasText:'No success was confirmed'}).waitFor();await settle(page,'Workload Injector');
  checks(await page.getByTestId('stAlert').filter({hasText:'No success was confirmed'}).isVisible(),'Workload HTTP failure is visible');
  checks(await page.getByText('Request accepted:',{exact:false}).count()===0,'Failed request clears prior accepted feedback');
  await state('ready');await select(page,'Drift & Retraining');
  await page.getByRole('button',{name:'Evaluate telemetry drift (PSI)',exact:true}).click();await page.getByTestId('stMetricValue').filter({hasText:'0.0800'}).waitFor();await settle(page,'Drift & Retraining');
  checks((await page.getByTestId('stMetricValue').allTextContents()).includes('0.0800'),'Drift evaluate reads and displays the API score');
- checks(await page.getByRole('button',{name:'Trigger retraining',exact:true}).isDisabled(),'Unverified retraining action is disabled with explanation');
- await select(page,'Model Registry');await page.getByText('Latest reported model',{exact:true}).click();
- checks(await page.getByTestId('stJson').count()>0,'Registry metadata inspector opens');
- await page.getByText('Recent API telemetry records',{exact:true}).click();checks(await page.getByTestId('stDataFrame').count()>0,'Registry telemetry inspector opens');
+ await page.getByRole('button',{name:'Trigger Event-Driven Retraining Pipeline',exact:true}).click();await page.getByText('Training accepted:',{exact:false}).waitFor();await settle(page,'Drift & Retraining');
+ checks((await calls()).at(-1).path==='/monitoring/retrain/trigger','Retraining sends explicit trigger');
+ checks(!((await page.getByTestId('stMain').innerText()).includes('Training job completed and champion loaded')),'ACK does not claim completion');
+ await state('completed');await page.getByRole('button',{name:'Refresh now',exact:true}).click();await settle(page,'Drift & Retraining');
+ checks((await page.getByTestId('stMetricValue').allTextContents()).includes('qa-v8'),'Completion shows the verified champion');
+ await state('ready');await select(page,'Workload Injector');
+ await page.getByRole('button',{name:'Launch Autonomous Lifecycle Simulation',exact:true}).click();await page.getByRole('button',{name:'Stop Running Scenario',exact:true}).waitFor();await settle(page,'Workload Injector');
+ checks((await calls()).at(-1).path==='/monitoring/autonomous-scenario/start','Lifecycle start sends explicit trigger');
+ await page.getByRole('button',{name:'Stop Running Scenario',exact:true}).click();await page.getByRole('button',{name:'Launch Autonomous Lifecycle Simulation',exact:true}).waitFor();await settle(page,'Workload Injector');
+ checks((await calls()).at(-1).path==='/monitoring/autonomous-scenario/stop','Lifecycle stop sends explicit cancellation');
+ await select(page,'Model Registry');
+ checks(await page.getByTestId('stJson').count()===0,'Registry uses readable cards and tables');
  const links={'Open MLflow registry':'https://mlflow.titipin.me'};
  for(const [name,href] of Object.entries(links))checks(await page.getByRole('link',{name,exact:true}).getAttribute('href')===href,`${name}: configured URL`);
  await select(page,'HPA vs Predictive');checks(await page.getByRole('link',{name:'Inspect telemetry in Grafana',exact:true}).getAttribute('href')==='https://grafana.titipin.me','Benchmark source link opens configured Grafana');

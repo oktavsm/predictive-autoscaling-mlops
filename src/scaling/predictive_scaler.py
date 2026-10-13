@@ -320,7 +320,11 @@ class PredictiveScalerController:
         req = urllib.request.Request(
             url,
             data=body,
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.getenv("INFERENCE_API_TOKEN", ""),
+            },
             method="POST",
         )
         try:
@@ -416,7 +420,10 @@ class PredictiveScalerController:
                 req = urllib.request.Request(
                     f"{self.inference_url}/scaling/action-record",
                     data=event_payload,
-                    headers={"Content-Type": "application/json"},
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + os.getenv("INFERENCE_API_TOKEN", ""),
+                    },
                 )
                 urllib.request.urlopen(req, timeout=1.0)
             except Exception:

@@ -1,0 +1,99 @@
+{
+  "observed_date_utc": "2026-10-13",
+  "base_url": "https://model.titipin.me",
+  "method": "GET",
+  "samples_per_endpoint": 3,
+  "scope": "Public-path diagnostic before cluster payload extension; not a load test or SLO.",
+  "results": {
+    "/health": {
+      "latencies_ms": [
+        248.58,
+        106.56,
+        115.59
+      ],
+      "median_ms": 115.59,
+      "status": 200,
+      "bytes": 450
+    },
+    "/cluster/status": {
+      "latencies_ms": [
+        861.8,
+        128.29,
+        134.63
+      ],
+      "median_ms": 134.63,
+      "status": 200,
+      "bytes": 3126
+    },
+    "/scaling/decisions": {
+      "latencies_ms": [
+        125.57,
+        109.76,
+        109.56
+      ],
+      "median_ms": 109.76,
+      "status": 200,
+      "bytes": 18804
+    },
+    "/scaling/actions": {
+      "latencies_ms": [
+        110.94,
+        92.67,
+        97.35
+      ],
+      "median_ms": 97.35,
+      "status": 200,
+      "bytes": 883
+    },
+    "/operations/audit": {
+      "latencies_ms": [
+        119.22,
+        135.23,
+        115.45
+      ],
+      "median_ms": 119.22,
+      "status": 200,
+      "bytes": 26082
+    },
+    "/monitoring/drift": {
+      "latencies_ms": [
+        100.84,
+        104.61,
+        131.26
+      ],
+      "median_ms": 104.61,
+      "status": 200,
+      "bytes": 805
+    },
+    "/workload/status": {
+      "latencies_ms": [
+        93.53,
+        118.34,
+        95.31
+      ],
+      "median_ms": 95.31,
+      "status": 200,
+      "bytes": 290
+    },
+    "/monitoring/autonomous-status": {
+      "latencies_ms": [
+        99.77,
+        92.88,
+        92.46
+      ],
+      "median_ms": 92.88,
+      "status": 200,
+      "bytes": 1856
+    },
+    "/openapi.json": {
+      "latencies_ms": [
+        141.55,
+        114.59,
+        109.26
+      ],
+      "median_ms": 114.59,
+      "status": 200,
+      "bytes": 13459
+    }
+  }
+}

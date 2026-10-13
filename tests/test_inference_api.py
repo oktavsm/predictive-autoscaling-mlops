@@ -27,8 +27,10 @@ def setup_model():
 
 
 @pytest.fixture
-def client():
-    return TestClient(app)
+def client(monkeypatch):
+    monkeypatch.setenv("OPERATOR_API_TOKEN", "test-operator")
+    monkeypatch.setenv("SERVICE_API_TOKEN", "test-service")
+    return TestClient(app, headers={"Authorization": "Bearer test-service"})
 
 
 def test_health_endpoint(client):

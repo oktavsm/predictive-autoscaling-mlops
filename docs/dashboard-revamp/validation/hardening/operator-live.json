@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-10-13T05:56:18.598Z",
+  "base": "https://mlops.titipin.me",
+  "checks": [
+    "anonymous session write control locked",
+    "credential input masked",
+    "verified operator unlocks controls",
+    "another tab cannot inherit operator credential",
+    "credential excluded from cluster component",
+    "credential absent from browser persistent storage",
+    "explicit lock revokes session write access",
+    "lock clears credential input",
+    "no browser errors"
+  ],
+  "errors": [],
+  "scope": "Only credential verification and local session lock; no forecast, traffic or training action."
+}

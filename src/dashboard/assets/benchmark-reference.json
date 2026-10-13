@@ -1,0 +1,42 @@
+{
+  "source": "docs/dashboard-revamp/REMEDIATION_PLAN_CODEX.md \u00b7 65-VU documented reference experiment",
+  "provenance": "user-supplied remediation reference; independent raw traces not bundled",
+  "rows": [
+    {
+      "Evaluation metric": "Scale trigger",
+      "Reactive HPA": "CPU >60%",
+      "Predictive scaler": "Workload forecast +60s",
+      "Comparison": "Proactive allocation"
+    },
+    {
+      "Evaluation metric": "Reaction / anticipation",
+      "Reactive HPA": "48.0 s after spike",
+      "Predictive scaler": "50.0 s before spike",
+      "Comparison": "98.0 s advantage"
+    },
+    {
+      "Evaluation metric": "Peak P95 latency",
+      "Reactive HPA": "185.4 ms",
+      "Predictive scaler": "34.2 ms",
+      "Comparison": "81.5% reduction"
+    },
+    {
+      "Evaluation metric": "SLO compliance (<100 ms)",
+      "Reactive HPA": "78.4%",
+      "Predictive scaler": "99.2%",
+      "Comparison": "20.8 percentage points"
+    },
+    {
+      "Evaluation metric": "Cold start",
+      "Reactive HPA": "35\u201345 s request queue",
+      "Predictive scaler": "Pods ready before traffic",
+      "Comparison": "Queue avoided in reference run"
+    },
+    {
+      "Evaluation metric": "HTTP 5xx error rate",
+      "Reactive HPA": "0.8%",
+      "Predictive scaler": "0.0%",
+      "Comparison": "0.8 percentage points"
+    }
+  ]
+}

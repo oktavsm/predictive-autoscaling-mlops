@@ -1,0 +1,434 @@
+[
+  {
+    "at_utc": "2026-10-13T04:00:53Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 106.17
+  },
+  {
+    "at_utc": "2026-10-13T04:00:53Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 130.43
+  },
+  {
+    "at_utc": "2026-10-13T04:00:57Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 117.24
+  },
+  {
+    "at_utc": "2026-10-13T04:00:57Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 137.84
+  },
+  {
+    "at_utc": "2026-10-13T04:01:00Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 119.49
+  },
+  {
+    "at_utc": "2026-10-13T04:01:00Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 119.4
+  },
+  {
+    "at_utc": "2026-10-13T04:01:05Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 111.55
+  },
+  {
+    "at_utc": "2026-10-13T04:01:06Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 118.96
+  },
+  {
+    "at_utc": "2026-10-13T04:01:10Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 111.0
+  },
+  {
+    "at_utc": "2026-10-13T04:01:10Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 99.01
+  },
+  {
+    "at_utc": "2026-10-13T04:01:13Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 107.65
+  },
+  {
+    "at_utc": "2026-10-13T04:01:13Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 115.76
+  },
+  {
+    "at_utc": "2026-10-13T04:01:16Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 124.68
+  },
+  {
+    "at_utc": "2026-10-13T04:01:16Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 116.34
+  },
+  {
+    "at_utc": "2026-10-13T04:01:22Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 119.78
+  },
+  {
+    "at_utc": "2026-10-13T04:01:22Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 119.71
+  },
+  {
+    "at_utc": "2026-10-13T04:01:25Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 125.29
+  },
+  {
+    "at_utc": "2026-10-13T04:01:25Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 107.22
+  },
+  {
+    "at_utc": "2026-10-13T04:01:28Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 110.96
+  },
+  {
+    "at_utc": "2026-10-13T04:01:28Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 113.16
+  },
+  {
+    "at_utc": "2026-10-13T04:01:31Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 114.69
+  },
+  {
+    "at_utc": "2026-10-13T04:01:31Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 123.45
+  },
+  {
+    "at_utc": "2026-10-13T04:01:35Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 141.75
+  },
+  {
+    "at_utc": "2026-10-13T04:01:35Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 116.87
+  },
+  {
+    "at_utc": "2026-10-13T04:01:38Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 117.51
+  },
+  {
+    "at_utc": "2026-10-13T04:01:38Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 105.42
+  },
+  {
+    "at_utc": "2026-10-13T04:01:41Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 146.26
+  },
+  {
+    "at_utc": "2026-10-13T04:01:41Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 121.7
+  },
+  {
+    "at_utc": "2026-10-13T04:01:46Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 115.23
+  },
+  {
+    "at_utc": "2026-10-13T04:01:46Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 133.95
+  },
+  {
+    "at_utc": "2026-10-13T04:01:49Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 130.33
+  },
+  {
+    "at_utc": "2026-10-13T04:01:49Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 111.2
+  },
+  {
+    "at_utc": "2026-10-13T04:01:53Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 116.92
+  },
+  {
+    "at_utc": "2026-10-13T04:01:53Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 106.67
+  },
+  {
+    "at_utc": "2026-10-13T04:01:56Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 130.8
+  },
+  {
+    "at_utc": "2026-10-13T04:01:56Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 122.38
+  },
+  {
+    "at_utc": "2026-10-13T04:01:59Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 121.07
+  },
+  {
+    "at_utc": "2026-10-13T04:01:59Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 127.1
+  },
+  {
+    "at_utc": "2026-10-13T04:02:02Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 137.85
+  },
+  {
+    "at_utc": "2026-10-13T04:02:03Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 125.58
+  },
+  {
+    "at_utc": "2026-10-13T04:02:08Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 120.13
+  },
+  {
+    "at_utc": "2026-10-13T04:02:08Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 117.6
+  },
+  {
+    "at_utc": "2026-10-13T04:02:11Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 113.22
+  },
+  {
+    "at_utc": "2026-10-13T04:02:11Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 122.27
+  },
+  {
+    "at_utc": "2026-10-13T04:02:15Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 125.25
+  },
+  {
+    "at_utc": "2026-10-13T04:02:15Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 136.45
+  },
+  {
+    "at_utc": "2026-10-13T04:02:18Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 142.85
+  },
+  {
+    "at_utc": "2026-10-13T04:02:18Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 132.04
+  },
+  {
+    "at_utc": "2026-10-13T04:02:21Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 115.56
+  },
+  {
+    "at_utc": "2026-10-13T04:02:21Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 116.86
+  },
+  {
+    "at_utc": "2026-10-13T04:02:25Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 127.48
+  },
+  {
+    "at_utc": "2026-10-13T04:02:25Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 118.32
+  },
+  {
+    "at_utc": "2026-10-13T04:02:28Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 117.45
+  },
+  {
+    "at_utc": "2026-10-13T04:02:28Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 120.09
+  },
+  {
+    "at_utc": "2026-10-13T04:02:31Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 109.84
+  },
+  {
+    "at_utc": "2026-10-13T04:02:31Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 104.88
+  },
+  {
+    "at_utc": "2026-10-13T04:02:34Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 119.3
+  },
+  {
+    "at_utc": "2026-10-13T04:02:34Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 118.29
+  },
+  {
+    "at_utc": "2026-10-13T04:02:38Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 105.22
+  },
+  {
+    "at_utc": "2026-10-13T04:02:38Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 118.22
+  },
+  {
+    "at_utc": "2026-10-13T04:02:41Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 124.13
+  },
+  {
+    "at_utc": "2026-10-13T04:02:41Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 116.64
+  },
+  {
+    "at_utc": "2026-10-13T04:02:44Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 119.29
+  },
+  {
+    "at_utc": "2026-10-13T04:02:44Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 126.2
+  },
+  {
+    "at_utc": "2026-10-13T04:02:47Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 143.92
+  },
+  {
+    "at_utc": "2026-10-13T04:02:47Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 123.16
+  },
+  {
+    "at_utc": "2026-10-13T04:02:51Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 139.28
+  },
+  {
+    "at_utc": "2026-10-13T04:02:51Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 129.44
+  },
+  {
+    "at_utc": "2026-10-13T04:02:54Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 136.08
+  },
+  {
+    "at_utc": "2026-10-13T04:02:54Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 274.51
+  },
+  {
+    "at_utc": "2026-10-13T04:02:57Z",
+    "url": "https://model.titipin.me/health",
+    "status": 200,
+    "elapsed_ms": 129.28
+  },
+  {
+    "at_utc": "2026-10-13T04:02:57Z",
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "elapsed_ms": 108.65
+  }
+]

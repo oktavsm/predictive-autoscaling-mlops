@@ -65,7 +65,5 @@
     "320px at 200% text: no page overflow",
     "No browser page errors"
   ],
-  "errors": [],
-  "checked_at": "2026-10-12T23:49:29.937227+00:00",
-  "source": "Local mock API; no production actions"
+  "errors": []
 }

@@ -1,0 +1,80 @@
+{
+  "verified_at_utc": "2026-10-13T06:02:19Z",
+  "method": "ConfigMap hot-deploy with existing images; no local Docker build or push",
+  "deployments": [
+    {
+      "name": "mlops-inference",
+      "available": 1,
+      "strategy": "Recreate",
+      "images": {
+        "inference-api": "docker.io/oktaavsm/predictive-autoscaler@sha256:830ad467010fdf4bd4139a6be11ccc2087d8642ae655f21fe706c9e603d32588",
+        "predictive-scaler": "docker.io/oktaavsm/predictive-autoscaler@sha256:830ad467010fdf4bd4139a6be11ccc2087d8642ae655f21fe706c9e603d32588"
+      },
+      "configmaps": [
+        "mlops-inference-code-hardening-20261013-0518",
+        "mlops-training-data"
+      ]
+    },
+    {
+      "name": "mlops-dashboard",
+      "available": 1,
+      "strategy": "RollingUpdate",
+      "images": {
+        "dashboard": "docker.io/oktaavsm/predictive-autoscaler-dashboard:remediation-20261013-0126@sha256:94c6a94cb639fcebc0f7f77b0a06130c16db601d26d9a6d1b760dfe1771965d0"
+      },
+      "configmaps": [
+        "mlops-dashboard-code"
+      ]
+    }
+  ],
+  "pvc": {
+    "name": "mlops-operations-state",
+    "phase": "Bound",
+    "capacity": {
+      "storage": "1Gi"
+    },
+    "storageClass": "local-path"
+  },
+  "serving": {
+    "model_version": "v43",
+    "model_algorithm": "ridge",
+    "model_ready": true,
+    "predictive_loop": "ACTIVE",
+    "last_scaling_observation": "2026-10-13T06:02:15Z"
+  },
+  "daemon_alive": true,
+  "terminal_state_survived_second_pod_replacement": true,
+  "operation_id": "fe471b144a2440908a4374d4ce4444ef",
+  "frozen_elapsed_seconds": 58.4,
+  "finished_at": 1791868132.8319116,
+  "retained_lifecycle_records": 1,
+  "cronjob_template_suspension_restored": true,
+  "code_sha256": {
+    "src/inference/service.py": "8fd0c2d8fa05cf9da623dffc0155cf237cda149fe164f64bacbd5ba8a654e6ca",
+    "src/inference/operational_store.py": "e65ffd6ed5c9215f3945a924f199ccf9a7ab16562d3cb27cc2bfb59ee230e61d",
+    "src/inference/cluster_metrics.py": "361342a0f970ac1708e55aa4bb68e432188636da44f4b47510bfb8f68756eeed",
+    "src/scaling/predictive_scaler.py": "cdc246be09fdcc7909e73182dedcd57b6e67fce652d9497142b21e6c6ae48148",
+    "src/dashboard/app.py": "655ce3693ae522e4dc9fbce57101002f5cc2405f7666fccf95826d97043e85fa",
+    "src/dashboard/cluster.py": "353f0b53e5e8624f86a39bc28a1ceda04364b78c45428b37878679f966471936",
+    "src/dashboard/assets/cluster.js": "9f890fc19d806aa04ea074b8ed67fb6a2edbe1f25af5b967a40bb148c68cf783",
+    "src/dashboard/assets/cluster.css": "c22b39ce92c7502ae0e2e6f3eefdc9e05135a12fa7340be5733b5570095f1f93",
+    "src/dashboard/assets/cluster-catalog.json": "5d387220068ac38ec7effc4194eb10d4002bba9bf41bf4a3217b8e952bd3df78",
+    "workloads/load-generator/traffic_daemon.py": "9da54af6cd3c28c017fc8bb6ed93047589ea7ea4bc38e87495e49885d0091984"
+  },
+  "secret_name": "mlops-api-auth",
+  "ct_code_map": "mlops-ct-code-hardening-20261013-0458",
+  "validation": {
+    "python_full_suite": 130,
+    "adapter_ui_subset": 62,
+    "hardening_subset": 21,
+    "dataset_warnings_as_errors": 8,
+    "explorer_qa_checks": 112,
+    "controls_qa_checks": 196,
+    "operator_qa_checks": 12,
+    "explorer_live_checks": 100,
+    "operator_live_checks": 9,
+    "api_live_checks": 15,
+    "restart_live_checks": 16
+  },
+  "dashboard_final_update_verified": true
+}

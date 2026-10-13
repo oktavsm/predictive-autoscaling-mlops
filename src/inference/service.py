@@ -17,22 +17,27 @@ import json
 import logging
 import math
 import os
+import secrets
 import ssl
 import subprocess
 import threading
 import time
 import urllib.request
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from copy import deepcopy
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 import mlflow
 import mlflow.pyfunc
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     Counter,
@@ -41,6 +46,9 @@ from prometheus_client import (
     generate_latest,
 )
 from pydantic import BaseModel, Field
+
+from src.inference.cluster_metrics import SnapshotCache, attach_usage
+from src.inference.operational_store import OperationalStore
 
 os.environ["MLFLOW_DISABLE_AGENT_HINT"] = "1"
 logger = logging.getLogger("predictive-autoscaler")
@@ -87,11 +95,11 @@ model_store: Dict[str, Any] = {
     "model_uri": f"models:/{MODEL_NAME}@{MODEL_ALIAS}",
     "loaded_at": None,
     "load_time_ms": 0.0,
-    "version": "v30",
-    "model_algorithm": "LightGBM Regressor (Optuna)",
+    "version": "Unknown",
+    "model_algorithm": "Unknown",
 }
 
-total_evaluations_count: int = 1440
+total_evaluations_count: int = 0
 
 
 def find_local_model_artifact() -> Optional[str]:
@@ -137,81 +145,64 @@ def find_local_model_artifact() -> Optional[str]:
     return None
 
 
-def load_model_from_registry():
-    """Memuat model terdaftar dari MLflow Model Registry atau artefak lokal."""
+def load_model_from_registry(strict: bool = False) -> bool:
+    """Load an exact registry version before atomically replacing the serving model."""
+    from mlflow.tracking import MlflowClient
+
     mlflow.set_tracking_uri(DEFAULT_TRACKING_URI)
-    model_uri = f"models:/{MODEL_NAME}@{MODEL_ALIAS}"
     t0 = time.perf_counter()
     try:
-        loaded = mlflow.pyfunc.load_model(model_uri)
-        model_store["model"] = loaded
-        model_store["model_uri"] = model_uri
-        model_store["loaded_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        model_store["load_time_ms"] = round((time.perf_counter() - t0) * 1000.0, 2)
-        try:
-            from mlflow.tracking import MlflowClient
-
-            client = MlflowClient(DEFAULT_TRACKING_URI)
-            mvs = client.search_model_versions(f"name='{MODEL_NAME}'")
-            for mv in mvs:
-                if mv.current_stage == "Production":
-                    model_store["version"] = f"v{mv.version}"
-                    break
-        except Exception:
-            pass
-        return
-    except Exception as e:
-        print(f"[WARN] Failed to load from alias URI: {e}")
-
-    # Fallback 1: Versi langsung dari Production atau latest
-    try:
-        from mlflow.tracking import MlflowClient
-
         client = MlflowClient(DEFAULT_TRACKING_URI)
-        mvs = client.search_model_versions(f"name='{MODEL_NAME}'")
-        target_v = "30"
-        for mv in mvs:
-            if mv.current_stage == "Production":
-                target_v = str(mv.version)
-                break
-        fallback_uri = f"models:/{MODEL_NAME}/{target_v}"
-        loaded = mlflow.pyfunc.load_model(fallback_uri)
-        model_store["model"] = loaded
-        model_store["version"] = f"v{target_v}"
-        model_store["model_uri"] = fallback_uri
-        model_store["loaded_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        model_store["load_time_ms"] = round((time.perf_counter() - t0) * 1000.0, 2)
-        return
-    except Exception as e_fallback:
-        print(f"[WARN] Failed to load from direct version URI: {e_fallback}")
-
-    # Fallback 2: Local direct artifact directory (essential for containerized environments)
-    local_artifact_dir = find_local_model_artifact()
-    if local_artifact_dir:
-        try:
-            loaded = mlflow.pyfunc.load_model(local_artifact_dir)
-            model_store["model"] = loaded
-            model_store["model_uri"] = f"file://{local_artifact_dir}"
-            model_store["loaded_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-            model_store["load_time_ms"] = round((time.perf_counter() - t0) * 1000.0, 2)
-            print(f"[INFO] Successfully loaded local model artifact from {local_artifact_dir}")
-            return
-        except Exception as e_local:
-            print(f"[ERROR] Failed to load local artifact: {e_local}")
-
-    model_store["model"] = None
+        version = client.get_model_version_by_alias(MODEL_NAME, MODEL_ALIAS)
+        uri = f"models:/{MODEL_NAME}/{version.version}"
+        loaded = mlflow.pyfunc.load_model(uri)
+        run = client.get_run(version.run_id)
+        model_store.update(
+            model=loaded,
+            model_uri=uri,
+            version=f"v{version.version}",
+            model_algorithm=run.data.params.get("model_type", "Unknown"),
+            loaded_at=datetime.now(timezone.utc).isoformat(),
+            load_time_ms=round((time.perf_counter() - t0) * 1000, 2),
+        )
+        return True
+    except Exception:
+        logger.warning("Registry load failed; retaining the currently serving model.")
+        if not strict and model_store.get("model") is None:
+            local = find_local_model_artifact()
+            if local:
+                try:
+                    loaded = mlflow.pyfunc.load_model(local)
+                    model_store.update(
+                        model=loaded,
+                        model_uri=f"file://{local}",
+                        version="local",
+                        loaded_at=datetime.now(timezone.utc).isoformat(),
+                    )
+                    return True
+                except Exception:
+                    logger.warning("Local model artifact could not be loaded.")
+        return False
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifecycle startup: load ML model into memory."""
+    initialize_operational_store()
+    scenario_shutdown.clear()
     load_model_from_registry()
-    try:
-        _sync_live_ingestion_and_mlflow(force=True)
-    except Exception as e_sync:
-        logger.warning(f"Initial live sync warning: {e_sync}")
+    recover_lifecycle()
+    stop_sync = threading.Event()
+
+    def refresh_metadata():
+        while not stop_sync.is_set():
+            _sync_live_ingestion_and_mlflow(force=True)
+            stop_sync.wait(15)
+
+    threading.Thread(target=refresh_metadata, daemon=True).start()
     yield
-    model_store.clear()
+    stop_sync.set()
+    scenario_shutdown.set()
 
 
 app = FastAPI(
@@ -220,6 +211,55 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+bearer = HTTPBearer(auto_error=False)
+
+
+def authorize_write(
+    request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer)
+) -> str:
+    configured = {
+        role: os.getenv(name, "")
+        for role, name in (("operator", "OPERATOR_API_TOKEN"), ("service", "SERVICE_API_TOKEN"))
+    }
+    if not all(configured.values()):
+        raise HTTPException(503, "Write access is not configured")
+    token = credentials.credentials if credentials else ""
+    role = next(
+        (
+            role
+            for role, expected in configured.items()
+            if secrets.compare_digest(token.encode(), expected.encode())
+        ),
+        None,
+    )
+    if role is None:
+        raise HTTPException(
+            401, "Valid Bearer token required", headers={"WWW-Authenticate": "Bearer"}
+        )
+    operator_paths = {
+        "/auth/operator",
+        "/workload/trigger",
+        "/monitoring/retrain/trigger",
+        "/monitoring/autonomous-scenario/start",
+        "/monitoring/autonomous-scenario/stop",
+    }
+    service_paths = {
+        "/scale-decision",
+        "/scaling/action-record",
+        "/workload/heartbeat",
+        "/operations/record-ingestion",
+    }
+    if (request.url.path in operator_paths and role != "operator") or (
+        request.url.path in service_paths and role != "service"
+    ):
+        raise HTTPException(403, "Token role cannot perform this operation")
+    return role
+
+
+@app.post("/auth/operator", dependencies=[Depends(authorize_write)])
+def verify_operator() -> Dict[str, Any]:
+    return {"authenticated": True, "role": "operator"}
 
 
 # ---------------------------------------------------------------------------
@@ -263,12 +303,11 @@ class PredictionResponse(BaseModel):
 @app.get("/health")
 def health_check() -> Dict[str, Any]:
     """Health check endpoint validating model readiness."""
-    _sync_live_ingestion_and_mlflow()
     is_ready = model_store.get("model") is not None
-    active_v = str(model_store.get("version", "v30"))
-    if not active_v.startswith("v"):
+    active_v = str(model_store.get("version", "Unknown"))
+    if active_v.isdigit():
         active_v = f"v{active_v}"
-    algo_name = model_store.get("model_algorithm", "LightGBM Regressor (Optuna)")
+    algo_name = model_store.get("model_algorithm", "Unknown")
 
     return {
         "status": "healthy" if is_ready else "degraded",
@@ -283,17 +322,28 @@ def health_check() -> Dict[str, Any]:
         "target_rps_per_pod": TARGET_RPS_PER_POD,
         "replica_bounds": {"min": MIN_REPLICAS, "max": MAX_REPLICAS},
         "total_api_calls": total_evaluations_count,
+        "provenance": "live-services",
+        "predictive_loop": "ACTIVE"
+        if scaling_decisions_ring
+        and time.time()
+        - datetime.fromisoformat(
+            scaling_decisions_ring[0]["timestamp"].replace("Z", "+00:00")
+        ).timestamp()
+        < 45
+        else "WAITING",
+        "last_scaling_observation": scaling_decisions_ring[0]["timestamp"]
+        if scaling_decisions_ring
+        else None,
     }
 
 
-@app.post("/model/reload")
+@app.post("/model/reload", dependencies=[Depends(authorize_write)])
 def reload_model_endpoint() -> Dict[str, Any]:
     """Reloads the champion model dynamically from MLflow Model Registry."""
-    _sync_live_ingestion_and_mlflow(force=True)
-    load_model_from_registry()
+    reloaded = load_model_from_registry(strict=True)
     is_ready = model_store.get("model") is not None
     return {
-        "status": "reloaded" if is_ready else "failed",
+        "status": "reloaded" if reloaded else "failed",
         "model_ready": is_ready,
         "model_name": MODEL_NAME,
         "model_alias": MODEL_ALIAS,
@@ -309,7 +359,7 @@ def prometheus_metrics():
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
-@app.post("/predict", response_model=PredictionResponse)
+@app.post("/predict", response_model=PredictionResponse, dependencies=[Depends(authorize_write)])
 def predict_workload(payload: TelemetryFeatures):
     """Predict future workload rate and recommend replica count."""
     model = model_store.get("model")
@@ -399,7 +449,7 @@ def predict_workload(payload: TelemetryFeatures):
 
     return PredictionResponse(
         model_name=MODEL_NAME,
-        model_version=str(model_store.get("version", "v30")),
+        model_version=str(model_store.get("version", "Unknown")),
         status="SUCCESS",
         current_workload_rps=req_rate,
         predicted_workload_rps_60s=predicted_rps,
@@ -411,30 +461,40 @@ def predict_workload(payload: TelemetryFeatures):
     )
 
 
-@app.post("/scale-decision")
+@app.post("/scale-decision", dependencies=[Depends(authorize_write)])
 def scaling_decision(payload: TelemetryFeatures) -> Dict[str, Any]:
     """Adapter endpoint tailored for Kubernetes Custom HPA Controller."""
     global total_evaluations_count
     total_evaluations_count += 1
+    if payload.rps_roll_mean_60s is None:
+        recent = [r["input_rps"] for r in list(scaling_decisions_ring)[:3]]
+        payload.rps_roll_mean_60s = float(np.mean([payload.request_rate, *recent]))
     pred_res = predict_workload(payload)
     current_reps = int(
         payload.current_replicas or math.ceil(payload.request_rate / TARGET_RPS_PER_POD) or 1
     )
 
     # Track decision in ring buffer
-    scaling_decisions_ring.appendleft(
-        {
-            "timestamp": pred_res.timestamp,
-            "input_rps": round(payload.request_rate, 2),
-            "input_cpu": round(payload.php_cpu_cores, 3),
-            "input_p95_ms": round((payload.p95_latency_seconds or 0.0) * 1000.0, 1),
-            "current_replicas": current_reps,
-            "predicted_rps_60s": round(pred_res.predicted_workload_rps_60s, 2),
-            "desired_replicas": pred_res.recommended_replicas,
-            "action": pred_res.scaling_action,
-            "latency_ms": round(pred_res.inference_latency_ms, 2),
-        }
-    )
+    decision = {
+        "timestamp": pred_res.timestamp,
+        "input_rps": round(payload.request_rate, 2),
+        "input_cpu": round(payload.php_cpu_cores, 3),
+        "input_memory_mb": payload.php_memory_mb,
+        "input_rps_roll_mean_60s": payload.rps_roll_mean_60s
+        if payload.rps_roll_mean_60s is not None
+        else payload.request_rate,
+        "source": "predictive-scaler",
+        "synthetic": False,
+        "input_p95_ms": round((payload.p95_latency_seconds or 0.0) * 1000.0, 1),
+        "current_replicas": current_reps,
+        "predicted_rps_60s": round(pred_res.predicted_workload_rps_60s, 2),
+        "desired_replicas": pred_res.recommended_replicas,
+        "action": pred_res.scaling_action,
+        "latency_ms": round(pred_res.inference_latency_ms, 2),
+    }
+    if operational_store is not None:
+        operational_store.append("decisions", decision, 10000)
+    scaling_decisions_ring.appendleft(decision)
 
     return {
         "kind": "AutoscalingDecision",
@@ -467,56 +527,36 @@ def scaling_decision(payload: TelemetryFeatures) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 scaling_decisions_ring: deque = deque(maxlen=60)
 scaling_actions_ring: deque = deque(maxlen=40)
-
-# Pre-populate with realistic verified historical cluster events
-_now_utc = datetime.now(timezone.utc)
-scaling_actions_ring.appendleft(
-    {
-        "timestamp": (_now_utc - timedelta(minutes=45)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "action": "SCALE_UP",
-        "from_replicas": 1,
-        "to_replicas": 4,
-        "predicted_rps": 42.8,
-        "reason": "SCALE_UP (1 -> 4) rush-hour surge anticipation",
-        "status": "APPLIED (K8s Patched)",
-    }
-)
-scaling_actions_ring.appendleft(
-    {
-        "timestamp": (_now_utc - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "action": "SCALE_DOWN",
-        "from_replicas": 4,
-        "to_replicas": 1,
-        "predicted_rps": 8.5,
-        "reason": "SCALE_DOWN (4 -> 1) cooldown window elapsed",
-        "status": "APPLIED (K8s Patched)",
-    }
-)
-scaling_actions_ring.appendleft(
-    {
-        "timestamp": (_now_utc - timedelta(minutes=10)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "action": "MAINTAIN",
-        "from_replicas": 1,
-        "to_replicas": 1,
-        "predicted_rps": 10.4,
-        "reason": "MAINTAIN (1 replicas optimal) after CT model reload",
-        "status": "STABLE",
-    }
-)
-scaling_actions_ring.appendleft(
-    {
-        "timestamp": (_now_utc - timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "action": "MAINTAIN",
-        "from_replicas": 1,
-        "to_replicas": 1,
-        "predicted_rps": 5.2,
-        "reason": "MAINTAIN (1 replicas optimal) within steady-state boundary",
-        "status": "STABLE",
-    }
-)
+operational_store: Optional[OperationalStore] = None
 
 
-@app.post("/scaling/action-record")
+def initialize_operational_store() -> None:
+    global operational_store
+    path = os.getenv("OPERATIONS_DB_PATH")
+    if not path:
+        operational_store = None
+        return
+    operational_store = OperationalStore(path)
+    scaling_decisions_ring.clear()
+    scaling_decisions_ring.extend(operational_store.recent("decisions", 60))
+    scaling_actions_ring.clear()
+    scaling_actions_ring.extend(operational_store.recent("actions", 40))
+    saved = operational_store.lifecycle()
+    if saved:
+        autonomous_drift_coordinator.clear()
+        autonomous_drift_coordinator.update(saved)
+
+
+@app.get("/operations/history")
+def get_operational_history() -> Dict[str, Any]:
+    return {
+        "persistent": operational_store is not None,
+        "operations": operational_store.operations() if operational_store else [],
+        "retention": {"decisions": 10000, "actions": 1000, "operations": 100},
+    }
+
+
+@app.post("/scaling/action-record", dependencies=[Depends(authorize_write)])
 def record_scaling_action(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Records an executed scaling event from the predictive scaler daemon."""
     action_item = {
@@ -528,6 +568,8 @@ def record_scaling_action(payload: Dict[str, Any]) -> Dict[str, Any]:
         "reason": str(payload.get("reason", "Proactive workload demand")),
         "status": "APPLIED (K8s Patched)",
     }
+    if operational_store is not None:
+        operational_store.append("actions", action_item, 1000)
     scaling_actions_ring.appendleft(action_item)
     return {"status": "ok", "total_events": len(scaling_actions_ring)}
 
@@ -572,67 +614,57 @@ def compute_psi_between(
 
 @app.get("/monitoring/drift")
 def evaluate_telemetry_drift() -> Dict[str, Any]:
-    """Calculates real-time Population Stability Index (PSI) between baseline and active live telemetry."""
-    np.random.seed(42)
-    # Baseline reference distributions (calibrated from metrics_demo_processed.csv baseline):
-    ref_rps = np.random.normal(8.5, 3.2, 500).clip(0.5, 20.0)
-    ref_cpu = np.random.normal(0.28, 0.12, 500).clip(0.05, 0.8)
-    ref_p95 = np.random.normal(0.035, 0.015, 500).clip(0.015, 0.1)
-
-    decisions = list(scaling_decisions_ring)
-    if len(decisions) >= 3:
-        live_rps = np.array([float(d["input_rps"]) for d in decisions])
-        live_cpu = np.array([float(d["input_cpu"]) for d in decisions])
-        live_p95 = np.array([float(d["input_p95_ms"]) / 1000.0 for d in decisions])
-    else:
-        live_rps = np.array([10.0])
-        live_cpu = np.array([0.25])
-        live_p95 = np.array([0.035])
-
-    psi_rps = compute_psi_between(ref_rps, live_rps)
-    psi_cpu = compute_psi_between(ref_cpu, live_cpu)
-    psi_p95 = compute_psi_between(ref_p95, live_p95)
-
-    overall_psi = round(float(max(psi_rps, psi_cpu, psi_p95)), 4)
-    threshold = 0.20
-
-    drifted_features = []
-    if psi_rps >= threshold:
-        drifted_features.append("request_rate")
-    if psi_cpu >= threshold:
-        drifted_features.append("php_cpu_cores")
-    if psi_p95 >= threshold:
-        drifted_features.append("p95_latency_seconds")
-
-    return {
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "psi_score": overall_psi,
-        "threshold": threshold,
-        "status": "MAJOR_DRIFT_DETECTED" if overall_psi >= threshold else "STABLE_NO_DRIFT",
-        "overall_drift_detected": overall_psi >= threshold,
-        "evaluated_cycles": len(decisions),
-        "monitored_features": {
-            "request_rate": {
-                "psi": round(float(psi_rps), 4),
-                "live_mean": round(float(np.mean(live_rps)), 2),
-                "baseline_mean": 8.5,
-                "has_drift": psi_rps >= threshold,
-            },
-            "php_cpu_cores": {
-                "psi": round(float(psi_cpu), 4),
-                "live_mean": round(float(np.mean(live_cpu)), 3),
-                "baseline_mean": 0.28,
-                "has_drift": psi_cpu >= threshold,
-            },
-            "p95_latency_seconds": {
-                "psi": round(float(psi_p95), 4),
-                "live_mean": round(float(np.mean(live_p95)), 4),
-                "baseline_mean": 0.035,
-                "has_drift": psi_p95 >= threshold,
-            },
-        },
-        "drifted_features": drifted_features,
+    """Compare observed scaler samples with the configured reference CSV."""
+    path = Path(os.getenv("DRIFT_REFERENCE_PATH", "/app/data/processed/metrics_demo_processed.csv"))
+    features = {
+        "request_rate": "input_rps",
+        "php_cpu_cores": "input_cpu",
+        "p95_latency_seconds": "input_p95_ms",
+        "php_memory_mb": "input_memory_mb",
+        "rps_roll_mean_60s": "input_rps_roll_mean_60s",
     }
+    rows = list(scaling_decisions_ring)
+    result = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "psi_score": None,
+        "threshold": 0.2,
+        "evaluated_cycles": len(rows),
+        "overall_drift_detected": False,
+        "status": "WAITING_FOR_SAMPLES",
+        "monitored_features": {},
+        "reference": path.name,
+    }
+    if len(rows) < 3:
+        return result
+    try:
+        reference = pd.read_csv(path)
+        for name, field in features.items():
+            if name not in reference:
+                continue
+            values = np.array([float(row[field]) for row in rows if row.get(field) is not None])
+            if name == "p95_latency_seconds":
+                values = values / 1000
+            expected = pd.to_numeric(reference[name], errors="coerce").dropna().to_numpy()
+            values = values[np.isfinite(values)]
+            if len(values) < 3 or len(expected) < 3:
+                continue
+            psi = round(compute_psi_between(expected, values), 4)
+            result["monitored_features"][name] = {
+                "psi": psi,
+                "live_mean": float(np.mean(values)),
+                "baseline_mean": float(np.mean(expected)),
+                "has_drift": psi >= 0.2,
+            }
+        if not result["monitored_features"]:
+            result["status"] = "REFERENCE_UNAVAILABLE"
+            return result
+        result["psi_score"] = max(row["psi"] for row in result["monitored_features"].values())
+        result["overall_drift_detected"] = result["psi_score"] >= 0.2
+        result["status"] = "DRIFT_DETECTED" if result["overall_drift_detected"] else "STABLE"
+        return result
+    except (OSError, ValueError, KeyError):
+        result["status"] = "REFERENCE_UNAVAILABLE"
+        return result
 
 
 @app.get("/telemetry/live-sample")
@@ -644,29 +676,10 @@ def get_live_telemetry_sample() -> List[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Dynamic Ingestion & Retraining Audit Store
 # ---------------------------------------------------------------------------
-_init_now = datetime.now(timezone.utc)
-_init_wib = _init_now.astimezone(timezone(timedelta(hours=7)))
-_init_ts_str = (
-    f"{_init_now.strftime('%Y-%m-%d %H:%M:%S UTC')} ({_init_wib.strftime('%H:%M:%S WIB')})"
-)
-_init_date_str = _init_now.strftime("%Y%m%d")
-
-ingestion_store: Dict[str, Any] = {
-    "last_ingestion": {
-        "timestamp": _init_ts_str,
-        "window_minutes": 1440,
-        "records_count": 5760,
-        "target_dataset": f"data/processed/metrics_processed_{_init_date_str}_020017.csv",
-        "raw_dataset": f"data/raw/metrics_{_init_date_str}_020011.csv",
-        "md5": "live_sync_pending",
-        "bucket": "s3://mlops-dvc",
-        "status": "HEALTHY_INGESTED (Pending Live Sync)",
-    },
-    "history": [],
-}
+ingestion_store: Dict[str, Any] = {"last_ingestion": {}, "history": []}
 
 
-@app.post("/operations/record-ingestion")
+@app.post("/operations/record-ingestion", dependencies=[Depends(authorize_write)])
 def record_ingestion_event(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Records a new ingestion event dynamically from CT pipeline or manual ingest."""
     ts = payload.get("timestamp", time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()))
@@ -678,7 +691,7 @@ def record_ingestion_event(payload: Dict[str, Any]) -> Dict[str, Any]:
         "raw_dataset": payload.get("raw_dataset", "data/raw/latest.csv"),
         "md5": payload.get("md5", ""),
         "bucket": payload.get("bucket", "s3://mlops-dvc"),
-        "status": payload.get("status", "HEALTHY_INGESTED"),
+        "status": payload.get("status", "REPORTED"),
     }
     ingestion_store["last_ingestion"] = item
     batch_name = f"ING-{time.strftime('%Y%m%d-%H%M%S', time.gmtime())}"
@@ -687,234 +700,131 @@ def record_ingestion_event(payload: Dict[str, Any]) -> Dict[str, Any]:
         {
             "batch": batch_name,
             "time_utc": ts,
-            "source": payload.get("source", "Prometheus (Automated Scrape)"),
+            "source": payload.get("source", "API report"),
             "records": item["records_count"],
             "window": f"{item['window_minutes']} min",
             "output": Path(item["target_dataset"]).name,
-            "status": "HEALTHY (DVC Synced)",
+            "status": item["status"],
         },
     )
     return {"status": "ok", "recorded_batch": batch_name}
 
 
-retraining_history: List[Dict[str, Any]] = [
-    {
-        "version": "30",
-        "timestamp": _init_ts_str,
-        "time_utc": _init_now.strftime("%Y-%m-%d %H:%M:%S"),
-        "algorithm": "LightGBM Regressor (Optuna)",
-        "val_mae": "5.6538 RPS",
-        "stage": "Production (@champion)",
-        "trigger": "Continuous Training Pipeline (K8s CronJob)",
-    },
-    {
-        "version": "29",
-        "timestamp": _init_ts_str,
-        "time_utc": _init_now.strftime("%Y-%m-%d %H:%M:%S"),
-        "algorithm": "LightGBM Regressor (Optuna)",
-        "val_mae": "5.6865 RPS",
-        "stage": "Staging (@challenger)",
-        "trigger": "Continuous Training Pipeline (K8s CronJob)",
-    },
-]
-
+retraining_history: List[Dict[str, Any]] = []
+registry_snapshot: Dict[str, Any] = {}
 _last_live_sync_time = 0.0
 
 
 def _sync_live_ingestion_and_mlflow(force: bool = False):
-    """Dynamically syncs ingestion_store from MinIO S3 and retraining_history from MLflow."""
+    """Refresh metadata off the request path; never relabel the loaded model."""
     global _last_live_sync_time
-    now = time.time()
-    if not force and (now - _last_live_sync_time) < 10.0:
+    if not force and time.time() - _last_live_sync_time < 15:
         return
-    _last_live_sync_time = now
-
-    # 1. Sync Ingestion from MinIO S3 or local processed files
+    _last_live_sync_time = time.time()
     try:
-        from minio import Minio
+        from src.data.minio_sync import get_minio_client
 
-        minio_endpoint = (
-            os.getenv("MINIO_ENDPOINT", "storage.titipin.me")
-            .replace("https://", "")
-            .replace("http://", "")
-            .split("/")[0]
-        )
-        minio_user = os.getenv("MINIO_ROOT_USER", os.getenv("MINIO_ACCESS_KEY", "titipin_minio"))
-        minio_password = os.getenv(
-            "MINIO_ROOT_PASSWORD", os.getenv("MINIO_SECRET_KEY", "rahasiawoy")
-        )
-        minio_secure = os.getenv("MINIO_SECURE", "true").lower() in ("true", "1")
-        bucket_name = os.getenv("MINIO_BUCKET", "mlops-dvc")
-
-        m_client = Minio(
-            minio_endpoint, access_key=minio_user, secret_key=minio_password, secure=minio_secure
-        )
-        objs = list(m_client.list_objects(bucket_name, prefix="processed/"))
-        proc_objs = [
+        client, bucket = get_minio_client()
+        objects = [
             o
-            for o in objs
-            if "metrics_processed_" in o.object_name and not o.object_name.endswith("latest.csv")
+            for o in client.list_objects(bucket, prefix="processed/")
+            if o.object_name.endswith(".csv") and not o.object_name.endswith("latest.csv")
         ]
-        proc_objs.sort(key=lambda x: x.last_modified, reverse=True)
-
-        if proc_objs:
-            wib = timezone(timedelta(hours=7))
-            dyn_history = []
-            for o in proc_objs[:20]:
-                ts_utc = o.last_modified.astimezone(timezone.utc)
-                ts_wib = o.last_modified.astimezone(wib)
-                ts_str = f"{ts_utc.strftime('%Y-%m-%d %H:%M:%S UTC')} ({ts_wib.strftime('%H:%M:%S WIB')})"
-                fname = os.path.basename(o.object_name)
-                dyn_history.append(
-                    {
-                        "batch": f"ING-{ts_utc.strftime('%Y%m%d-%H%M%S')}",
-                        "time_utc": ts_utc.strftime("%Y-%m-%d %H:%M:%S"),
-                        "timestamp": ts_str,
-                        "source": "Prometheus (Automated CT Ingestion)",
-                        "records": 5760,
-                        "window": "1440 min",
-                        "output": fname,
-                        "size": o.size,
-                        "status": "HEALTHY (DVC Synced)",
-                    }
-                )
-
-            top = dyn_history[0]
-            raw_target = top["output"].replace("metrics_processed_", "metrics_")
-            ingestion_store["last_ingestion"] = {
-                "timestamp": top["timestamp"],
-                "window_minutes": 1440,
-                "records_count": 5760,
-                "target_dataset": f"data/processed/{top['output']}",
-                "raw_dataset": f"data/raw/{raw_target}",
-                "md5": getattr(proc_objs[0], "etag", "").strip('"') or "live_cas_synced",
-                "bucket": f"s3://{bucket_name}",
-                "status": "HEALTHY_INGESTED (Live MinIO S3 Synced)",
-            }
-            ingestion_store["history"] = dyn_history
-            logger.info(
-                f"[LIVE-SYNC] Synced latest ingestion from MinIO: {top['output']} ({top['timestamp']})"
-            )
-    except Exception as e_minio:
-        logger.debug(f"[LIVE-SYNC] MinIO sync exception: {e_minio}")
-        try:
-            base_dir = Path(__file__).resolve().parent.parent.parent
-            proc_files = sorted(
-                list((base_dir / "data" / "processed").glob("metrics_processed_*.csv")),
-                key=lambda p: p.stat().st_mtime,
-                reverse=True,
-            )
-            if proc_files:
-                top_f = proc_files[0]
-                mtime = top_f.stat().st_mtime
-                wib = timezone(timedelta(hours=7))
-                dt_utc = datetime.fromtimestamp(mtime, tz=timezone.utc)
-                dt_wib = dt_utc.astimezone(wib)
-                ts_str = f"{dt_utc.strftime('%Y-%m-%d %H:%M:%S UTC')} ({dt_wib.strftime('%H:%M:%S WIB')})"
-                fname = top_f.name
-                raw_name = fname.replace("metrics_processed_", "metrics_")
-                ingestion_store["last_ingestion"] = {
-                    "timestamp": ts_str,
-                    "window_minutes": 1440,
-                    "records_count": 5760,
-                    "target_dataset": f"data/processed/{fname}",
-                    "raw_dataset": f"data/raw/{raw_name}",
-                    "md5": "live_local_synced",
-                    "bucket": "s3://mlops-dvc",
-                    "status": "HEALTHY_INGESTED (Local Disk Synced)",
+        objects.sort(key=lambda o: o.last_modified, reverse=True)
+        history = []
+        for obj in objects[:20]:
+            stat = client.stat_object(bucket, obj.object_name)
+            meta = stat.metadata or {}
+            md5 = meta.get("x-amz-meta-md5", obj.etag)
+            cas_key = f"files/md5/{md5[:2]}/{md5[2:]}"
+            try:
+                client.stat_object(bucket, cas_key)
+                synced = True
+            except Exception:
+                synced = False
+            history.append(
+                {
+                    "batch": obj.object_name,
+                    "time_utc": obj.last_modified.isoformat(),
+                    "output": obj.object_name,
+                    "raw_dataset": meta.get("x-amz-meta-raw-dataset"),
+                    "records": int(meta["x-amz-meta-records"])
+                    if meta.get("x-amz-meta-records")
+                    else None,
+                    "md5": md5,
+                    "bucket": f"s3://{bucket}",
+                    "cas_key": cas_key,
+                    "status": "DVC CAS synced" if synced else "Object available",
+                    "size": obj.size,
                 }
-        except Exception:
-            pass
-
-    # 2. Sync Retraining from MLflow Model Registry
+            )
+        if history:
+            latest = {
+                **history[0],
+                "records_count": history[0]["records"],
+                "timestamp": history[0]["time_utc"],
+            }
+            ingestion_store.update(history=history, last_ingestion=latest)
+    except Exception:
+        logger.warning("Dataset metadata refresh unavailable; retaining last snapshot.")
     try:
         from mlflow.tracking import MlflowClient
 
-        ml_client = MlflowClient(DEFAULT_TRACKING_URI)
-        mvs = ml_client.search_model_versions(f"name='{MODEL_NAME}'")
-        mvs.sort(key=lambda x: int(x.version), reverse=True)
-
-        if mvs:
-            wib = timezone(timedelta(hours=7))
-            dyn_retrain = []
-            prod_ver = None
-            prod_algo = None
-            for mv in mvs[:15]:
-                try:
-                    run = ml_client.get_run(mv.run_id)
-                    params = run.data.params
-                    metrics = run.data.metrics
-                    st = run.info.start_time / 1000.0
-                    dt_utc = datetime.fromtimestamp(st, tz=timezone.utc)
-                    dt_wib = dt_utc.astimezone(wib)
-                    ts_str = f"{dt_utc.strftime('%Y-%m-%d %H:%M:%S UTC')} ({dt_wib.strftime('%H:%M:%S WIB')})"
-                    algo = params.get(
-                        "model_type", params.get("algorithm", "LightGBM Regressor (Optuna)")
-                    )
-                    if "lightgbm" in algo.lower():
-                        algo = "LightGBM Regressor (Optuna)"
-                    elif "random" in algo.lower():
-                        algo = "Random Forest Regressor"
-                    elif "ridge" in algo.lower():
-                        algo = "Ridge Linear Regressor"
-
-                    stage_str = (
-                        "Production (@champion)"
-                        if mv.current_stage == "Production"
-                        else (
-                            "Staging (@challenger)" if mv.current_stage == "Staging" else "Archived"
-                        )
-                    )
-                    if mv.current_stage == "Production" and not prod_ver:
-                        prod_ver = str(mv.version)
-                        prod_algo = algo
-
-                    val_mae = metrics.get("val_mae", metrics.get("mae", 0.088))
-                    dyn_retrain.append(
-                        {
-                            "version": str(mv.version),
-                            "timestamp": ts_str,
-                            "time_utc": dt_utc.strftime("%Y-%m-%d %H:%M:%S"),
-                            "algorithm": algo,
-                            "val_mae": f"{float(val_mae):.4f} RPS",
-                            "stage": stage_str,
-                            "trigger": "Continuous Training Pipeline (K8s CronJob)",
-                        }
-                    )
-                except Exception:
-                    continue
-
-            if dyn_retrain:
-                retraining_history.clear()
-                retraining_history.extend(dyn_retrain)
-                if prod_ver:
-                    model_store["version"] = f"v{prod_ver}"
-                    if prod_algo:
-                        model_store["model_algorithm"] = prod_algo
-                    autonomous_drift_coordinator["champion_version"] = f"v{prod_ver}"
-                logger.info(
-                    f"[LIVE-SYNC] Synced MLflow retraining history: {len(dyn_retrain)} versions. Active Champion: v{prod_ver}"
-                )
-    except Exception as e_mlflow:
-        logger.debug(f"[LIVE-SYNC] MLflow sync exception: {e_mlflow}")
-
-
-# Perform immediate sync at module load
-try:
-    _sync_live_ingestion_and_mlflow(force=True)
-except Exception:
-    pass
+        client = MlflowClient(DEFAULT_TRACKING_URI)
+        aliases = {}
+        for alias in ("champion", "challenger"):
+            try:
+                aliases[alias] = str(client.get_model_version_by_alias(MODEL_NAME, alias).version)
+            except Exception:
+                aliases[alias] = None
+        versions = sorted(
+            client.search_model_versions(f"name='{MODEL_NAME}'"),
+            key=lambda v: int(v.version),
+            reverse=True,
+        )
+        history = []
+        for version in versions[:15]:
+            run = client.get_run(version.run_id)
+            mae = run.data.metrics.get("val_mae")
+            history.append(
+                {
+                    "version": str(version.version),
+                    "run_id": version.run_id,
+                    "timestamp": datetime.fromtimestamp(
+                        run.info.start_time / 1000, timezone.utc
+                    ).isoformat(),
+                    "algorithm": run.data.params.get("model_type", "Unknown"),
+                    "val_mae": f"{mae:.4f} RPS" if mae is not None else None,
+                    "metrics": run.data.metrics,
+                    "tags": dict(version.tags),
+                    "stage": "Production (@champion)"
+                    if str(version.version) == aliases["champion"]
+                    else "Staging (@challenger)"
+                    if str(version.version) == aliases["challenger"]
+                    else "Archived",
+                }
+            )
+        retraining_history[:] = history
+        registry_snapshot.update(aliases=aliases, updated_at=datetime.now(timezone.utc).isoformat())
+    except Exception:
+        logger.warning("Registry metadata refresh unavailable; retaining last snapshot.")
 
 
 @app.get("/operations/audit")
 def get_operations_audit() -> Dict[str, Any]:
     """Consolidated endpoint providing operational audit history across MLOps lifecycle."""
-    _sync_live_ingestion_and_mlflow()
-    latest_retrain = retraining_history[0] if retraining_history else {}
-    challenger_retrain = retraining_history[1] if len(retraining_history) > 1 else latest_retrain
+    aliases = registry_snapshot.get("aliases", {})
+    latest_retrain = next(
+        (v for v in retraining_history if v["version"] == aliases.get("champion")), {}
+    )
+    challenger_retrain = next(
+        (v for v in retraining_history if v["version"] == aliases.get("challenger")), {}
+    )
     return {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "last_ingestion": ingestion_store["last_ingestion"],
+        "provenance": "live-services",
+        "registry_updated_at": registry_snapshot.get("updated_at"),
+        "last_ingestion": deepcopy(ingestion_store["last_ingestion"]),
         "ingestion_history": ingestion_store["history"],
         "retraining": {
             "latest": latest_retrain,
@@ -935,536 +845,650 @@ def get_operations_audit() -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Autonomous Event-Driven Drift & Retraining Orchestrator
 # ---------------------------------------------------------------------------
+WORKLOAD_STATES = {
+    "IDLE_SILENT",
+    "STEADY_NORMAL",
+    "BURST_BUSY",
+    "FLASH_ANOMALY",
+    "DRIFT_ANOMALY",
+    "COOLING_DOWN",
+}
+workload_coordinator: Dict[str, Any] = {
+    "override_state": None,
+    "override_id": 0,
+    "updated_at": None,
+    "daemon_heartbeat": None,
+    "daemon_current_state": None,
+    "daemon_vus": None,
+    "daemon_remaining_s": None,
+}
+scenario_lock = threading.RLock()
+scenario_cancel = threading.Event()
+scenario_shutdown = threading.Event()
 autonomous_drift_coordinator: Dict[str, Any] = {
     "active": False,
     "stage": "IDLE",
     "stage_index": 0,
     "stage_title": "Standby",
-    "stage_detail": "Normal baseline operations.",
-    "started_at": None,
     "progress_pct": 0,
     "job_name": None,
-    "champion_version": "v30",
-    "previous_version": "v29",
-    "metrics": None,
-    "next_stage_countdown": 0,
+    "started_at": None,
+    "finished_at": None,
     "timeline": [],
+    "champion_version": None,
+    "previous_version": None,
 }
 
 
-def _add_timeline_event(stage_code: str, icon: str, title: str, desc: str, status: str = "ACTIVE"):
-    """Appends an event to the lifetime monitor timeline stream."""
-    ts_str = time.strftime("%H:%M:%S WIB", time.localtime())
-    # Mark previous active events as COMPLETED
-    for ev in autonomous_drift_coordinator["timeline"]:
-        if ev.get("status") == "ACTIVE":
-            ev["status"] = "COMPLETED"
-    autonomous_drift_coordinator["timeline"].insert(
-        0,
-        {
-            "timestamp": ts_str,
-            "stage": stage_code,
-            "icon": icon,
-            "title": title,
-            "detail": desc,
-            "status": status,
-        },
-    )
-    # Keep up to 20 historical lifecycle events
-    autonomous_drift_coordinator["timeline"] = autonomous_drift_coordinator["timeline"][:20]
-
-
-# ---------------------------------------------------------------------------
-# Workload Generator Coordination Endpoints (for VM cp-bcc & Dashboard)
-# ---------------------------------------------------------------------------
-workload_coordinator: Dict[str, Any] = {
-    "override_state": None,
-    "override_id": int(time.time() * 1000),
-    "updated_at": None,
-    "daemon_heartbeat": None,
-    "daemon_current_state": "STEADY_NORMAL",
-    "daemon_vus": 6,
-    "daemon_alive": False,
-    "daemon_remaining_s": 0,
-}
-
-
-@app.post("/workload/heartbeat")
-def record_workload_heartbeat(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Called by VM cp-bcc traffic daemon to report its live running status."""
-    now = time.time()
-    workload_coordinator["daemon_heartbeat"] = now
-    curr_state = payload.get("current_state", "STEADY_NORMAL")
-    workload_coordinator["daemon_current_state"] = curr_state
-    workload_coordinator["daemon_vus"] = int(payload.get("vus", 0))
-    workload_coordinator["daemon_remaining_s"] = int(payload.get("remaining_seconds", 0))
-    workload_coordinator["daemon_alive"] = True
-
-    # Auto-clear override_state when daemon reaches it or after 35s timeout
-    ov_state = workload_coordinator.get("override_state")
-    ov_id = workload_coordinator.get("override_id", 0)
-    if ov_state and (curr_state == ov_state or (now - (ov_id / 1000.0) > 35.0)):
-        workload_coordinator["override_state"] = None
-
-    return {"status": "ok", "ack_time": now}
-
-
-@app.post("/workload/trigger")
-def trigger_workload_state(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Triggered from Streamlit Dashboard or CLI to set traffic state on VM cp-bcc."""
-    state = payload.get("state", "FLASH_ANOMALY").upper()
-    workload_coordinator["override_id"] = int(time.time() * 1000)
-    workload_coordinator["override_state"] = state
-    workload_coordinator["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-
-    # If DRIFT_ANOMALY is triggered, seed authentic drift decisions showing model under-prediction
-    if state in ("DRIFT", "DRIFT_ANOMALY", "DRIFT_EXPERIMENT"):
-        now_t = time.time()
-        for i, offset_s in enumerate([75, 60, 45, 30, 15, 0]):
-            t_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now_t - offset_s))
-            scaling_decisions_ring.appendleft(
-                {
-                    "timestamp": t_str,
-                    "input_rps": 44.5 + round((i % 3) * 2.1, 1),
-                    "input_cpu": 1.45 + round((i % 2) * 0.15, 2),
-                    "input_p95_ms": 285.0 + round((i % 4) * 15.0, 1),
-                    "current_replicas": 2,
-                    "predicted_rps_60s": 17.8,  # Under-predicts baseline model: anticipates only 17.8 RPS!
-                    "desired_replicas": 2,  # Inadequate replicas allocated!
-                    "action": "UNDER_PROVISIONED_ERROR (Drift: Model under-predicted 17.8 vs 44.5+ RPS)",
-                    "latency_ms": 11.4,
-                }
-            )
-        autonomous_drift_coordinator["started_at"] = time.time()
-        threading.Thread(target=_run_autonomous_drift_sequence, daemon=True).start()
-    elif state in ("STEADY_NORMAL", "IDLE_SILENT"):
-        autonomous_drift_coordinator["active"] = False
-        autonomous_drift_coordinator["stage"] = "IDLE"
-        autonomous_drift_coordinator["stage_index"] = 0
-        autonomous_drift_coordinator["progress_pct"] = 0
-        autonomous_drift_coordinator["stage_title"] = "Standby"
-        autonomous_drift_coordinator["stage_detail"] = "Normal baseline operations."
-        _add_timeline_event(
-            "RESET_BASELINE",
-            "🔄",
-            "Workload Reset to Baseline Normal (6 VUs)",
-            "VM cp-bcc traffic generator switched back to STEADY_NORMAL (6 VUs, ~8 RPS). Baseline operations restored.",
-            "COMPLETED",
+def kubernetes_request(path: str, method: str = "GET", body=None):
+    token = Path("/var/run/secrets/kubernetes.io/serviceaccount/token")
+    if token.exists():
+        req = urllib.request.Request(
+            "https://kubernetes.default.svc" + path,
+            data=json.dumps(body).encode() if body is not None else None,
+            headers={
+                "Authorization": f"Bearer {token.read_text().strip()}",
+                "Content-Type": "application/json",
+            },
+            method=method,
         )
-
-    return {
-        "status": "ok",
-        "override_state": state,
-        "override_id": workload_coordinator["override_id"],
-        "timestamp": workload_coordinator["updated_at"],
-        "autonomous_active": autonomous_drift_coordinator["active"],
-    }
+        ctx = ssl.create_default_context(
+            cafile="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        )
+        with urllib.request.urlopen(req, context=ctx, timeout=5) as response:
+            return json.load(response)
+    command = [
+        "kubectl",
+        {"GET": "get", "POST": "create", "DELETE": "delete"}[method],
+        "--raw",
+        path,
+    ]
+    if body is not None:
+        command += ["-f", "-"]
+    result = subprocess.run(
+        command,
+        input=json.dumps(body) if body is not None else None,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=10,
+    )
+    return json.loads(result.stdout)
 
 
 def _trigger_k8s_retraining_job() -> Optional[str]:
-    """Spawns a real Kubernetes continuous training job from CronJob in namespace mlops."""
-    job_name = f"drift-retrain-{int(time.time())}"
-    token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-    ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-
-    # If running outside k8s pod (e.g. local dev), fallback to subprocess kubectl
-    if not os.path.exists(token_file):
-        try:
-            subprocess.Popen(
-                [
-                    "kubectl",
-                    "create",
-                    "job",
-                    job_name,
-                    "--from=cronjob/mlops-continuous-training",
-                    "-n",
-                    "mlops",
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            return job_name
-        except Exception:
-            return None
-
-    # Inside Kubernetes pod: use the in-cluster API with the mounted ServiceAccount
+    """Create a job from the deployed training template and return its actual name."""
     try:
-        with open(token_file, "r") as f:
-            token = f.read().strip()
-
-        ctx = ssl.create_default_context(cafile=ca_file)
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
-
-        # 1. Fetch CronJob spec
-        cj_req = urllib.request.Request(
-            "https://kubernetes.default.svc/apis/batch/v1/namespaces/mlops/cronjobs/mlops-continuous-training",
-            headers=headers,
+        cron = kubernetes_request(
+            "/apis/batch/v1/namespaces/mlops/cronjobs/mlops-continuous-training"
         )
-        with urllib.request.urlopen(cj_req, context=ctx, timeout=5) as resp:
-            cj_data = json.loads(resp.read().decode())
-
-        job_spec = cj_data.get("spec", {}).get("jobTemplate", {}).get("spec", {})
-        job_body = {
-            "apiVersion": "batch/v1",
-            "kind": "Job",
-            "metadata": {
-                "name": job_name,
-                "namespace": "mlops",
-                "labels": {
-                    "app.kubernetes.io/managed-by": "mlops-closed-loop-trigger",
-                    "scenario": "drift_retraining",
+        spec = deepcopy(cron["spec"]["jobTemplate"]["spec"])
+        spec["activeDeadlineSeconds"] = 900
+        operation_id = autonomous_drift_coordinator.get("operation_id") or uuid4().hex
+        name = f"drift-retrain-{operation_id[:12]}"
+        created = kubernetes_request(
+            "/apis/batch/v1/namespaces/mlops/jobs",
+            "POST",
+            {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "metadata": {
+                    "name": name,
+                    "namespace": "mlops",
+                    "labels": {
+                        "app.kubernetes.io/managed-by": "mlops-closed-loop-trigger",
+                        "titipin.me/operation-id": operation_id,
+                    },
                 },
+                "spec": spec,
             },
-            "spec": job_spec,
-        }
-
-        post_req = urllib.request.Request(
-            "https://kubernetes.default.svc/apis/batch/v1/namespaces/mlops/jobs",
-            data=json.dumps(job_body).encode("utf-8"),
-            headers=headers,
-            method="POST",
         )
-        with urllib.request.urlopen(post_req, context=ctx, timeout=5) as post_resp:
-            if post_resp.status in (200, 201):
-                logger.info(f"Successfully spawned Kubernetes retraining Job: {job_name}")
-                return job_name
-    except Exception as exc:
-        logger.warning(f"Could not spawn in-cluster K8s job: {exc}")
-    return None
+        return created["metadata"]["name"]
+    except Exception:
+        logger.exception("Training job dispatch failed")
+        return None
 
 
 def _check_k8s_job_status(job_name: str) -> Dict[str, Any]:
-    """Queries live status of a Kubernetes batch Job in namespace mlops."""
-    token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-    ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-    if not os.path.exists(token_file):
-        return {"status": "UNKNOWN"}
-    try:
-        with open(token_file, "r") as f:
-            token = f.read().strip()
-        ctx = ssl.create_default_context(cafile=ca_file)
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
-        url = f"https://kubernetes.default.svc/apis/batch/v1/namespaces/mlops/jobs/{job_name}"
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, context=ctx, timeout=4) as resp:
-            data = json.loads(resp.read().decode())
-            status = data.get("status", {})
-            succeeded = status.get("succeeded", 0)
-            active = status.get("active", 0)
-            failed = status.get("failed", 0)
-            return {
-                "succeeded": bool(succeeded > 0),
-                "active": bool(active > 0),
-                "failed": bool(failed > 0),
-                "start_time": status.get("startTime"),
-                "completion_time": status.get("completionTime"),
-            }
-    except Exception as exc:
-        logger.debug(f"Error checking K8s job {job_name}: {exc}")
-        return {"status": "ERROR", "error": str(exc)}
-
-
-@app.post("/monitoring/retrain/trigger")
-def trigger_event_driven_retraining(payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """Autonomous or manual event-driven retraining trigger post drift detection."""
-    curr_v = model_store.get("version", "v30").lstrip("v")
-    try:
-        next_v = f"v{int(curr_v) + 1}"
-    except Exception:
-        next_v = "v31"
-
-    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    payload_data = payload or {}
-    psi_val = float(payload_data.get("psi_score", 0.3842))
-
-    retrain_item = {
-        "version": next_v.lstrip("v"),
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-        "batch": f"RETRAIN-{time.strftime('%Y%m%d')}-{int(time.time()) % 1000:03d}",
-        "retrained_at": now_iso,
-        "trigger": "EVENT_DRIVEN_DRIFT_TRIGGER",
-        "reason": f"Population Stability Index (PSI) drift alert: {psi_val:.4f} > 0.2000 threshold",
-        "dataset": "s3://mlops-dvc/data/processed/metrics_flashsale_drifted.csv",
-        "dataset_rows": 5760,
-        "model_version": next_v,
-        "challenger_model": f"{next_v}-LightGBM-Optuna",
-        "champion_model": model_store.get("version", "v30"),
-        "algorithm": "LightGBM Regressor (Optuna)",
-        "val_mae": "0.0880 RPS",
-        "stage": "Production (@champion)",
-        "metrics": {
-            "challenger_mae": 0.088,
-            "champion_mae": 0.312,
-            "challenger_r2": 0.985,
-            "champion_r2": 0.912,
-            "error_reduction_pct": 71.8,
-        },
-        "decision": "PROMOTE_CHALLENGER_TO_CHAMPION",
-        "status": "COMPLETED",
-    }
-    retraining_history.insert(0, retrain_item)
-    model_store["version"] = next_v
-    model_store["model_uri"] = f"models:/{MODEL_NAME}@{MODEL_ALIAS}"
-    model_store["loaded_at"] = now_iso
-
-    # Sync ingestion_store so Telemetry / Ingestion tab displays the event-driven batch live
-    ingestion_store["last_ingestion"] = {
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-        "window_minutes": 60,
-        "records_count": 5760,
-        "target_dataset": "data/processed/metrics_flashsale_drifted.csv",
-        "raw_dataset": "data/raw/metrics_drift_event.csv",
-        "md5": "d41d8cd98f00b204e9800998ecf8427e",
-        "bucket": "s3://mlops-dvc",
-        "status": "HEALTHY_INGESTED (Event-Driven Drift Sync)",
-    }
-    ingestion_store["history"].insert(
-        0,
-        {
-            "batch": f"ING-{time.strftime('%Y%m%d-%H%M%S', time.gmtime())}",
-            "time_utc": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
-            "source": "Prometheus (Drift Anomaly Ingestion)",
-            "records": 5760,
-            "window": "60 min",
-            "output": "metrics_flashsale_drifted.csv",
-            "status": "HEALTHY (DVC Synced)",
-        },
-    )
-
-    # Stabilize telemetry ring buffer to show retrained model adapting to the drifted pattern
-    now_t = time.time()
-    for offset_s in [10, 5, 0]:
-        t_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now_t - offset_s))
-        scaling_decisions_ring.appendleft(
-            {
-                "timestamp": t_str,
-                "input_rps": 44.5,
-                "input_cpu": 1.45,
-                "input_p95_ms": 32.5,  # SLO restored to < 35ms!
-                "current_replicas": 5,
-                "predicted_rps_60s": 45.2,  # Accurately predicted!
-                "desired_replicas": 5,
-                "action": "SCALE_UP (Proactively allocated 5 pods for heavy workload)",
-                "latency_ms": 9.8,
-            }
-        )
-
-    # Return daemon state to STEADY_NORMAL
-    workload_coordinator["override_state"] = "STEADY_NORMAL"
-    workload_coordinator["override_id"] = int(time.time() * 1000)
-
-    # Asynchronously trigger real K8s Job
-    job_name = _trigger_k8s_retraining_job()
-
+    data = kubernetes_request(f"/apis/batch/v1/namespaces/mlops/jobs/{job_name}")
+    status = data.get("status", {})
+    conditions = {c["type"] for c in status.get("conditions", []) if c.get("status") == "True"}
     return {
-        "status": "SUCCESS",
-        "stage": "MODEL_PROMOTED_AND_HOT_RELOADED",
-        "champion_version": next_v,
-        "previous_version": retrain_item["champion_model"],
-        "dataset": retrain_item["dataset"],
-        "metrics": retrain_item["metrics"],
-        "k8s_job": job_name,
-        "message": f"Closed-loop event-driven retraining complete. Challenger {next_v} promoted to @champion and hot reloaded.",
+        "succeeded": "Complete" in conditions,
+        "failed": "Failed" in conditions,
+        "active": bool(status.get("active")),
+        "completion_time": status.get("completionTime"),
     }
 
 
-def _run_autonomous_drift_sequence():
-    """Executes the full automated event-driven MLOps lifecycle over ~20 seconds."""
-    logger.info("[AUTONOMOUS-DRIFT] Starting Phase 1: Model Under-Prediction Observation...")
-    autonomous_drift_coordinator["active"] = True
-    autonomous_drift_coordinator["stage"] = "STAGE_1_ANOMALY"
-    autonomous_drift_coordinator["stage_index"] = 1
-    autonomous_drift_coordinator["progress_pct"] = 20
-    autonomous_drift_coordinator["stage_title"] = (
-        "Stage 1: Production Workload Anomaly & Model Under-Prediction"
-    )
-    autonomous_drift_coordinator["stage_detail"] = (
-        "Traffic surged to 44.5 RPS. Champion model under-predicted at 17.8 RPS (2 pods allocated, SLO breached)."
-    )
-    autonomous_drift_coordinator["next_stage_countdown"] = 6
+def _job_result(job_name: str) -> Dict[str, Any]:
+    pods = kubernetes_request(f"/api/v1/namespaces/mlops/pods?labelSelector=job-name%3D{job_name}")
+    for pod in pods["items"]:
+        for container in pod["status"].get("containerStatuses", []):
+            terminated = container.get("state", {}).get("terminated", {})
+            if terminated.get("exitCode") == 0 and terminated.get("message"):
+                return json.loads(terminated["message"])
+    return {}
 
-    _add_timeline_event(
-        "WORKLOAD_DRIFT",
-        "⚡",
-        "Data Drift Telemetry Injected on VM cp-bcc",
-        "k6 load generator on remote VM cp-bcc shifted to 49 Virtual Users (~45 RPS). High-volume anomalous requests hitting api.titipin.me.",
-        "COMPLETED",
-    )
-    _add_timeline_event(
-        "MODEL_DEGRADATION",
-        "⚠️",
-        "Model Under-Prediction & Latency SLO Breach",
-        "Live workload 44.5 RPS vs Champion forecast 17.8 RPS (-60% error). Klaster under-provisioned (hanya 2 pod), P95 latensi melonjak ke 285ms (> 100ms SLO).",
-        "ACTIVE",
-    )
 
-    # Wait 6 seconds for user/Grafana to observe degradation
-    for c in range(6, 0, -1):
-        if not autonomous_drift_coordinator["active"]:
-            return
-        autonomous_drift_coordinator["next_stage_countdown"] = c
-        time.sleep(1)
-
-    logger.info("[AUTONOMOUS-DRIFT] Advancing to Phase 2: Statistical Drift Alert...")
-    autonomous_drift_coordinator["stage"] = "STAGE_2_DRIFT_ALERT"
-    autonomous_drift_coordinator["stage_index"] = 2
-    autonomous_drift_coordinator["progress_pct"] = 40
-    autonomous_drift_coordinator["stage_title"] = "Stage 2: Statistical Drift Detected (PSI > 0.20)"
-    autonomous_drift_coordinator["stage_detail"] = (
-        "Population Stability Index computed at 0.3842 > 0.2000. Autonomous event dispatcher firing in 3s..."
-    )
-    autonomous_drift_coordinator["next_stage_countdown"] = 3
-
-    _add_timeline_event(
-        "STATISTICAL_ALERT",
-        "🚨",
-        "Population Stability Index (PSI) Drift Alert Fired",
-        "Statistical drift monitor flagged PSI = 0.3842 (Ambang batas: 0.2000). Fitur terdrift: request_rate (0.3812), php_cpu_cores (0.4215), p95_latency (0.3640).",
-        "ACTIVE",
-    )
-
-    for c in range(3, 0, -1):
-        if not autonomous_drift_coordinator["active"]:
-            return
-        autonomous_drift_coordinator["next_stage_countdown"] = c
-        time.sleep(1)
-
-    logger.info("[AUTONOMOUS-DRIFT] Advancing to Phase 3: Spawning Kubernetes Retraining Job...")
-    autonomous_drift_coordinator["stage"] = "STAGE_3_RETRAINING"
-    autonomous_drift_coordinator["stage_index"] = 3
-    autonomous_drift_coordinator["progress_pct"] = 70
-    autonomous_drift_coordinator["stage_title"] = "Stage 3: Event-Driven Retraining Job Launched"
-    autonomous_drift_coordinator["stage_detail"] = (
-        "Autonomous event triggered! Ingesting telemetry & spawning real Kubernetes Job in namespace 'mlops'..."
-    )
-
-    _add_timeline_event(
-        "INGESTION_SYNC",
-        "📥",
-        "Event-Driven Telemetry Ingestion & MinIO DVC Sync",
-        "Scraping Prometheus time-series window -> Berhasil mengunggah dataset metrics_flashsale_drifted.csv (5,760 baris) ke MinIO S3 bucket 'mlops-dvc'.",
-        "COMPLETED",
-    )
-
-    # Trigger real retraining and K8s job
-    retrain_res = trigger_event_driven_retraining({"psi_score": 0.3842})
-    job_name = retrain_res.get("k8s_job") or "drift-retrain-active"
-    autonomous_drift_coordinator["job_name"] = job_name
-    autonomous_drift_coordinator["champion_version"] = retrain_res.get("champion_version")
-    autonomous_drift_coordinator["previous_version"] = retrain_res.get("previous_version")
-    autonomous_drift_coordinator["metrics"] = retrain_res.get("metrics")
-    autonomous_drift_coordinator["next_stage_countdown"] = 6
-
-    _add_timeline_event(
-        "K8S_RETRAINING",
-        "☸️",
-        f"Kubernetes Retraining Job Spawned (job.batch/{job_name})",
-        "Pod Continuous Training berjalan di klaster K3s (Namespace: mlops). Menjalankan LightGBM Regressor dengan optimasi hyperparameter Optuna.",
-        "ACTIVE",
-    )
-
-    # Actively monitor the real Kubernetes batch Job running in the cluster
-    job_start_time = time.time()
-    max_wait_seconds = 120
-    poll_interval = 2
-
-    while (time.time() - job_start_time) < max_wait_seconds:
-        if not autonomous_drift_coordinator["active"]:
-            return
-
-        elapsed = int(time.time() - job_start_time)
-        job_status = _check_k8s_job_status(job_name) if job_name else {}
-
-        if job_status.get("succeeded"):
-            logger.info(f"[AUTONOMOUS-DRIFT] Real K8s Job {job_name} SUCCEEDED in {elapsed}s!")
-            break
-        elif job_status.get("failed"):
-            logger.warning(f"[AUTONOMOUS-DRIFT] Real K8s Job {job_name} reported FAILED.")
-            break
-
-        # Dynamically scale progress from 70% to 95% based on typical ~55s runtime
-        dynamic_pct = min(95, 70 + int((elapsed / 60.0) * 25))
-        autonomous_drift_coordinator["progress_pct"] = dynamic_pct
-        autonomous_drift_coordinator["stage_detail"] = (
-            f"Kubernetes Job '{job_name}' aktif berjalan di klaster ({elapsed}s)... "
-            "Melakukan scraping telemetri Prometheus, pelatihan LightGBM via Optuna, dan sinkronisasi MinIO DVC."
-        )
-
-        # Fallback if running outside K8s cluster (e.g. local dev mock)
-        if job_status.get("status") == "UNKNOWN" and elapsed >= 10:
-            break
-
-        time.sleep(poll_interval)
-
-    total_job_s = max(int(time.time() - job_start_time), 1)
-    logger.info(
-        f"[AUTONOMOUS-DRIFT] Advancing to Phase 4: Model Promoted & Hot-Reloaded (Job runtime: {total_job_s}s)..."
-    )
-    champ_v = retrain_res.get("champion_version", model_store.get("version", "v30"))
-    autonomous_drift_coordinator["stage"] = "STAGE_4_RECOVERED"
-    autonomous_drift_coordinator["stage_index"] = 4
-    autonomous_drift_coordinator["progress_pct"] = 100
-    autonomous_drift_coordinator["stage_title"] = (
-        "Stage 4: Challenger Promoted & Zero-Downtime Hot Reload"
-    )
-    autonomous_drift_coordinator["stage_detail"] = (
-        f"Kubernetes Job selesai ({total_job_s}s)! Challenger {champ_v} dipromosikan ke @champion. "
-        "Kapasitas pod otomatis diekspansi ke 5 pod (latensi pulih < 35ms)."
-    )
-    autonomous_drift_coordinator["next_stage_countdown"] = 0
-
-    _add_timeline_event(
-        "PROMOTION_HOTRELOAD",
-        "🎉",
-        f"Challenger Model {champ_v} Promoted to @champion ({total_job_s}s)",
-        f"Job batch K8s '{job_name}' selesai dalam {total_job_s} detik. Model lolos quality gate (MAE 0.088 vs Champion 0.312, reduksi error 71.8%). Dipromosikan ke @champion di MLflow registry. Inference service hot-reload otomatis zero-downtime. Kapasitas pod diekspansi ke 5 pod, latensi pulih ke 32.5ms.",
-        "COMPLETED",
+def _queue_workload(state: str):
+    workload_coordinator.update(
+        override_state=state,
+        override_id=max(int(time.time() * 1000), workload_coordinator["override_id"] + 1),
+        updated_at=datetime.now(timezone.utc).isoformat(),
     )
 
 
-@app.get("/monitoring/autonomous-status")
-def get_autonomous_status() -> Dict[str, Any]:
-    """Provides live status of the autonomous event-driven drift and retraining loop."""
-    now = time.time()
-    started = autonomous_drift_coordinator.get("started_at")
-    elapsed = round(now - started, 1) if started else 0
-    return {
-        **autonomous_drift_coordinator,
-        "elapsed_seconds": elapsed,
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
+@app.post("/workload/heartbeat", dependencies=[Depends(authorize_write)])
+def record_workload_heartbeat(payload: Dict[str, Any]) -> Dict[str, Any]:
+    state = payload.get("current_state")
+    try:
+        vus, remaining = int(payload["vus"]), int(payload["remaining_seconds"])
+        if state not in WORKLOAD_STATES or min(vus, remaining) < 0:
+            raise ValueError()
+    except (KeyError, ValueError, TypeError):
+        raise HTTPException(422, "Invalid daemon heartbeat")
+    workload_coordinator.update(
+        daemon_heartbeat=time.time(),
+        daemon_current_state=state,
+        daemon_vus=vus,
+        daemon_remaining_s=remaining,
+    )
+    if workload_coordinator["override_state"] == state:
+        workload_coordinator["override_state"] = None
+    return {"status": "ok"}
 
 
 @app.get("/workload/status")
 def get_workload_status() -> Dict[str, Any]:
-    """Polled by VM cp-bcc traffic daemon to receive state override commands, and by dashboard."""
-    now = time.time()
-    last_hb = workload_coordinator.get("daemon_heartbeat")
-    is_alive = (last_hb is not None) and ((now - last_hb) < 20.0)
-    curr_state = workload_coordinator.get("daemon_current_state", "STEADY_NORMAL")
-    ov_state = workload_coordinator.get("override_state")
-    ov_id = workload_coordinator.get("override_id", 0)
-
-    # Auto-clear override_state when daemon reaches it or after 35s timeout
-    if ov_state and (curr_state == ov_state or (now - (ov_id / 1000.0) > 35.0)):
-        workload_coordinator["override_state"] = None
-        ov_state = None
-
+    heartbeat = workload_coordinator["daemon_heartbeat"]
+    age = time.time() - heartbeat if heartbeat is not None else None
     return {
-        "override_state": ov_state,
-        "override_id": workload_coordinator["override_id"],
-        "updated_at": workload_coordinator["updated_at"],
-        "daemon_alive": is_alive,
-        "daemon_current_state": curr_state,
-        "daemon_vus": workload_coordinator.get("daemon_vus", 0),
-        "daemon_remaining_s": workload_coordinator.get("daemon_remaining_s", 0),
-        "last_heartbeat_seconds_ago": round(now - last_hb, 1) if last_hb else None,
+        **workload_coordinator,
+        "daemon_alive": age is not None and age < 20,
+        "last_heartbeat_seconds_ago": round(age, 1) if age is not None else None,
+        "pending_age_s": max(0, time.time() - workload_coordinator["override_id"] / 1000)
+        if workload_coordinator["override_state"]
+        else None,
     }
+
+
+def _persist_lifecycle() -> None:
+    if operational_store is not None:
+        operational_store.save_lifecycle(autonomous_drift_coordinator)
+
+
+def _finish_lifecycle(stage: str, title: str, **fields) -> None:
+    with scenario_lock:
+        for event in autonomous_drift_coordinator["timeline"]:
+            if event["status"] == "ACTIVE":
+                event["status"] = "CANCELLED" if stage == "STOPPED" else stage
+        autonomous_drift_coordinator.update(
+            active=False,
+            stage=stage,
+            stage_title=title,
+            finished_at=autonomous_drift_coordinator.get("finished_at") or time.time(),
+            **fields,
+        )
+        autonomous_drift_coordinator["timeline"].insert(
+            0,
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "stage": stage,
+                "title": title,
+                "status": "CANCELLED" if stage == "STOPPED" else stage,
+            },
+        )
+        _persist_lifecycle()
+
+
+def recover_lifecycle() -> None:
+    if not autonomous_drift_coordinator.get("active"):
+        return
+    job = autonomous_drift_coordinator.get("job_name")
+    if not job:
+        _finish_lifecycle(
+            "INTERRUPTED",
+            "Service restarted before a training Job was recorded; inspect owned Jobs before retrying",
+        )
+        return
+    global scenario_cancel
+    scenario_cancel = threading.Event()
+    if autonomous_drift_coordinator.get("stage") in ("STOPPING", "STOP_FAILED"):
+        scenario_cancel.set()
+    threading.Thread(
+        target=_run_autonomous_drift_sequence,
+        args=(
+            autonomous_drift_coordinator["operation_id"],
+            scenario_cancel,
+            autonomous_drift_coordinator.get("inject", False),
+            job,
+        ),
+        daemon=True,
+    ).start()
+
+
+def _stage(operation_id, index, code, title, **fields):
+    with scenario_lock:
+        if (
+            scenario_cancel.is_set()
+            or autonomous_drift_coordinator.get("operation_id") != operation_id
+        ):
+            raise InterruptedError("Scenario cancelled")
+        autonomous_drift_coordinator.update(
+            stage=code, stage_title=title, stage_index=index, progress_pct=index * 20, **fields
+        )
+        for event in autonomous_drift_coordinator["timeline"]:
+            if event["status"] == "ACTIVE":
+                event["status"] = "COMPLETED"
+        autonomous_drift_coordinator["timeline"].insert(
+            0,
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "stage": code,
+                "title": title,
+                "status": "ACTIVE" if index < 5 else "COMPLETED",
+            },
+        )
+        if not autonomous_drift_coordinator.get("active", True):
+            autonomous_drift_coordinator["finished_at"] = time.time()
+        _persist_lifecycle()
+
+
+def _run_autonomous_drift_sequence(operation_id, cancel, inject, resume_job=None):
+    job_name = resume_job
+    try:
+        if inject and not resume_job:
+            _stage(operation_id, 1, "WORKLOAD", "Waiting for drift profile heartbeat")
+            deadline = time.monotonic() + 60
+            while workload_coordinator.get("daemon_current_state") != "DRIFT_ANOMALY":
+                if scenario_shutdown.is_set():
+                    return
+                if cancel.wait(1):
+                    raise InterruptedError()
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("Daemon did not acknowledge drift within 60 seconds")
+            _stage(operation_id, 2, "DRIFT", "Evaluating observed telemetry")
+            if cancel.wait(15):
+                raise InterruptedError()
+            drift = evaluate_telemetry_drift()
+            _stage(operation_id, 2, "DRIFT", "Observed drift evaluated", drift=drift)
+        _stage(
+            operation_id,
+            3,
+            "TRAINING",
+            "Reconnecting to owned training job"
+            if resume_job
+            else "Dispatching Kubernetes training job",
+        )
+        if not resume_job:
+            job_name = _trigger_k8s_retraining_job()
+        if not job_name:
+            raise RuntimeError("Kubernetes training job could not be created")
+        _stage(operation_id, 3, "TRAINING", "Kubernetes training job running", job_name=job_name)
+        deadline = time.monotonic() + 960
+        while True:
+            if scenario_shutdown.is_set():
+                return
+            if cancel.is_set():
+                raise InterruptedError()
+            status = _check_k8s_job_status(job_name)
+            if status["failed"]:
+                raise RuntimeError("Kubernetes training job failed; inspect its logs")
+            if status["succeeded"]:
+                break
+            if time.monotonic() >= deadline:
+                raise RuntimeError("Training job exceeded its completion deadline")
+            if cancel.wait(3):
+                raise InterruptedError()
+        pipeline_result = _job_result(job_name)
+        if (
+            pipeline_result.get("pipeline_status") != "COMPLETED"
+            or pipeline_result.get("inference_reloaded") is not True
+        ):
+            raise RuntimeError("Job succeeded but training/reload result was not verified")
+        promotion = pipeline_result.get("registry_promotion", {})
+        _stage(operation_id, 4, "VERIFYING", "Verifying registry champion and serving reload")
+        with scenario_lock:
+            if cancel.is_set():
+                raise InterruptedError()
+            if not load_model_from_registry(strict=True):
+                raise RuntimeError(
+                    "Training completed but registry reload failed; old model retained"
+                )
+            if model_store.get("version") != f"v{promotion.get('champion_version')}":
+                raise RuntimeError("Loaded version does not match the training result champion")
+        _sync_live_ingestion_and_mlflow(force=True)
+        with scenario_lock:
+            champion = next((r for r in retraining_history if "@champion" in r["stage"]), {})
+            _stage(
+                operation_id,
+                5,
+                "COMPLETED",
+                "Training job completed and champion loaded",
+                champion_version=model_store.get("version"),
+                metrics={
+                    **champion.get("metrics", {}),
+                    "candidate_holdout_mae": promotion.get("candidate_mae"),
+                    "champion_holdout_mae": promotion.get("champion_mae"),
+                },
+                quality_gate="PASSED"
+                if promotion.get("status") == "PROMOTED"
+                else "RETAINED_CHAMPION",
+                hot_reload="SUCCESS",
+                active=False,
+            )
+        if inject:
+            _queue_workload("STEADY_NORMAL")
+    except InterruptedError:
+        try:
+            if job_name:
+                kubernetes_request(
+                    f"/apis/batch/v1/namespaces/mlops/jobs/{job_name}",
+                    "DELETE",
+                    {"propagationPolicy": "Foreground"},
+                )
+                deadline = time.monotonic() + 90
+                while True:
+                    try:
+                        kubernetes_request(f"/apis/batch/v1/namespaces/mlops/jobs/{job_name}")
+                    except urllib.error.HTTPError as exc:
+                        if exc.code == 404:
+                            break
+                        raise
+                    if time.monotonic() >= deadline:
+                        raise RuntimeError("Job cancellation was not confirmed within 90 seconds")
+                    time.sleep(1)
+            with scenario_lock:
+                if autonomous_drift_coordinator.get("operation_id") == operation_id:
+                    _finish_lifecycle("STOPPED", "Scenario stopped; training job removed")
+        except Exception as exc:
+            logger.exception("Scenario job cancellation failed")
+            with scenario_lock:
+                autonomous_drift_coordinator.update(
+                    active=True, stage="STOP_FAILED", stage_title=str(exc), error=str(exc)
+                )
+                _persist_lifecycle()
+    except Exception as exc:
+        with scenario_lock:
+            if (
+                autonomous_drift_coordinator.get("operation_id") == operation_id
+                and not cancel.is_set()
+            ):
+                _finish_lifecycle("FAILED", str(exc), error=str(exc))
+        logger.exception("Lifecycle operation failed")
+
+
+def _start_scenario(inject: bool) -> Dict[str, Any]:
+    global scenario_cancel
+    with scenario_lock:
+        if autonomous_drift_coordinator["active"]:
+            raise HTTPException(409, "A training lifecycle is already running")
+        if inject and not get_workload_status()["daemon_alive"]:
+            raise HTTPException(409, "Traffic daemon is offline")
+        scenario_cancel = threading.Event()
+        operation_id = uuid4().hex
+        autonomous_drift_coordinator.clear()
+        autonomous_drift_coordinator.update(
+            active=True,
+            operation_id=operation_id,
+            stage="QUEUED",
+            stage_index=0,
+            stage_title="Lifecycle accepted",
+            progress_pct=0,
+            job_name=None,
+            timeline=[],
+            started_at=time.time(),
+            finished_at=None,
+            inject=inject,
+            previous_version=model_store.get("version"),
+            champion_version=model_store.get("version"),
+        )
+        if inject:
+            _queue_workload("DRIFT_ANOMALY")
+        _persist_lifecycle()
+        threading.Thread(
+            target=_run_autonomous_drift_sequence,
+            args=(operation_id, scenario_cancel, inject),
+            daemon=True,
+        ).start()
+        return {
+            "status": "ACCEPTED",
+            "operation_id": operation_id,
+            "champion_version": model_store.get("version"),
+            "k8s_job": None,
+        }
+
+
+@app.post("/monitoring/retrain/trigger", status_code=202, dependencies=[Depends(authorize_write)])
+def trigger_event_driven_retraining(payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Accept training; completion is reported only after the real job and reload."""
+    return _start_scenario(inject=False)
+
+
+@app.post(
+    "/monitoring/autonomous-scenario/start",
+    status_code=202,
+    dependencies=[Depends(authorize_write)],
+)
+def start_autonomous_scenario() -> Dict[str, Any]:
+    return _start_scenario(inject=True)
+
+
+@app.post("/monitoring/autonomous-scenario/stop", dependencies=[Depends(authorize_write)])
+def stop_autonomous_scenario() -> Dict[str, Any]:
+    with scenario_lock:
+        scenario_cancel.set()
+        active = autonomous_drift_coordinator["active"]
+        if autonomous_drift_coordinator["stage"] == "STOP_FAILED":
+            raise HTTPException(503, "Job cancellation failed; inspect the owned Kubernetes job")
+        autonomous_drift_coordinator.update(
+            stage="STOPPING" if active else "STOPPED",
+            stage_title="Stopping scenario and cancelling its training job"
+            if active
+            else "Scenario stopped",
+        )
+        if not active:
+            _finish_lifecycle("STOPPED", "Scenario stopped")
+        else:
+            _persist_lifecycle()
+        _queue_workload("STEADY_NORMAL")
+        return {
+            "status": "ok",
+            "override_state": "STEADY_NORMAL",
+            "stage": autonomous_drift_coordinator["stage"],
+        }
+
+
+@app.post("/workload/trigger", dependencies=[Depends(authorize_write)])
+def trigger_workload_state(payload: Dict[str, Any]) -> Dict[str, Any]:
+    state = str(payload.get("state", "")).upper()
+    if state not in WORKLOAD_STATES:
+        raise HTTPException(422, "Unknown traffic profile")
+    if state == "DRIFT_ANOMALY":
+        _start_scenario(inject=True)
+    elif state in ("STEADY_NORMAL", "IDLE_SILENT") and autonomous_drift_coordinator["active"]:
+        stop_autonomous_scenario()
+        _queue_workload(state)
+    else:
+        _queue_workload(state)
+    return {
+        "status": "ok",
+        "override_state": state,
+        "override_id": workload_coordinator["override_id"],
+    }
+
+
+@app.get("/monitoring/autonomous-status")
+def get_autonomous_status() -> Dict[str, Any]:
+    with scenario_lock:
+        started = autonomous_drift_coordinator.get("started_at")
+        ended = (
+            time.time()
+            if autonomous_drift_coordinator.get("active")
+            else autonomous_drift_coordinator.get("finished_at")
+        )
+        return {
+            **deepcopy(autonomous_drift_coordinator),
+            "elapsed_seconds": round(max(0, ended - started), 1)
+            if started and ended
+            else None
+            if started
+            else 0,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "next_stage_countdown": None,
+        }
+
+
+cluster_cache = SnapshotCache()
+
+
+@app.get("/cluster/status")
+def cluster_status() -> Dict[str, Any]:
+    return cluster_cache.get(lambda: attach_usage(_read_cluster_inventory()))
+
+
+def _read_cluster_inventory() -> Dict[str, Any]:
+    """Return sanitized node, workload and routing inventory from Kubernetes."""
+    namespaces = ("mlops", "monitoring", "titipin")
+    try:
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            results = list(
+                pool.map(kubernetes_request, ("/api/v1/nodes", "/api/v1/pods", "/api/v1/services"))
+            )
+        nodes, pods, services = (result["items"] for result in results)
+        return {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "scope": list(namespaces),
+            "source": "Kubernetes API inventory",
+            "nodes": [
+                {
+                    "name": n["metadata"]["name"],
+                    "ready": any(
+                        c["type"] == "Ready" and c["status"] == "True"
+                        for c in n["status"].get("conditions", [])
+                    ),
+                    "role": "control-plane"
+                    if "node-role.kubernetes.io/control-plane" in n["metadata"].get("labels", {})
+                    else "worker",
+                    "unschedulable": n.get("spec", {}).get("unschedulable", False),
+                    "capacity": {
+                        k: n["status"].get("capacity", {}).get(k) for k in ("cpu", "memory", "pods")
+                    },
+                    "allocatable": {
+                        k: n["status"].get("allocatable", {}).get(k)
+                        for k in ("cpu", "memory", "pods")
+                    },
+                    "info": {
+                        k: n["status"].get("nodeInfo", {}).get(k)
+                        for k in (
+                            "architecture",
+                            "osImage",
+                            "kernelVersion",
+                            "kubeletVersion",
+                            "containerRuntimeVersion",
+                        )
+                    },
+                    "conditions": [
+                        {k: c.get(k) for k in ("type", "status", "reason", "lastTransitionTime")}
+                        for c in n["status"].get("conditions", [])
+                    ],
+                }
+                for n in nodes
+            ],
+            "pods": [
+                {
+                    "name": p["metadata"]["name"],
+                    "namespace": p["metadata"]["namespace"],
+                    "node": p["spec"].get("nodeName"),
+                    "phase": p["status"].get("phase", "Unknown"),
+                    "ready": sum(
+                        c.get("ready", False) for c in p["status"].get("containerStatuses", [])
+                    ),
+                    "containers": len(p["spec"]["containers"]),
+                    "created_at": p["metadata"].get("creationTimestamp"),
+                    "owner": [
+                        {"kind": o.get("kind"), "name": o.get("name")}
+                        for o in p["metadata"].get("ownerReferences", [])
+                        if o.get("controller")
+                    ],
+                    "labels": {
+                        k: v
+                        for k, v in p["metadata"].get("labels", {}).items()
+                        if k
+                        in (
+                            "app",
+                            "app.kubernetes.io/name",
+                            "app.kubernetes.io/component",
+                            "job-name",
+                        )
+                    },
+                    "restarts": sum(
+                        c.get("restartCount", 0) for c in p["status"].get("containerStatuses", [])
+                    ),
+                    "container_details": [
+                        {
+                            "name": c["name"],
+                            "requests": {
+                                k: c.get("resources", {}).get("requests", {}).get(k)
+                                for k in ("cpu", "memory")
+                            },
+                            "limits": {
+                                k: c.get("resources", {}).get("limits", {}).get(k)
+                                for k in ("cpu", "memory")
+                            },
+                            "ready": next(
+                                (
+                                    x.get("ready", False)
+                                    for x in p["status"].get("containerStatuses", [])
+                                    if x["name"] == c["name"]
+                                ),
+                                False,
+                            ),
+                            "state": next(
+                                (
+                                    {
+                                        state: {
+                                            k: details.get(k)
+                                            for k in (
+                                                "reason",
+                                                "exitCode",
+                                                "startedAt",
+                                                "finishedAt",
+                                            )
+                                        }
+                                        for state, details in x.get("state", {}).items()
+                                    }
+                                    for x in p["status"].get("containerStatuses", [])
+                                    if x["name"] == c["name"]
+                                ),
+                                {},
+                            ),
+                        }
+                        for c in p["spec"]["containers"]
+                    ],
+                }
+                for p in pods
+                if p["metadata"]["namespace"] in namespaces
+            ],
+            "services": [
+                {
+                    "name": service["metadata"]["name"],
+                    "namespace": service["metadata"]["namespace"],
+                    "type": service["spec"].get("type"),
+                    "selector": service["spec"].get("selector", {}),
+                    "ports": [
+                        {
+                            k: port.get(k)
+                            for k in ("name", "port", "targetPort", "nodePort", "protocol")
+                        }
+                        for port in service["spec"].get("ports", [])
+                    ],
+                }
+                for service in services
+                if service["metadata"]["namespace"] in namespaces
+            ],
+        }
+    except Exception:
+        raise HTTPException(503, "Cluster inventory unavailable")

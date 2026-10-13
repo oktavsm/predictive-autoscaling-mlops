@@ -1,0 +1,20 @@
+{
+  "checked_at": "2026-10-13T05:50:08.460Z",
+  "base": "http://127.0.0.1:18765",
+  "checks": [
+    "anonymous session write control locked",
+    "credential input masked",
+    "verified operator unlocks controls",
+    "another tab cannot inherit operator credential",
+    "credential excluded from cluster component",
+    "credential absent from browser persistent storage",
+    "explicit lock revokes session write access",
+    "lock clears credential input",
+    "rejected action immediately relocks controls",
+    "rejected action clears credential input",
+    "rejected credential has visible recovery feedback",
+    "no browser errors"
+  ],
+  "errors": [],
+  "scope": "Mock-only credential verification, session isolation/lock and rejected-action recovery."
+}

@@ -136,6 +136,7 @@ def send_heartbeat(current_state: str, vus: int, remaining_s: int):
             headers={
                 "Content-Type": "application/json",
                 "User-Agent": "TitipinTrafficDaemon/1.0",
+                "Authorization": "Bearer " + os.getenv("INFERENCE_API_TOKEN", ""),
             },
             method="POST",
         )
@@ -248,6 +249,8 @@ def run_state(state_name: str) -> Optional[str]:
     env["TARGET_URL"] = TARGET_URL
     env["THINK_MIN"] = think_min
     env["THINK_MAX"] = think_max
+    env["TRAFFIC_PROFILE"] = state_name
+    env["DRIFT_MODE"] = "1" if state_name == "DRIFT_ANOMALY" else "0"
 
     cmd = [
         "k6",

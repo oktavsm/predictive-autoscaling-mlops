@@ -1,0 +1,70 @@
+{
+  "release_id": "cluster-20261013-0404",
+  "verified_at_utc": "2026-10-13T04:06:25Z",
+  "deployment_method": "ConfigMap + rolling pod-template update; existing image unchanged; no local Docker commands",
+  "deployments": [
+    {
+      "name": "mlops-dashboard",
+      "images": {
+        "dashboard": "docker.io/oktaavsm/predictive-autoscaler-dashboard:remediation-20261013-0126@sha256:94c6a94cb639fcebc0f7f77b0a06130c16db601d26d9a6d1b760dfe1771965d0"
+      },
+      "available_replicas": 1,
+      "configmaps": [
+        "mlops-dashboard-code"
+      ],
+      "code_annotation": "2ea8a4144ea381aa7fbee0849c1b2d074e148d219a0ce294cf7138c0b7316d9d"
+    },
+    {
+      "name": "mlops-inference",
+      "images": {
+        "inference-api": "docker.io/oktaavsm/predictive-autoscaler@sha256:830ad467010fdf4bd4139a6be11ccc2087d8642ae655f21fe706c9e603d32588",
+        "predictive-scaler": "docker.io/oktaavsm/predictive-autoscaler@sha256:830ad467010fdf4bd4139a6be11ccc2087d8642ae655f21fe706c9e603d32588"
+      },
+      "available_replicas": 1,
+      "configmaps": [
+        "mlops-inference-code-cluster-20261013-0404",
+        "mlops-training-data"
+      ],
+      "code_annotation": "9aa5a361cdcc8a7fcb489cd8f7f179cce9c29d4729ab0eed3cd2778e1e532dfc"
+    }
+  ],
+  "file_sha256": {
+    "src/dashboard/app.py": "007e038f2c422809e96e2cb369f0a9a80b0f28e4c484cccfd07180b844444e9a",
+    "src/dashboard/cluster.py": "353f0b53e5e8624f86a39bc28a1ceda04364b78c45428b37878679f966471936",
+    "src/dashboard/assets/cluster.js": "e0a6f493766af721ceaf4e70261d27d578f223ed096b04d5f06dd01d71f8f47c",
+    "src/dashboard/assets/cluster.css": "6223e6fee60b8298457b6eeee892c41ba9140032da5bf3f5d11af7fd3461b781",
+    "src/dashboard/assets/cluster-catalog.json": "5d387220068ac38ec7effc4194eb10d4002bba9bf41bf4a3217b8e952bd3df78",
+    "src/inference/service.py": "9aa5a361cdcc8a7fcb489cd8f7f179cce9c29d4729ab0eed3cd2778e1e532dfc"
+  },
+  "serving": {
+    "model_version": "v43",
+    "model_algorithm": "ridge",
+    "model_ready": true,
+    "predictive_loop": "ACTIVE",
+    "last_scaling_observation": "2026-10-13T04:06:14Z"
+  },
+  "inventory": {
+    "timestamp": "2026-10-13T04:06:27.049597+00:00",
+    "nodes": 3,
+    "ready_nodes": 3,
+    "pods": 22,
+    "services": 15,
+    "scope": [
+      "mlops",
+      "monitoring",
+      "titipin"
+    ]
+  },
+  "rollout_observations": {
+    "sampled_gets": 72,
+    "sampled_get_statuses": {
+      "200": 72
+    },
+    "additional_head_after_rollout": 502,
+    "subsequent_dashboard_get_checks": 4,
+    "subsequent_dashboard_get_statuses": {
+      "200": 4
+    },
+    "limitation": "One HEAD returned 502 immediately after rollout. Sampled GETs are not a no-downtime guarantee."
+  }
+}

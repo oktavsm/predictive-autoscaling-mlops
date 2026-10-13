@@ -13,7 +13,8 @@ from re import sub
 import pandas as pd
 import requests
 import streamlit as st
-from adapter import number, read_resource, runtime_policy
+from adapter import normalize_decisions, number, read_resource, runtime_policy
+from cluster import render_cluster
 from overview import facts, mapping, render_overview
 
 INFERENCE_API_URL = (
@@ -82,7 +83,16 @@ with st.sidebar:
         )
     page = pages[page_title]
     st.divider()
-    can_auto_refresh = page in ("overview", "injector", "audit", "registry", "benchmark")
+    can_auto_refresh = page in (
+        "overview",
+        "injector",
+        "audit",
+        "registry",
+        "benchmark",
+        "finops",
+        "k8s",
+        "retrain",
+    )
     auto_refresh = st.toggle("Auto-refresh", value=True, disabled=not can_auto_refresh)
     refresh_rate = st.select_slider(
         "Read interval",
@@ -112,9 +122,6 @@ st.html(
 )
 if page == "overview":
     st.caption("Serving evidence, next-minute workload, and recorded scaling decisions.")
-    st.caption(
-        "Source-reported metadata and decisions can include unmarked demo records in the current inference service. Verify production claims against Prometheus, MLflow and job logs."
-    )
 else:
     st.caption("Titipin MLOps · Operational workspace")
 
@@ -140,8 +147,23 @@ def read(path, shape=dict):
 
 
 def post(path, payload):
+    token = st.session_state.get("operator_token")
+    if not token:
+        st.error("Unlock operator access in the sidebar before sending a request.")
+        return None
     try:
-        response = requests.post(f"{INFERENCE_API_URL.rstrip('/')}{path}", json=payload, timeout=5)
+        response = requests.post(
+            f"{INFERENCE_API_URL.rstrip('/')}{path}",
+            json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=5,
+        )
+        if response.status_code in (401, 403):
+            lock_operator()
+            st.session_state["operator_notice"] = (
+                "Operator access expired or was rejected. Unlock access again."
+            )
+            st.rerun()
         response.raise_for_status()
         data = response.json()
         if not isinstance(data, dict) or not data:
@@ -152,6 +174,46 @@ def post(path, payload):
             "Request failed or returned an invalid response. No success was confirmed. Refresh status before retrying."
         )
         return None
+
+
+def lock_operator():
+    st.session_state.pop("operator_token", None)
+    st.session_state.pop("operator_token_input", None)
+
+
+if page in ("sim", "retrain", "injector"):
+    with (
+        st.sidebar,
+        st.expander("Operator access", expanded=not st.session_state.get("operator_token")),
+    ):
+        if st.session_state.get("operator_token"):
+            st.caption("Operator access unlocked for this session.")
+            st.button("Lock operator access", on_click=lock_operator)
+        else:
+            st.text_input("Operator token", type="password", key="operator_token_input")
+            if st.button("Unlock operator access"):
+                candidate = st.session_state.get("operator_token_input", "").strip()
+                try:
+                    response = requests.post(
+                        f"{INFERENCE_API_URL.rstrip('/')}/auth/operator",
+                        json={},
+                        headers={"Authorization": f"Bearer {candidate}"},
+                        timeout=5,
+                    )
+                    response.raise_for_status()
+                    if response.json().get("authenticated") is not True:
+                        raise ValueError()
+                    st.session_state["operator_token"] = candidate
+                    st.rerun()
+                except (requests.RequestException, ValueError, TypeError):
+                    st.error("Access was not unlocked. Check the token or service availability.")
+            st.caption("Read-only views stay public. Tokens are never shared with the cluster map.")
+
+operator_ready = bool(st.session_state.get("operator_token"))
+if notice := st.session_state.pop("operator_notice", None):
+    st.warning(notice)
+if page in ("sim", "retrain", "injector") and not operator_ready:
+    st.info("Read-only mode. Unlock Operator access in the sidebar to use write controls.")
 
 
 def table(rows):
@@ -219,7 +281,9 @@ if page == "sim":
         cpu = left.slider("CPU usage (cores)", 0.0, 2.5, step=0.01, key="sim_cpu")
         p95 = right.slider("P95 latency (s)", 0.010, 0.400, step=0.001, key="sim_p95")
         memory = right.slider("PHP-FPM memory (MB)", 50.0, 500.0, step=1.0, key="sim_mem")
-        if st.button("Compute forecast", type="primary", width="stretch"):
+        if st.button(
+            "Compute forecast", type="primary", width="stretch", disabled=not operator_ready
+        ):
             st.session_state.pop("sim_result", None)
             now = datetime.now(timezone.utc)
             result = post(
@@ -276,16 +340,84 @@ if page == "sim":
             st.json({"inputs": result["inputs"], "response": result["response"]})
 
 
+def lifecycle(state):
+    try:
+        progress = min(100.0, number(state.get("progress_pct", 0))) / 100
+    except (ValueError, TypeError):
+        progress = 0.0
+    st.progress(progress)
+    facts(
+        [
+            ("Stage", f"{state.get('stage_index', 0)}/5 · {state.get('stage_title', 'Standby')}"),
+            ("Kubernetes job", state.get("job_name") or "Not dispatched"),
+            ("Active model", state.get("champion_version") or "Unknown"),
+            (
+                "Elapsed",
+                f"{state['elapsed_seconds']} s"
+                if state.get("elapsed_seconds") is not None
+                else "End time not recorded",
+            ),
+        ]
+    )
+    if state.get("stage") == "COMPLETED":
+        st.success(
+            f"Retraining completed. Model {state.get('champion_version')} is loaded; job {state.get('job_name')} succeeded."
+        )
+        cols = st.columns(3)
+        metrics = mapping(state.get("metrics"))
+        mae = metrics.get("candidate_holdout_mae", metrics.get("val_mae"))
+        cols[0].metric(
+            "Champion model",
+            str(state.get("champion_version", "Unknown")),
+            help=f"Candidate holdout MAE: {mae} RPS",
+        )
+        cols[1].metric("Quality gate", str(state.get("quality_gate", "Unknown")))
+        cols[2].metric("Hot reload", str(state.get("hot_reload", "Unknown")))
+    elif state.get("stage") == "FAILED":
+        st.error(state.get("error", "Lifecycle failed; inspect the Kubernetes job logs."))
+    elif state.get("active"):
+        st.info(
+            "Lifecycle running. Job and model outcomes update from the backend; keep Auto-refresh enabled."
+        )
+    rows = state.get("timeline", [])
+    if isinstance(rows, list) and rows:
+        table(
+            [
+                {key: row.get(key) for key in ("timestamp", "stage", "title", "status")}
+                for row in rows
+                if isinstance(row, dict)
+            ]
+        )
+    with st.expander("Persisted lifecycle history"):
+        history = read("/operations/history")
+        if history.get("persistent"):
+            table(
+                [
+                    {
+                        key: item.get(key)
+                        for key in (
+                            "operation_id",
+                            "stage",
+                            "started_at",
+                            "finished_at",
+                            "champion_version",
+                        )
+                    }
+                    for item in history.get("operations", [])
+                    if isinstance(item, dict)
+                ]
+            )
+        else:
+            st.caption("Persistent history is unavailable on this source.")
+
+
 @st.fragment(run_every=interval)
 def operational_view():
     if page == "injector":
         heading(
             "Traffic profiles",
             "pipeline",
-            "Request a profile from the remote k6 daemon. Selection changes traffic against the configured target API.",
-        )
-        st.caption(
-            "Profile sizes are configured VU ranges, not measured throughput or scaling guarantees. The daemon chooses the next profile after its current window."
+            "Control the remote k6 generator and follow the five-phase training lifecycle.",
         )
         live = read("/workload/status")
         alive = live.get("daemon_alive") is True
@@ -293,23 +425,22 @@ def operational_view():
             heading(
                 "Generator status",
                 "health",
-                "Last state reported by the daemon; an accepted request still needs a heartbeat acknowledgement.",
+                "Observed profile and pending request are separate until the next heartbeat.",
             )
             facts(
                 [
-                    (
-                        "Connection",
-                        "Connected (API reported)" if alive else "Offline or unavailable",
-                    ),
+                    ("Connection", "Connected" if alive else "Offline or unavailable"),
                     ("Observed profile", live.get("daemon_current_state", "Unknown")),
                     ("Virtual users", live.get("daemon_vus", "Unknown")),
                     ("Heartbeat age (s)", live.get("last_heartbeat_seconds_ago", "Unknown")),
                     ("Window remaining (s)", live.get("daemon_remaining_s", "Unknown")),
-                    ("Pending request", live.get("override_state") or "None reported"),
+                    ("Pending request", live.get("override_state") or "None"),
                 ]
             )
         if not alive:
-            st.warning("Profile requests are disabled until the daemon reports a live connection.")
+            st.info(
+                "The daemon is offline. Requests become available after its next live heartbeat."
+            )
         feedback = st.empty()
         profiles = (
             ("Steady normal", "STEADY_NORMAL", "4–8 VUs · 20–45 min"),
@@ -317,11 +448,7 @@ def operational_view():
             ("Flash sale", "FLASH_ANOMALY", "50–75 VUs · 3–8 min"),
             ("Cooling down", "COOLING_DOWN", "8–14 VUs · 5–10 min"),
             ("Quiet night", "IDLE_SILENT", "0–1 VUs · 5–15 min"),
-            (
-                "Drift anomaly",
-                "DRIFT_ANOMALY",
-                "35–55 VUs · unavailable pending backend correction",
-            ),
+            ("Drift anomaly", "DRIFT_ANOMALY", "35–55 VUs · High payload & memory drift anomaly"),
         )
         with st.container(key="operation-profiles"):
             columns = st.columns(2)
@@ -336,7 +463,7 @@ def operational_view():
                         f"Request {label.lower()}",
                         key=f"request_{state}",
                         width="stretch",
-                        disabled=not alive or state == "DRIFT_ANOMALY",
+                        disabled=not alive or not operator_ready,
                     ):
                         st.session_state.pop("workload_feedback", None)
                         ack = post("/workload/trigger", {"state": state})
@@ -354,41 +481,40 @@ def operational_view():
             feedback.info(st.session_state["workload_feedback"])
         with st.container(key="panel-lifecycle"):
             heading(
-                "Retraining lifecycle",
+                "Autonomous retraining lifecycle",
                 "events",
-                "Coordinator metadata reported by the API. Completion and model promotion require independent verification.",
-            )
-            st.warning(
-                "Drift injection and lifecycle launch/stop are unavailable. Start/stop routes are absent, and drift orchestration inserts demonstration telemetry and promotion results into shared buffers."
+                "Traffic injection → drift evaluation → Kubernetes training → registry verification → serving reload.",
             )
             state = read("/monitoring/autonomous-status")
-            facts(
-                [
-                    (label, state.get(key, "Unknown"))
-                    for label, key in (
-                        ("Coordinator active", "active"),
-                        ("Reported stage", "stage"),
-                        ("Reported job", "job_name"),
+            if state.get("active"):
+                if st.button("Stop Running Scenario", width="stretch", disabled=not operator_ready):
+                    result = post("/monitoring/autonomous-scenario/stop", {})
+                    if result and result.get("status") == "ok":
+                        st.session_state["lifecycle_notice"] = (
+                            "Stop requested. Traffic is returning to the steady baseline."
+                        )
+                        st.rerun()
+            elif st.button(
+                "Launch Autonomous Lifecycle Simulation",
+                type="primary",
+                width="stretch",
+                disabled=not alive or not operator_ready,
+            ):
+                result = post("/monitoring/autonomous-scenario/start", {})
+                if result and result.get("status") == "ACCEPTED":
+                    st.session_state["lifecycle_notice"] = (
+                        f"Lifecycle accepted: {result.get('operation_id')}."
                     )
-                ]
-            )
-            rows = state.get("timeline", [])
-            if isinstance(rows, list):
-                table(
-                    [
-                        {key: row[key] for key in ("timestamp", "stage", "status") if key in row}
-                        for row in rows
-                        if isinstance(row, dict)
-                    ]
-                )
-            else:
-                st.warning("Coordinator timeline is invalid.")
+                    st.rerun()
+            if st.session_state.get("lifecycle_notice"):
+                st.caption(st.session_state["lifecycle_notice"])
+            lifecycle(state)
 
     elif page == "retrain":
         heading(
-            "Drift evaluation",
+            "Drift and continuous training",
             "drift",
-            "PSI compares the API decision buffer against a generated demo/reference distribution, not an immutable training baseline.",
+            "Compare buffered live telemetry with the configured reference CSV, then run the training pipeline.",
         )
         if st.button("Evaluate telemetry drift (PSI)", width="stretch"):
             st.session_state.pop("drift_result", None)
@@ -398,120 +524,145 @@ def operational_view():
         result = st.session_state.get("drift_result")
         if result:
             try:
-                score = number(result["psi_score"])
-                cycles = number(result["evaluated_cycles"])
-                threshold = number(result["threshold"])
-                if cycles < 3:
-                    st.warning(
-                        "Insufficient decision samples. The API substitutes demo inputs below three samples; no live drift verdict is available."
-                    )
+                score, threshold = number(result["psi_score"]), number(result["threshold"])
+                if number(result["evaluated_cycles"]) < 3:
+                    raise ValueError()
+                st.metric("Overall PSI", f"{score:.4f}")
+                if score >= threshold:
+                    st.warning(f"Drift detected: PSI {score:.4f} ≥ {threshold:g}.")
                 else:
-                    st.metric("Reported PSI (demo reference)", f"{score:.4f}")
-                    st.caption(
-                        f"{int(cycles)} buffered samples · API threshold {threshold:g}. This score alone does not verify a production drift incident."
-                    )
-                    features = mapping(result.get("monitored_features"))
-                    table(
-                        [
-                            {"feature": name, **value}
-                            for name, value in features.items()
-                            if isinstance(value, dict)
-                        ]
-                    )
+                    st.success(f"Stable distribution: PSI {score:.4f} < {threshold:g}.")
+                st.caption(
+                    f"Reference: {result.get('reference', 'configured CSV')} · {result['evaluated_cycles']} live samples"
+                )
+                table(
+                    [
+                        {
+                            "Feature": name,
+                            "PSI score": value.get("psi"),
+                            "Live mean": value.get("live_mean"),
+                            "Baseline mean": value.get("baseline_mean"),
+                            "Status": "DRIFT" if value.get("has_drift") else "STABLE",
+                        }
+                        for name, value in mapping(result.get("monitored_features")).items()
+                        if isinstance(value, dict)
+                    ]
+                )
             except (KeyError, TypeError, ValueError, OverflowError):
-                st.warning("Drift response is incomplete or invalid. No verdict is available.")
+                st.info(
+                    f"Drift evaluation is waiting for samples/reference: {result.get('status', 'Incomplete response')}."
+                )
         with st.container(key="panel-retraining"):
             heading(
-                "Manual retraining",
+                "Event-driven retraining",
                 "pipeline",
-                "Unavailable until the trigger API reports a real job outcome and verified promotion.",
+                "Dispatch a real training job. Completion follows the job result, validation gate and verified model reload.",
             )
-            st.button("Trigger retraining", disabled=True, width="stretch")
-            st.warning(
-                "The current trigger changes in-memory model metadata and inserts fixed metrics before the Kubernetes job finishes. It cannot confirm training, quality-gate success, or hot reload. Use the operational pipeline outside this dashboard and verify its job and MLflow records."
-            )
+            if st.button(
+                "Trigger Event-Driven Retraining Pipeline",
+                type="primary",
+                width="stretch",
+                disabled=not operator_ready,
+            ):
+                st.session_state.pop("retrain_notice", None)
+                result = post("/monitoring/retrain/trigger", {})
+                if result and result.get("status") == "ACCEPTED":
+                    st.session_state["retrain_notice"] = (
+                        f"Training accepted: {result.get('operation_id')}."
+                    )
+            if st.session_state.get("retrain_notice"):
+                st.caption(st.session_state["retrain_notice"])
+            lifecycle(read("/monitoring/autonomous-status"))
 
     elif page == "audit":
         heading(
             "Operation records",
             "events",
-            "Source-reported ingestion, model metadata, decisions and scaling actions.",
-        )
-        st.warning(
-            "The inference service contains seeded history and unmarked demonstration rows. These records are not independent proof of ingestion, training, live traffic, or applied scaling."
+            "Live ingestion lineage, registry history, decisions and applied scaling events.",
         )
         audit = read("/operations/audit")
-        st.caption(f"API snapshot timestamp: {audit.get('timestamp', 'Unknown')}")
+        st.caption(
+            f"API snapshot: {audit.get('timestamp', 'Unknown')} · registry refresh: {audit.get('registry_updated_at', 'Unknown')}"
+        )
         with st.container(key="panel-ingestion"):
             heading(
-                "Ingestion",
+                "Data ingestion and CAS lineage",
                 "pipeline",
-                "Last reported metadata and ingestion history; no UI fallback batches.",
+                "MinIO metadata and verified content-addressed objects.",
             )
-            st.json(mapping(audit.get("last_ingestion")))
             table(audit.get("ingestion_history", []))
         with st.container(key="panel-retrain-history"):
             heading(
-                "Retraining records",
+                "Retraining history",
                 "model",
-                "Verify source claims against job logs and MLflow artifacts.",
+                "Version, algorithm, validation result and registry stage.",
             )
-            table(mapping(audit.get("retraining")).get("history", []))
+            rows = mapping(audit.get("retraining")).get("history", [])
+            table(
+                [
+                    {
+                        k: row.get(k)
+                        for k in ("version", "timestamp", "algorithm", "val_mae", "stage", "run_id")
+                    }
+                    for row in rows
+                    if isinstance(row, dict)
+                ]
+                if isinstance(rows, list)
+                else rows
+            )
         with st.container(key="panel-decisions"):
             heading(
                 "Inference decisions",
                 "forecast",
-                "Recommendations recorded by the scale-decision API; these do not establish applied scaling.",
+                "Recent controller observations and recommendations.",
             )
             scaling = mapping(audit.get("scaling_api"))
             st.caption(
-                f"API-reported total: {scaling.get('total_calls_tracked', 'Unknown')} · the service initializes this counter with a seeded value."
+                f"Tracked evaluations since service start: {scaling.get('total_calls_tracked', 'Unknown')}"
             )
             table(scaling.get("recent_decisions", []))
         with st.container(key="panel-actions"):
             heading(
-                "Scaling actions",
+                "Applied scaling actions",
                 "replicas",
-                "Action records require the controller's reported outcome; a recommendation is not an applied action.",
+                "Actions reported after a successful Kubernetes scale patch.",
             )
             table(mapping(audit.get("scaling_actions")).get("recent_actions", []))
 
     elif page == "registry":
         heading(
-            "Model metadata",
+            "Champion and challenger",
             "model",
-            "Serving metadata from health and registry metadata from the audit API.",
+            "Registry aliases and validation metadata, with the currently loaded serving version.",
         )
-        st.warning(
-            "Audit history can contain seeded or demonstration metadata. Validate scores, stages and dataset hashes in MLflow and DVC before using them as evidence."
-        )
-        health = read("/health")
-        audit = read("/operations/audit")
-        with st.container(key="panel-serving"):
-            facts(
-                [
-                    (label, health.get(key, "Unknown"))
-                    for label, key in (
-                        ("Model", "model_name"),
-                        ("Version", "model_version"),
-                        ("Alias", "model_alias"),
-                        ("Algorithm", "model_algorithm"),
-                        ("Ready (API reported)", "model_ready"),
+        health, audit = read("/health"), read("/operations/audit")
+        with st.container(key="operation-profiles"):
+            columns = st.columns(2)
+            for column, label, key in (
+                (columns[0], "Champion · Production", "latest"),
+                (columns[1], "Challenger · Staging", "challenger"),
+            ):
+                model = mapping(mapping(audit.get("retraining")).get(key))
+                with column, st.container(key=f"panel-model-{key}"):
+                    heading(label, "model", f"@{'champion' if key == 'latest' else 'challenger'}")
+                    facts(
+                        [
+                            ("Version", model.get("version", "Unknown")),
+                            ("Algorithm", model.get("algorithm", "Unknown")),
+                            ("Validation MAE", model.get("val_mae") or "Unknown"),
+                            ("Registry stage", model.get("stage", "Unknown")),
+                        ]
                     )
-                ]
-            )
-        for label, key in (
-            ("Latest reported model", "latest"),
-            ("Reported challenger", "challenger"),
-        ):
-            with st.expander(label):
-                st.json(mapping(mapping(audit.get("retraining")).get(key)))
+                    if key == "latest":
+                        st.caption(
+                            f"Serving: {health.get('model_version', 'Unknown')} · {'Ready' if health.get('model_ready') else 'Unavailable'}"
+                        )
         st.link_button("Open MLflow registry", MLFLOW_URL, width="stretch")
         with st.container(key="panel-lineage"):
             heading(
-                "Dataset lineage",
+                "DVC content-addressable storage",
                 "pipeline",
-                "DVC stores content-addressed blobs in MinIO; the table preserves source filenames and reported counts.",
+                "Batch, processed/raw dataset, actual row count and MinIO CAS hash.",
             )
             table(audit.get("ingestion_history", []))
         with st.expander("Recent API telemetry records"):
@@ -519,26 +670,52 @@ def operational_view():
 
     elif page == "benchmark":
         heading(
-            "HPA comparison",
+            "HPA vs predictive benchmark",
             "replicas",
-            "A measured comparison requires baseline and predictive runs under the same workload, with traceable artifacts.",
+            "65-VU reference experiment and an independently refreshed production SLO snapshot.",
         )
-        st.info(
-            "No verified benchmark artifact is connected to this dashboard. The previous fixed reaction-time, latency and success-rate figures have been removed."
-        )
-        st.markdown("#### Recent API records")
+        bench = json.loads((ASSETS / "benchmark-reference.json").read_text())
         st.caption(
-            "These records may include demonstration inputs. They cannot establish SLO compliance or an HPA advantage."
+            f"Reference source: {bench['source']}. These reference results are separate from the live cards below."
         )
-        table(read("/telemetry/live-sample", list))
+        table(bench["rows"])
+        samples = read("/telemetry/live-sample", list)
+        valid, _ = normalize_decisions(samples)
+        with st.container(key="operation-metrics"):
+            cols = st.columns(4)
+            sample = valid[-1] if valid else None
+            cols[0].metric(
+                "Live ingress workload", f"{sample['actual_rps']:.1f} RPS" if sample else "Unknown"
+            )
+            cols[1].metric(
+                "Live P95 latency",
+                f"{sample['p95_latency_ms']:.1f} ms" if sample else "Unknown",
+                delta=("SLO MET (<100 ms)" if sample["p95_latency_ms"] < 100 else "SLO ELEVATED")
+                if sample
+                else None,
+            )
+            cols[2].metric(
+                "Active replicas",
+                sample["observed_replicas"] if sample else "Unknown",
+                delta=f"Target: {sample['recommended_replicas']}" if sample else None,
+            )
+            cols[3].metric(
+                "Forecast (+60s)", f"{sample['forecast_rps']:.1f} RPS" if sample else "Unknown"
+            )
+        if sample:
+            st.caption(
+                f"Live snapshot observed at {sample['issued_at_utc'].isoformat()}; this is a point observation, not a window-wide compliance statistic."
+            )
+        table(samples)
         st.link_button("Inspect telemetry in Grafana", GRAFANA_URL, width="stretch")
 
     elif page == "finops":
         heading(
-            "Cost and carbon scenario",
+            "Live allocation cost and carbon",
             "replicas",
-            "An allocation estimate using your assumptions; this is not a cloud bill or measured emissions inventory.",
+            "Cost estimates update with the controller's recent replica recommendations.",
         )
+        decisions, _ = normalize_decisions(read("/scaling/decisions", list))
         with st.container(key="panel-cost-assumptions"):
             days = st.slider("Evaluation period (days)", 7, 60, 30)
             rate = st.number_input(
@@ -549,56 +726,97 @@ def operational_view():
             reactive = st.number_input(
                 "Assumed average HPA replicas", min_value=0.0, value=2.8, step=0.1
             )
-            predictive = st.number_input(
-                "Assumed average predictive replicas", min_value=0.0, value=1.6, step=0.1
+        predictive = (
+            sum(row["recommended_replicas"] for row in decisions) / len(decisions)
+            if decisions
+            else 1.6
+        )
+        if decisions:
+            observed = sum(row["observed_replicas"] for row in decisions) / len(decisions)
+            st.caption(
+                f"Dynamic allocation coefficient: {predictive:.2f} recommended replicas from {len(decisions)} decisions · observed mean {observed:.2f} replicas."
+            )
+        else:
+            st.info(
+                "Waiting for live decisions. The cost preview uses a disclosed default of 1.6 replicas until observations arrive."
             )
         st.caption(
-            "Fixed scenario assumptions: 0.175 vCPU and 0.152 GiB per replica; $0.0022/GiB-hour; 0.0042 kg CO2e/vCPU-hour. These factors are illustrative and are not provider-certified rates. No live replica average is inferred from contaminated decision buffers."
+            "Estimates use 0.175 vCPU and 0.152 GiB per replica, $0.0022/GiB-hour and an illustrative 0.0042 kg CO2e/vCPU-hour factor. Cloud bills and measured emissions are not connected."
         )
         hours = days * 24
-        allocations = [float(static), reactive, predictive]
-        costs = [pods * hours * (0.175 * rate + 0.152 * 0.0022) for pods in allocations]
-        carbon = [pods * hours * 0.175 * 0.0042 for pods in allocations]
+        costs = [
+            pods * hours * (0.175 * rate + 0.152 * 0.0022)
+            for pods in (static, reactive, predictive)
+        ]
+        carbon = [pods * hours * 0.175 * 0.0042 for pods in (static, reactive, predictive)]
+        saved = costs[0] - costs[2]
+        with st.container(key="operation-metrics"):
+            cols = st.columns(4)
+            cols[0].metric(
+                "Estimated cost saved",
+                f"Rp {saved * exchange:,.0f}",
+                delta=f"{saved / costs[0] * 100:.1f}% vs static" if costs[0] else None,
+            )
+            cols[1].metric("Estimated cloud cost", f"${costs[2]:.2f}")
+            cols[2].metric("Estimated carbon", f"{carbon[2]:.2f} kg CO2e")
+            cols[3].metric(
+                "Allocation efficiency",
+                f"{(static - predictive) / static * 100:.1f}%",
+                delta=f"{predictive:.2f} mean replicas",
+            )
         df = pd.DataFrame(
             {
-                "Strategy": ["Static assumption", "HPA assumption", "Predictive assumption"],
+                "Strategy": ["Static baseline", "HPA assumption", "Predictive recommendation"],
                 "Estimated cost (IDR)": [cost * exchange for cost in costs],
                 "Estimated carbon (kg CO2e)": carbon,
             }
         ).set_index("Strategy")
-        with st.container(key="operation-metrics"):
-            left, right = st.columns(2)
-            left.metric("Estimated predictive cost", f"${costs[2]:.2f}")
-            right.metric("Estimated savings vs static", f"${costs[0] - costs[2]:.2f}")
         st.dataframe(df, width="stretch")
         st.bar_chart(df["Estimated cost (IDR)"], color=palette["chart-actual"])
         st.bar_chart(df["Estimated carbon (kg CO2e)"], color=palette["chart-predicted"])
 
     elif page == "k8s":
         heading(
-            "Service topology",
+            "Cluster topology",
             "replicas",
-            "Configured architecture from the operational handoff; this diagram is not a live Kubernetes inventory.",
+            "Select a node, workload or system component to inspect its role and operational evidence.",
         )
-        st.code(
-            """AWS K3s: control-plane · worker-1 · worker-2
-  titipin
-    laravel-backend       Target application
-    MinIO                Dataset object storage
-  monitoring
-    Prometheus           Telemetry collection
-    Grafana              Observability
-  mlops
-    inference-api        Model serving
-    predictive-scaler    Replica control loop
-    mlops-dashboard      This console
-    mlops-mlflow         Model registry
-    training CronJob     Scheduled training pipeline""",
-            language="text",
+        health, cluster = read("/health"), read("/cluster/status")
+        with st.container(key="operation-metrics"):
+            cols = st.columns(3)
+            cols[0].metric(
+                "Serving engine", "HEALTHY" if health.get("model_ready") else "UNAVAILABLE"
+            )
+            cols[1].metric("Active model", str(health.get("model_version", "Unknown")))
+            cols[2].metric("Predictive loop", str(health.get("predictive_loop", "Unknown")))
+        render_cluster(
+            cluster,
+            health,
+            read("/workload/status"),
+            palette,
+            {
+                "dashboard": "https://mlops.titipin.me",
+                "inference": PUBLIC_INFERENCE_DOCS,
+                "api": API_URL,
+                "mlflow": MLFLOW_URL,
+                "grafana": GRAFANA_URL,
+                "minio": MINIO_URL,
+            },
         )
-        st.caption(
-            "Node health, ready-pod counts and placement require cluster inspection. Connected services are available in the sidebar."
-        )
+        with st.expander("Inspect pod inventory as a table"):
+            table(
+                [
+                    {
+                        "Component": p.get("name"),
+                        "Namespace": p.get("namespace"),
+                        "Node": p.get("node"),
+                        "Ready": f"{p.get('ready', 0)}/{p.get('containers', 0)}",
+                        "Phase": p.get("phase"),
+                    }
+                    for p in cluster.get("pods", [])
+                    if isinstance(p, dict)
+                ]
+            )
 
 
 if page not in ("overview", "sim"):

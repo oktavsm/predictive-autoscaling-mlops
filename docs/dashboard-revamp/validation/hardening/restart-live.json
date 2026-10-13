@@ -1,0 +1,75 @@
+{
+  "checked_at_utc": "2026-10-13T05:08:58Z",
+  "method": "One authenticated owned Job created in suspended state; no training pod. Restore CronJob template, replace inference pod, reconnect and cancel owned Job.",
+  "checks": [
+    "no pre-existing lifecycle",
+    "authenticated operator trigger accepted",
+    "owned job recorded in lifecycle",
+    "verification Job remains suspended",
+    "suspended Job created no training pod",
+    "CronJob template restored before restart",
+    "active lifecycle restored after pod replacement",
+    "same owned Job reconnected",
+    "actual pod identity changed",
+    "pre-restart decision remains in history",
+    "persisted operation history survives restart",
+    "owned Job cancellation reaches terminal state",
+    "terminal timeline has no active stage",
+    "owned verification Job actually removed",
+    "terminal elapsed time stays frozen",
+    "loaded model remains v43"
+  ],
+  "operation_id": "fe471b144a2440908a4374d4ce4444ef",
+  "job_name": "drift-retrain-fe471b144a24",
+  "decision_anchor": "2026-10-13T05:07:43Z",
+  "pod_identity_changed": true,
+  "terminal": {
+    "active": false,
+    "operation_id": "fe471b144a2440908a4374d4ce4444ef",
+    "stage": "STOPPED",
+    "stage_index": 3,
+    "stage_title": "Scenario stopped; training job removed",
+    "progress_pct": 60,
+    "job_name": "drift-retrain-fe471b144a24",
+    "timeline": [
+      {
+        "timestamp": "2026-10-13T05:08:52.831923+00:00",
+        "stage": "STOPPED",
+        "title": "Scenario stopped; training job removed",
+        "status": "CANCELLED"
+      },
+      {
+        "timestamp": "2026-10-13T05:08:43.617323+00:00",
+        "stage": "TRAINING",
+        "title": "Kubernetes training job running",
+        "status": "CANCELLED"
+      },
+      {
+        "timestamp": "2026-10-13T05:08:43.591606+00:00",
+        "stage": "TRAINING",
+        "title": "Reconnecting to owned training job",
+        "status": "COMPLETED"
+      },
+      {
+        "timestamp": "2026-10-13T05:07:54.490127+00:00",
+        "stage": "TRAINING",
+        "title": "Kubernetes training job running",
+        "status": "COMPLETED"
+      },
+      {
+        "timestamp": "2026-10-13T05:07:54.460644+00:00",
+        "stage": "TRAINING",
+        "title": "Dispatching Kubernetes training job",
+        "status": "COMPLETED"
+      }
+    ],
+    "started_at": 1791868074.451848,
+    "finished_at": 1791868132.8319116,
+    "inject": false,
+    "previous_version": "v43",
+    "champion_version": "v43",
+    "elapsed_seconds": 58.4,
+    "timestamp": "2026-10-13T05:08:53.273395+00:00",
+    "next_stage_countdown": null
+  }
+}
