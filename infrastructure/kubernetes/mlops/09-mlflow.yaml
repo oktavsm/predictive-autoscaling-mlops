@@ -9,6 +9,8 @@ metadata:
     app.kubernetes.io/part-of: predictive-autoscaling-mlops
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: mlops-mlflow
@@ -21,13 +23,26 @@ spec:
     spec:
       containers:
         - name: mlflow-server
-          image: docker.io/oktaavsm/predictive-autoscaler:latest
+          image: docker.io/oktaavsm/predictive-autoscaler@sha256:830ad467010fdf4bd4139a6be11ccc2087d8642ae655f21fe706c9e603d32588
           imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: mlops-object-storage
           env:
-            - name: MLFLOW_BACKEND_STORE_URI
-              value: "sqlite:////app/mlflow.db"
-            - name: MLFLOW_DEFAULT_ARTIFACT_ROOT
-              value: "/app/mlruns"
+            - name: AWS_REQUEST_CHECKSUM_CALCULATION
+              value: "when_required"
+            - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+              value: "when_required"
+            - name: _MLFLOW_SERVER_FILE_STORE
+              value: "sqlite:////var/lib/mlflow/mlflow.db"
+            - name: _MLFLOW_SERVER_ARTIFACT_ROOT
+              value: "s3://mlops-dvc/mlflow"
+            - name: _MLFLOW_SERVER_ARTIFACT_DESTINATION
+              value: "s3://mlops-dvc/mlflow"
+            - name: _MLFLOW_SERVER_SERVE_ARTIFACTS
+              value: "true"
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: "https://storage.titipin.me"
             - name: MLFLOW_SERVER_ALLOWED_HOSTS
               value: "*"
             - name: MLFLOW_SERVER_CORS_ALLOWED_ORIGINS
@@ -36,13 +51,24 @@ spec:
             - "/bin/sh"
             - "-c"
             - |
+              pip install --no-cache-dir boto3 && \
               mkdir -p /home/oktaavsm/Code/github.com/college/predictive-autoscaling-mlops && \
               ln -sf /app/mlruns /home/oktaavsm/Code/github.com/college/predictive-autoscaling-mlops/mlruns && \
               exec python -m uvicorn mlflow.server.fastapi_app:app --host 0.0.0.0 --port 5000 --workers 1
+          volumeMounts:
+            - name: state
+              mountPath: /var/lib/mlflow
           ports:
             - name: http
               containerPort: 5000
               protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
           resources:
             requests:
               cpu: 50m
@@ -50,6 +76,22 @@ spec:
             limits:
               cpu: 1000m
               memory: 800Mi
+      volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: mlops-mlflow-state
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mlops-mlflow-state
+  namespace: mlops
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
 ---
 apiVersion: v1
 kind: Service

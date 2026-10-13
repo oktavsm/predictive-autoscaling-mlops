@@ -222,6 +222,7 @@ def test_prediction_failure_clears_previous_result(operational, failure):
         ("flash sale", "FLASH_ANOMALY"),
         ("cooling down", "COOLING_DOWN"),
         ("quiet night", "IDLE_SILENT"),
+        ("drift anomaly", "DRIFT_ANOMALY"),
     ],
 )
 def test_workload_profiles_acknowledged_but_not_claimed_applied(operational, label, state):
@@ -231,7 +232,9 @@ def test_workload_profiles_acknowledged_but_not_claimed_applied(operational, lab
     assert writes["calls"] == [("/workload/trigger", {"state": state})]
     assert any("execution is not yet confirmed" in item.value for item in app.info)
     assert data["/workload/status"]["daemon_current_state"] == "STEADY_NORMAL"
-    assert next(button for button in app.button if button.label == "Request drift anomaly").disabled
+    assert not next(
+        button for button in app.button if button.label == "Request drift anomaly"
+    ).disabled
 
 
 @pytest.mark.parametrize("failure", ["400", "503", "timeout", "json", "ack"])
@@ -268,23 +271,22 @@ def test_accepted_workload_response_and_manual_refresh_controls(operational):
     writes["status"] = 202
     click(app, "Request rush hour")
     assert any("Request accepted" in item.value for item in app.info)
-    for page in (
-        "Scaling Simulator",
-        "Drift & Retraining",
-        "FinOps & Carbon",
-        "Cluster Architecture",
-    ):
+    select_page(app, "Scaling Simulator")
+    assert app.toggle[0].disabled and app.select_slider[0].disabled
+    for page in ("Drift & Retraining", "FinOps & Carbon", "Cluster Architecture"):
         select_page(app, page)
-        assert app.toggle[0].disabled and app.select_slider[0].disabled
+        assert not app.toggle[0].disabled
     assert len(writes["calls"]) == 1
 
 
-def test_drift_evaluation_and_disabled_retraining(operational):
+def test_drift_evaluation_and_active_retraining(operational):
     app, data, writes = operational
     select_page(app, "Drift & Retraining")
     click(app, "Evaluate telemetry drift (PSI)")
     assert app.metric[0].value == "0.0800"
-    assert next(button for button in app.button if button.label == "Trigger retraining").disabled
+    assert not next(
+        button for button in app.button if "retraining" in button.label.lower()
+    ).disabled
     data["/monitoring/drift"] = requests.Timeout()
     click(app, "Evaluate telemetry drift (PSI)")
     assert app.error and not app.metric and not writes["calls"]
@@ -302,33 +304,108 @@ def test_drift_does_not_invent_a_live_verdict(operational, value):
     assert not app.metric
 
 
-def test_finops_assumptions_control_estimate(operational):
+def test_finops_live_coefficient_and_cost_inputs(operational):
     app, data, writes = operational
     select_page(app, "FinOps & Carbon")
-    cost = app.metric[0].value
+    cost = float(app.metric[1].value[1:])
+    assert app.metric[3].delta == "4.00 mean replicas"
     app.slider[0].set_value(60).run()
-    assert float(app.metric[0].value[1:]) == pytest.approx(float(cost[1:]) * 2, abs=0.01)
-    period_cost = float(app.metric[0].value[1:])
+    assert float(app.metric[1].value[1:]) == pytest.approx(cost * 2, abs=0.011)
     app.number_input[0].set_value(0.035).run()
-    assert float(app.metric[0].value[1:]) > period_cost
-    dollars = app.metric[0].value
-    rupiah = app.dataframe[0].value.iloc[2, 0]
+    assert float(app.metric[1].value[1:]) > cost * 2
+    before = app.dataframe[0].value.iloc[2, 0]
     app.number_input[1].set_value(31600).run()
-    assert app.metric[0].value == dollars
-    assert app.dataframe[0].value.iloc[2, 0] == pytest.approx(rupiah * 2)
-    savings = float(app.metric[1].value[1:])
+    assert app.dataframe[0].value.iloc[2, 0] == pytest.approx(before * 2)
+    for row in data["/scaling/decisions"]:
+        row["desired_replicas"] = 2
+    app.run()
+    assert app.metric[3].delta == "2.00 mean replicas"
     app.number_input[2].set_value(10).run()
-    assert float(app.metric[1].value[1:]) > savings
     app.number_input[3].set_value(0.0).run()
     assert app.dataframe[0].value.iloc[1, 0] == 0
-    predictive = next(
-        widget
-        for widget in app.number_input
-        if widget.label == "Assumed average predictive replicas"
-    )
-    predictive.set_value(0.0).run()
-    assert app.metric[0].value == "$0.00"
     assert not writes["calls"]
+
+
+@pytest.mark.parametrize(
+    "page,button,path",
+    [
+        (
+            "Drift & Retraining",
+            "Trigger Event-Driven Retraining Pipeline",
+            "/monitoring/retrain/trigger",
+        ),
+        (
+            "Workload Injector",
+            "Launch Autonomous Lifecycle Simulation",
+            "/monitoring/autonomous-scenario/start",
+        ),
+    ],
+)
+def test_training_controls_accept_job_then_poll_result(operational, page, button, path):
+    app, data, writes = operational
+    select_page(app, page)
+    writes["body"] = {"status": "ACCEPTED", "operation_id": "test-operation"}
+    click(app, button)
+    assert writes["calls"] == [(path, {})]
+    assert not app.success
+    data["/monitoring/autonomous-status"] = {
+        "active": False,
+        "stage": "COMPLETED",
+        "progress_pct": 100,
+        "stage_index": 5,
+        "champion_version": "v9",
+        "job_name": "real-job",
+        "quality_gate": "PASSED",
+        "hot_reload": "SUCCESS",
+        "metrics": {"candidate_holdout_mae": 0.123},
+        "timeline": [],
+    }
+    app.run()
+    assert app.success and [m.value for m in app.metric] == ["v9", "PASSED", "SUCCESS"]
+    assert len(writes["calls"]) == 1
+
+
+def test_stop_lifecycle_calls_stop_route(operational):
+    app, data, writes = operational
+    data["/monitoring/autonomous-status"] = {
+        "active": True,
+        "stage": "TRAINING",
+        "progress_pct": 60,
+    }
+    select_page(app, "Workload Injector")
+    writes["body"] = {"status": "ok", "stage": "STOPPED"}
+    click(app, "Stop Running Scenario")
+    assert writes["calls"] == [("/monitoring/autonomous-scenario/stop", {})]
+
+
+def test_benchmark_has_reference_and_live_slo_cards(operational):
+    app, data, writes = operational
+    data["/telemetry/live-sample"] = data["/scaling/decisions"]
+    select_page(app, "HPA vs Predictive")
+    assert len(app.dataframe[0].value) == 6
+    assert [m.value for m in app.metric] == ["21.0 RPS", "23.9 ms", "2", "35.0 RPS"]
+    assert "SLO MET" in app.metric[1].delta
+
+
+def test_cluster_uses_live_node_status_and_placement(operational):
+    app, data, writes = operational
+    data["/health"]["predictive_loop"] = "ACTIVE"
+    data["/cluster/status"] = {
+        "nodes": [{"name": "worker-test", "ready": True, "role": "worker"}],
+        "pods": [
+            {
+                "name": "actual-pod",
+                "namespace": "mlops",
+                "node": "worker-test",
+                "ready": 1,
+                "containers": 1,
+                "phase": "Running",
+            }
+        ],
+    }
+    select_page(app, "Cluster Architecture")
+    assert app.metric[-1].value == "ACTIVE"
+    assert app.dataframe[0].value.iloc[0]["Component"] == "actual-pod"
 
 
 @pytest.mark.parametrize(
@@ -369,7 +446,14 @@ def test_dashboard_write_routes_and_profile_states_match_service_contract():
         for node in ast.walk(ui)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "post"
     }
-    assert writes == {"/predict", "/workload/trigger"} and writes <= routes
+    allowed_writes = {
+        "/predict",
+        "/workload/trigger",
+        "/monitoring/retrain/trigger",
+        "/monitoring/autonomous-scenario/start",
+        "/monitoring/autonomous-scenario/stop",
+    }
+    assert writes == allowed_writes and writes <= routes
     daemon = ast.parse((repo / "workloads/load-generator/traffic_daemon.py").read_text())
     states = next(
         ast.literal_eval(node.value)

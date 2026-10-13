@@ -23,15 +23,16 @@ spec:
       containers:
         # 1. FastAPI Model Serving Microservice
         - name: inference-api
-          image: docker.io/oktaavsm/predictive-autoscaler:latest
+          image: docker.io/oktaavsm/predictive-autoscaler@sha256:830ad467010fdf4bd4139a6be11ccc2087d8642ae655f21fe706c9e603d32588
           imagePullPolicy: IfNotPresent
           command:
             - "/bin/sh"
             - "-c"
             - |
-              pip install --no-cache-dir minio && \
+              pip install --no-cache-dir minio boto3 && \
               mkdir -p /app/src/inference && \
               cp /config/inference/service.py /app/src/inference/service.py && \
+              cp /config/inference/minio_sync.py /app/src/data/minio_sync.py && \
               exec uvicorn src.inference.service:app --host 0.0.0.0 --port 8000
           ports:
             - name: http
@@ -40,9 +41,18 @@ spec:
           envFrom:
             - configMapRef:
                 name: mlops-config
+            - secretRef:
+                name: mlops-object-storage
+          env:
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: "https://storage.titipin.me"
           volumeMounts:
             - name: inference-code
               mountPath: /config/inference
+            - name: drift-reference
+              mountPath: /app/data/processed/metrics_demo_processed.csv
+              subPath: metrics_demo_processed.csv
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /health
@@ -69,7 +79,7 @@ spec:
 
         # 2. Predictive Autoscaler Control Loop & Exporter
         - name: predictive-scaler
-          image: docker.io/oktaavsm/predictive-autoscaler:latest
+          image: docker.io/oktaavsm/predictive-autoscaler@sha256:830ad467010fdf4bd4139a6be11ccc2087d8642ae655f21fe706c9e603d32588
           imagePullPolicy: IfNotPresent
           command:
             - "/bin/sh"
@@ -85,6 +95,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: mlops-config
+            - secretRef:
+                name: mlops-object-storage
           env:
             - name: INFERENCE_URL
               value: "http://127.0.0.1:8000"
@@ -115,4 +127,7 @@ spec:
       volumes:
         - name: inference-code
           configMap:
-            name: mlops-inference-code
+            name: mlops-inference-code-remediation-20261013-0308
+        - name: drift-reference
+          configMap:
+            name: mlops-training-data

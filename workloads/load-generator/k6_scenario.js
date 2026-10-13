@@ -27,6 +27,8 @@ export default function () {
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
       'X-Traffic-Source': 'cp-bcc-continuous-generator',
+      'X-Traffic-Profile': __ENV.TRAFFIC_PROFILE || 'STEADY_NORMAL',
+      ...(__ENV.DRIFT_MODE === '1' ? {'X-Drift-Payload': 'x'.repeat(2048)} : {}),
     },
     timeout: '8s',
   });

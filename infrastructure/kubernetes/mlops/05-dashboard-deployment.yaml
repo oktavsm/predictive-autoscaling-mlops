@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: dashboard
-          image: docker.io/oktaavsm/predictive-autoscaler-dashboard:cleanup-20261012-2346@sha256:85edafed952c6e18833f3fc983fb1caf6dbbc974220463891faec4793f3bac2d
+          image: docker.io/oktaavsm/predictive-autoscaler-dashboard:remediation-20261013-0126@sha256:94c6a94cb639fcebc0f7f77b0a06130c16db601d26d9a6d1b760dfe1771965d0
           imagePullPolicy: Always
           ports:
             - name: http
@@ -72,4 +72,4 @@ spec:
       volumes:
         - name: dashboard-code
           configMap:
-            name: mlops-dashboard-code-cleanup-20261012-2346
+            name: mlops-dashboard-code-remediation-20261013-0126

@@ -248,6 +248,8 @@ def run_state(state_name: str) -> Optional[str]:
     env["TARGET_URL"] = TARGET_URL
     env["THINK_MIN"] = think_min
     env["THINK_MAX"] = think_max
+    env["TRAFFIC_PROFILE"] = state_name
+    env["DRIFT_MODE"] = "1" if state_name == "DRIFT_ANOMALY" else "0"
 
     cmd = [
         "k6",

@@ -19,7 +19,7 @@ rules:
     resources: ["deployments", "deployments/scale"]
     verbs: ["get", "list", "watch", "update", "patch"]
   - apiGroups: [""]
-    resources: ["pods", "services", "configmaps"]
+    resources: ["pods", "services", "configmaps", "nodes"]
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -36,4 +36,32 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: mlops-scaler-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mlops-training-jobs
+  namespace: mlops
+rules:
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    verbs: ["get"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mlops-training-jobs
+  namespace: mlops
+subjects:
+  - kind: ServiceAccount
+    name: mlops-service-account
+    namespace: mlops
+roleRef:
+  kind: Role
+  name: mlops-training-jobs
   apiGroup: rbac.authorization.k8s.io

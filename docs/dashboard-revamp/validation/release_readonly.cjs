@@ -42,7 +42,7 @@ const output=process.argv[3];
   check(await page.locator('.operation-title img').evaluateAll(es=>es.length>0&&es.every(e=>e.complete&&e.naturalWidth>0)),title+': kit SVG images loaded');
   check(!/\p{Extended_Pictographic}/u.test(await page.getByTestId('stMain').innerText()),title+': no decorative emoji');
  }
- check(await page.getByRole('button',{name:'Request drift anomaly',exact:true}).isDisabled(),'drift action visibly disabled');
+ check(await page.getByRole('button',{name:'Request drift anomaly',exact:true}).isEnabled(),'drift action available with live daemon');
  await page.screenshot({path:output+'/production-injector-light-desktop.png',fullPage:true});
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(400);
  check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'injector mobile no overflow');

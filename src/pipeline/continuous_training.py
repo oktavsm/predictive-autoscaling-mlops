@@ -27,7 +27,6 @@ if str(root_dir) not in sys.path:
 from src.monitoring.drift_detector import (  # noqa: E402
     DriftDetector,
     find_default_reference,
-    generate_drifted_dataset,
 )
 
 logging.basicConfig(
@@ -70,13 +69,13 @@ class ContinuousTrainingPipeline:
             ingest_cmd = [sys.executable, "src/ingest_data.py", "--minutes", str(minutes)]
             res_ingest = subprocess.run(ingest_cmd, capture_output=True, text=True, check=False)
             if res_ingest.returncode != 0:
-                logger.warning("Live ingestion non-fatal warning: %s", res_ingest.stderr)
+                raise RuntimeError("Live ingestion failed; training was not dispatched")
 
             # 2. Preprocessing
             prep_cmd = [sys.executable, "src/preprocess.py"]
             res_prep = subprocess.run(prep_cmd, capture_output=True, text=True, check=False)
             if res_prep.returncode != 0:
-                logger.warning("Preprocessing non-fatal warning: %s", res_prep.stderr)
+                raise RuntimeError("Preprocessing failed; training was not dispatched")
 
             # 3. Find latest raw & processed
             raw_dir = Path("data/raw")
@@ -96,26 +95,24 @@ class ContinuousTrainingPipeline:
             latest_proc = str(proc_files[-1]) if proc_files else None
 
             # 4. Push to MinIO object storage
-            if latest_raw or latest_proc:
-                try:
-                    from src.data.minio_sync import push_dataset_to_minio
+            if not latest_raw or not latest_proc:
+                raise RuntimeError("Fresh raw and processed datasets are required")
+            from src.data.minio_sync import push_dataset_to_minio
 
-                    push_dataset_to_minio(raw_path=latest_raw, processed_path=latest_proc)
-                    logger.info(
-                        "✓ Telemetry raw and processed datasets synced to MinIO cloud remote!"
-                    )
-                except Exception as sync_err:
-                    logger.warning("MinIO sync warning: %s", sync_err)
+            synced = push_dataset_to_minio(raw_path=latest_raw, processed_path=latest_proc)
+            if len(synced["pushed_files"]) != 2:
+                raise RuntimeError("Raw and processed dataset uploads were not confirmed")
+            logger.info("Telemetry datasets and DVC CAS synced to MinIO")
 
             return latest_raw, latest_proc
         except Exception as e:
             logger.warning("Ingestion & MinIO sync step encountered issue: %s", e)
-            return None, None
+            raise RuntimeError("Live dataset ingestion/sync failed") from e
 
     def reload_inference_service(self) -> bool:
         """Invokes dynamic hot reload endpoint on production serving service."""
         reload_url = f"{self.inference_url.rstrip('/')}/model/reload"
-        logger.info("Triggering zero-downtime hot reload: %s ...", reload_url)
+        logger.info("Triggering serving hot reload: %s ...", reload_url)
         try:
             import urllib.request
 
@@ -145,8 +142,7 @@ class ContinuousTrainingPipeline:
         logger.info("Evaluating telemetry drift against baseline: %s", self.ref_path)
         ref_df = pd.read_csv(self.ref_path)
         if current_data is None:
-            # Simulate real-world shift if no live streaming batch provided
-            current_data = generate_drifted_dataset(ref_df, traffic_multiplier=2.2)
+            raise ValueError("Observed current data is required for drift evaluation")
 
         detector = DriftDetector(ref_df, psi_threshold=self.drift_threshold)
         report = detector.evaluate_drift(
@@ -166,29 +162,77 @@ class ContinuousTrainingPipeline:
         env = os.environ.copy()
         env["MLFLOW_TRACKING_URI"] = self.tracking_uri
 
-        res = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+        subprocess.run(cmd, env=env, text=True, check=True)
         duration = round(time.time() - start_time, 2)
         logger.info("Retraining completed in %.2fs.", duration)
         return {
             "status": "SUCCESS",
             "duration_seconds": duration,
-            "output_summary": res.stdout[-400:] if len(res.stdout) > 400 else res.stdout,
         }
 
     def promote_challenger_to_champion(self) -> Dict[str, Any]:
         """Evaluates trained candidate models and promotes the best candidate to @champion."""
-        logger.info(
-            "Evaluating candidates in MLflow Model Registry (src/models/register_model.py)..."
-        )
-        cmd = [sys.executable, "src/models/register_model.py", "--tracking-uri", self.tracking_uri]
-        env = os.environ.copy()
-        env["MLFLOW_TRACKING_URI"] = self.tracking_uri
+        import mlflow
+        import numpy as np
+        from mlflow.tracking import MlflowClient
 
-        res = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+        from src.models.register_model import get_or_create_registered_model, register_model_version
+        from src.models.train import FEATURE_COLUMNS, TARGET_COLUMN, load_and_prepare_dataset
+
+        mlflow.set_tracking_uri(self.tracking_uri)
+        client = MlflowClient(self.tracking_uri)
+        candidate_meta = json.loads(Path("models/champion_model_metadata.json").read_text())
+        run_id = candidate_meta["champion_run_id"]
+        candidate = mlflow.pyfunc.load_model(f"runs:/{run_id}/model")
+        _, _, validation, targets, _ = load_and_prepare_dataset(
+            Path("data/processed"), FEATURE_COLUMNS, TARGET_COLUMN
+        )
+        candidate_mae = float(np.mean(np.abs(candidate.predict(validation) - targets)))
+        if not np.isfinite(candidate_mae):
+            raise RuntimeError("Candidate validation MAE is invalid")
+        try:
+            previous = client.get_model_version_by_alias(self.model_name, "champion")
+        except mlflow.exceptions.MlflowException as exc:
+            if exc.error_code != "RESOURCE_DOES_NOT_EXIST":
+                raise
+            previous = None
+        previous_mae = None
+        if previous:
+            current = mlflow.pyfunc.load_model(f"models:/{self.model_name}/{previous.version}")
+            previous_mae = float(np.mean(np.abs(current.predict(validation) - targets)))
+            if not np.isfinite(previous_mae):
+                raise RuntimeError("Current champion validation MAE is invalid")
+        promote = previous_mae is None or candidate_mae <= previous_mae
+        get_or_create_registered_model(client, self.model_name)
+        version = register_model_version(
+            client,
+            self.model_name,
+            run_id,
+            "Continuous training candidate evaluated against champion on a shared chronological holdout",
+            {
+                "evaluation_gate": "PASSED" if promote else "RETAINED_CHAMPION",
+                "candidate_mae": str(candidate_mae),
+                "champion_mae": str(previous_mae),
+                "holdout_rows": str(len(targets)),
+                "model_type": candidate_meta.get("champion_model_type", "Unknown"),
+            },
+            model_source=candidate.metadata.artifact_path,
+        )
+        # Verify registry delivery before changing either serving alias.
+        mlflow.pyfunc.load_model(f"models:/{self.model_name}/{version}")
+        client.set_registered_model_alias(
+            self.model_name, "challenger", previous.version if previous and promote else version
+        )
+        if promote:
+            client.set_registered_model_alias(self.model_name, "champion", version)
         return {
-            "status": "PROMOTED",
+            "status": "PROMOTED" if promote else "RETAINED_CHAMPION",
             "model_name": self.model_name,
-            "output": res.stdout[-400:] if len(res.stdout) > 400 else res.stdout,
+            "candidate_version": version,
+            "champion_version": version if promote else str(previous.version),
+            "candidate_mae": candidate_mae,
+            "champion_mae": previous_mae,
+            "holdout_rows": len(targets),
         }
 
     def execute_pipeline(self, force: bool = False, ingest_minutes: int = 1440) -> Dict[str, Any]:
@@ -206,10 +250,11 @@ class ContinuousTrainingPipeline:
         print("\n[Step 0/3] Ingesting latest telemetry & syncing datasets to MinIO DVC...")
         latest_raw, latest_proc = self.run_live_ingestion_and_minio_sync(minutes=ingest_minutes)
         if latest_proc and os.path.exists(latest_proc):
-            self.ref_path = latest_proc
-            logger.info("Using latest synced telemetry as reference dataset: %s", self.ref_path)
+            logger.info("Using latest synced telemetry as current dataset: %s", latest_proc)
 
-        drift_flag, drift_meta = self.run_drift_check()
+        if not latest_proc:
+            raise RuntimeError("No fresh processed dataset available")
+        drift_flag, drift_meta = self.run_drift_check(current_data=pd.read_csv(latest_proc))
 
         if not drift_flag and not force:
             print("✅ Telemetry distributions are stable. No retraining required.")
@@ -238,6 +283,8 @@ class ContinuousTrainingPipeline:
         # Step 3: Zero-downtime hot reload
         print("\n[Step 3/3] Triggering zero-downtime hot reload on Inference Service...")
         reloaded = self.reload_inference_service()
+        if not reloaded:
+            raise RuntimeError("Training completed but inference hot reload failed")
 
         summary = {
             "pipeline_status": "COMPLETED",
@@ -251,7 +298,7 @@ class ContinuousTrainingPipeline:
         }
 
         print("=" * 75)
-        print("🎉 CONTINUOUS TRAINING PIPELINE SUCCEEDED: New model serving live traffic!")
+        print("CONTINUOUS TRAINING PIPELINE SUCCEEDED: Verified champion serving live traffic")
         print("=" * 75 + "\n")
 
         # Save CT execution log
@@ -287,6 +334,21 @@ def main() -> None:
         drift_threshold=args.threshold,
     )
     res = ct.execute_pipeline(force=args.force, ingest_minutes=args.minutes)
+    termination = Path("/dev/termination-log")
+    if termination.exists():
+        termination.write_text(
+            json.dumps(
+                {
+                    key: res.get(key)
+                    for key in (
+                        "pipeline_status",
+                        "timestamp",
+                        "registry_promotion",
+                        "inference_reloaded",
+                    )
+                }
+            )
+        )
     if res.get("pipeline_status") != "COMPLETED" and res.get("status") != "SKIPPED":
         sys.exit(1)
 

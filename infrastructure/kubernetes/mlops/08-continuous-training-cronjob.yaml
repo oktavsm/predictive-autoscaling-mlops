@@ -26,13 +26,13 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: continuous-training-runner
-              image: docker.io/oktaavsm/predictive-autoscaler:latest
+              image: docker.io/oktaavsm/predictive-autoscaler@sha256:830ad467010fdf4bd4139a6be11ccc2087d8642ae655f21fe706c9e603d32588
               imagePullPolicy: IfNotPresent
               command:
                 - "/bin/sh"
                 - "-c"
                 - |
-                  pip install --no-cache-dir minio && \
+                  pip install --no-cache-dir minio boto3 && \
                   mkdir -p /app/src/pipeline /app/src/monitoring /app/src/models /app/src/data /app/data/raw /app/data/processed /app/reports /app/models && \
                   cp /config/ct/continuous_training.py /app/src/pipeline/ && \
                   cp /config/ct/drift_detector.py /app/src/monitoring/ && \
@@ -46,6 +46,23 @@ spec:
               envFrom:
                 - configMapRef:
                     name: mlops-config
+                - secretRef:
+                    name: mlops-object-storage
+              env:
+                - name: AWS_REQUEST_CHECKSUM_CALCULATION
+                  value: "when_required"
+                - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+                  value: "when_required"
+                - name: MLFLOW_S3_ENDPOINT_URL
+                  value: "https://storage.titipin.me"
+                - name: MLFLOW_EXPERIMENT_NAME
+                  value: "predictive-autoscaling-live"
+                - name: MLFLOW_ARTIFACT_ROOT
+                  value: "s3://mlops-dvc/mlflow/live"
+                - name: OMP_NUM_THREADS
+                  value: "2"
+                - name: OPENBLAS_NUM_THREADS
+                  value: "2"
               volumeMounts:
                 - name: ct-code
                   mountPath: /config/ct
@@ -61,7 +78,7 @@ spec:
           volumes:
             - name: ct-code
               configMap:
-                name: mlops-ct-code
+                name: mlops-ct-code-remediation-20261013-0308
             - name: ct-data
               configMap:
                 name: mlops-training-data

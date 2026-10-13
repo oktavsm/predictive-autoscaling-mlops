@@ -57,7 +57,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 PROCESSED_DATA_DIR = REPO_ROOT / "data" / "processed"
 MODELS_DIR = REPO_ROOT / "models"
 DEFAULT_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
-EXPERIMENT_NAME = "predictive-autoscaling-workload"
+EXPERIMENT_NAME = os.getenv("MLFLOW_EXPERIMENT_NAME", "predictive-autoscaling-workload")
 PREDICTION_HORIZON_SECONDS = 60
 RANDOM_STATE = 42
 
@@ -452,6 +452,9 @@ def main() -> None:
 
     # Inisialisasi MLflow
     mlflow.set_tracking_uri(args.tracking_uri)
+    artifact_root = os.getenv("MLFLOW_ARTIFACT_ROOT")
+    if artifact_root and mlflow.get_experiment_by_name(EXPERIMENT_NAME) is None:
+        mlflow.create_experiment(EXPERIMENT_NAME, artifact_location=artifact_root)
     mlflow.set_experiment(EXPERIMENT_NAME)
     log.info("MLflow Tracking URI aktif: %s", args.tracking_uri)
     log.info("MLflow Experiment Name : %s", EXPERIMENT_NAME)

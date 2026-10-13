@@ -297,6 +297,7 @@ predictive-autoscaling-mlops/
 - **[Operational Telemetry & Audit Log](docs/PANDUAN_AUDIT_LOG_DAN_TELEMETRI_OPERASIONAL.md):** Real-time cluster audit, API call tracking, and pod scaling history.
 - **[DVC Lineage & MinIO Storage Guide](docs/PANDUAN_DVC_DAN_MINIO_STORAGE.md):** Content-addressable storage (CAS), MD5 hashing, and time-travel versioning.
 - **[Autonomous Drift Retraining Pipeline](docs/AUTONOMOUS_DRIFT_RETRAINING.md):** Closed-loop PSI monitoring, event-driven CT triggers, and zero-downtime hot reloads.
+- **[Dashboard Remediation & Live Verification](docs/dashboard-revamp/REMEDIATION_IMPLEMENTATION.md):** Functional controls, real training lifecycle, persistent artifacts, deployment evidence and rollback.
 - **[HPA vs Predictive Autoscaler Benchmark](docs/BENCHMARK_HPA_VS_PREDICTIVE.md):** Empirical head-to-head performance under flash-sale spikes.
 - **[FinOps & Carbon Efficiency Analysis](docs/FINOPS_DAN_COST_EFFICIENCY.md):** Cloud cost calculations, vCPU savings, and carbon footprint reduction.
 - **[Integrated Alerting & Incident Management](docs/ALERTING_DAN_INCIDENT_MANAGEMENT.md):** Discord and Telegram dispatchers for operational anomalies.

@@ -62,23 +62,31 @@ async function select(page,title){
  checks(await page.getByTestId('stAlert').filter({hasText:'No success was confirmed'}).isVisible(),'Prediction HTTP failure is visible');
  checks(await page.getByTestId('stMetricValue').count()===0,'Prediction failure removes previous result');
  await state('ready');await select(page,'Workload Injector');
- for(const label of ['steady normal','rush hour','flash sale','cooling down','quiet night']){
+ for(const label of ['steady normal','rush hour','flash sale','cooling down','quiet night','drift anomaly']){
   const before=(await calls()).length;
   await page.getByRole('button',{name:`Request ${label}`,exact:true}).click();await page.getByText('execution is not yet confirmed.',{exact:false}).waitFor();await settle(page,'Workload Injector');
   checks((await calls()).length===before+1,`${label}: one write per explicit click`);
   checks(await page.getByText('execution is not yet confirmed.',{exact:false}).count()===1,`${label}: acknowledgement is separate from execution`);
  }
- checks(await page.getByRole('button',{name:'Request drift anomaly',exact:true}).isDisabled(),'Drift injection is disabled with explanation');
+ checks(await page.getByRole('button',{name:'Request drift anomaly',exact:true}).isEnabled(),'All six traffic profiles are available');
  await state('write_error');await page.getByRole('button',{name:'Request rush hour',exact:true}).click();await page.getByTestId('stAlert').filter({hasText:'No success was confirmed'}).waitFor();await settle(page,'Workload Injector');
  checks(await page.getByTestId('stAlert').filter({hasText:'No success was confirmed'}).isVisible(),'Workload HTTP failure is visible');
  checks(await page.getByText('Request accepted:',{exact:false}).count()===0,'Failed request clears prior accepted feedback');
  await state('ready');await select(page,'Drift & Retraining');
  await page.getByRole('button',{name:'Evaluate telemetry drift (PSI)',exact:true}).click();await page.getByTestId('stMetricValue').filter({hasText:'0.0800'}).waitFor();await settle(page,'Drift & Retraining');
  checks((await page.getByTestId('stMetricValue').allTextContents()).includes('0.0800'),'Drift evaluate reads and displays the API score');
- checks(await page.getByRole('button',{name:'Trigger retraining',exact:true}).isDisabled(),'Unverified retraining action is disabled with explanation');
- await select(page,'Model Registry');await page.getByText('Latest reported model',{exact:true}).click();
- checks(await page.getByTestId('stJson').count()>0,'Registry metadata inspector opens');
- await page.getByText('Recent API telemetry records',{exact:true}).click();checks(await page.getByTestId('stDataFrame').count()>0,'Registry telemetry inspector opens');
+ await page.getByRole('button',{name:'Trigger Event-Driven Retraining Pipeline',exact:true}).click();await page.getByText('Training accepted:',{exact:false}).waitFor();await settle(page,'Drift & Retraining');
+ checks((await calls()).at(-1).path==='/monitoring/retrain/trigger','Retraining sends explicit trigger');
+ checks(!((await page.getByTestId('stMain').innerText()).includes('Training job completed and champion loaded')),'ACK does not claim completion');
+ await state('completed');await page.getByRole('button',{name:'Refresh now',exact:true}).click();await settle(page,'Drift & Retraining');
+ checks((await page.getByTestId('stMetricValue').allTextContents()).includes('qa-v8'),'Completion shows the verified champion');
+ await state('ready');await select(page,'Workload Injector');
+ await page.getByRole('button',{name:'Launch Autonomous Lifecycle Simulation',exact:true}).click();await page.getByRole('button',{name:'Stop Running Scenario',exact:true}).waitFor();await settle(page,'Workload Injector');
+ checks((await calls()).at(-1).path==='/monitoring/autonomous-scenario/start','Lifecycle start sends explicit trigger');
+ await page.getByRole('button',{name:'Stop Running Scenario',exact:true}).click();await page.getByRole('button',{name:'Launch Autonomous Lifecycle Simulation',exact:true}).waitFor();await settle(page,'Workload Injector');
+ checks((await calls()).at(-1).path==='/monitoring/autonomous-scenario/stop','Lifecycle stop sends explicit cancellation');
+ await select(page,'Model Registry');
+ checks(await page.getByTestId('stJson').count()===0,'Registry uses readable cards and tables');
  const links={'Open MLflow registry':'https://mlflow.titipin.me'};
  for(const [name,href] of Object.entries(links))checks(await page.getByRole('link',{name,exact:true}).getAttribute('href')===href,`${name}: configured URL`);
  await select(page,'HPA vs Predictive');checks(await page.getByRole('link',{name:'Inspect telemetry in Grafana',exact:true}).getAttribute('href')==='https://grafana.titipin.me','Benchmark source link opens configured Grafana');

@@ -65,8 +65,8 @@ def get_minio_client() -> Tuple[Minio, str]:
         or os.getenv("MLFLOW_S3_ENDPOINT_URL")
         or "https://storage.titipin.me"
     )
-    access_key = os.getenv("AWS_ACCESS_KEY_ID") or "titipin_minio"
-    secret_key = os.getenv("AWS_SECRET_ACCESS_KEY") or "rahasiawoy"
+    access_key = os.environ["AWS_ACCESS_KEY_ID"]
+    secret_key = os.environ["AWS_SECRET_ACCESS_KEY"]
     bucket_name = os.getenv("DVC_BUCKET_NAME") or "mlops-dvc"
 
     # Bersihkan skema http/https
@@ -121,7 +121,14 @@ def push_dataset_to_minio(
         # 1. Upload ke path direktori normal (misal: raw/metrics_20261003.csv)
         obj_key_named = f"{prefix}/{filename}"
         logger.info("Mengunggah %s (%d bytes) -> %s", filename, file_size, obj_key_named)
-        client.fput_object(bucket_name, obj_key_named, str(file_path))
+        import pandas as pd
+
+        metadata = {
+            "md5": md5_hash,
+            "records": str(len(pd.read_csv(file_path))),
+            "raw-dataset": str(raw_path or ""),
+        }
+        client.fput_object(bucket_name, obj_key_named, str(file_path), metadata=metadata)
 
         # 2. Upload pointer latest (misal: raw/latest.csv)
         obj_key_latest = f"{prefix}/latest.csv"

@@ -6,6 +6,8 @@ from urllib.parse import parse_qs, urlparse
 
 state = "ready"
 calls = []
+lifecycle_active = False
+lifecycle_completed = False
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -13,22 +15,29 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_POST(self):
+        global lifecycle_active, lifecycle_completed
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
         calls.append({"method": "POST", "path": self.path, "body": body})
         if state == "write_error":
             self.send_response(503)
             self.end_headers()
             return
-        value = (
-            {"status": "ok", "override_state": body.get("state")}
-            if self.path == "/workload/trigger"
-            else {
+        if self.path in ("/monitoring/retrain/trigger", "/monitoring/autonomous-scenario/start"):
+            lifecycle_active = True
+            lifecycle_completed = False
+            value = {"status": "ACCEPTED", "operation_id": "qa-operation"}
+        elif self.path == "/monitoring/autonomous-scenario/stop":
+            lifecycle_active = False
+            value = {"status": "ok", "stage": "STOPPED"}
+        elif self.path == "/workload/trigger":
+            value = {"status": "ok", "override_state": body.get("state")}
+        else:
+            value = {
                 "status": "SUCCESS",
                 "predicted_workload_rps_60s": 35,
                 "recommended_replicas": 4,
                 "inference_latency_ms": 1.7,
             }
-        )
         blob = json.dumps(value).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -37,10 +46,16 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(blob)
 
     def do_GET(self):
-        global state
+        global state, lifecycle_active, lifecycle_completed
         path = urlparse(self.path).path
         if path == "/__state":
             state = parse_qs(urlparse(self.path).query).get("value", ["ready"])[0]
+            if state == "completed":
+                lifecycle_active = False
+                lifecycle_completed = True
+            else:
+                lifecycle_active = False
+                lifecycle_completed = False
             calls.clear()
             value = {"state": state}
         elif path == "/__calls":
@@ -113,7 +128,31 @@ class Handler(BaseHTTPRequestHandler):
                     "daemon_remaining_s": 450,
                     "override_state": None,
                 },
-                "/monitoring/autonomous-status": {"active": False, "stage": "IDLE", "timeline": []},
+                "/monitoring/autonomous-status": {
+                    "active": lifecycle_active,
+                    "stage": "COMPLETED"
+                    if lifecycle_completed
+                    else ("TRAINING" if lifecycle_active else "IDLE"),
+                    "stage_index": 5 if lifecycle_completed else 3,
+                    "progress_pct": 100 if lifecycle_completed else 60,
+                    "champion_version": "qa-v8",
+                    "quality_gate": "PASSED",
+                    "hot_reload": "SUCCESS",
+                    "timeline": [],
+                },
+                "/cluster/status": {
+                    "nodes": [{"name": "qa-node", "role": "worker", "ready": True}],
+                    "pods": [
+                        {
+                            "name": "qa-serving",
+                            "namespace": "mlops",
+                            "node": "qa-node",
+                            "phase": "Running",
+                            "ready": 1,
+                            "containers": 1,
+                        }
+                    ],
+                },
             }
             if state == "empty":
                 data["/scaling/decisions"] = []
