@@ -4,7 +4,7 @@ Implemented 12 October 2026 against the v1.1.0 kit in `docs/.agents/dashboard_re
 
 The Overview answers three questions: what was observed, what workload is forecast at +60s, and what replica recommendation was recorded. Its two main charts remain above the summary; model, cluster and action evidence occupy the support column. Charcoal/blue/teal, Geist, 10px panel corners and restrained spacing follow the supplied kit. Design dials: ENERGY 1 / RHYTHM 2 / MOTION 1.
 
-The 13 October operational cleanup is also deployed. It removes emoji/fabricated UI outcomes, fixes supported injector states and error feedback, and documents disabled capabilities. Validation: 53 Python tests, 189 operational plus 63 Overview mock-browser assertions, and 35 read-only production assertions. See [control inventory and limitations](FUNCTIONALITY.md), [cleanup release](deployment/cleanup-2026-10-13/RELEASE.md), and [audit 002](../../anti-slop/audit-002-2026-10-13.md).
+The 13 October operational cleanup is also deployed. It removes emoji/fabricated UI outcomes, fixes supported injector states and error feedback, and documents disabled capabilities. Validation: 53 Python tests, 189 operational plus 63 Overview mock-browser assertions, and 35 read-only production assertions. See [control inventory and limitations](FUNCTIONALITY.md), [Codex Remediation Plan (Active)](REMEDIATION_PLAN_CODEX.md), [cleanup release](deployment/cleanup-2026-10-13/RELEASE.md), and [audit 002](../../anti-slop/audit-002-2026-10-13.md).
 
 ## Changes
 
