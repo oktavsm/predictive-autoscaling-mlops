@@ -1,0 +1,37 @@
+{
+  "checked_at": "2026-10-13T00:17:20.300274+00:00",
+  "url": "https://mlops.titipin.me",
+  "deployment_revision": "23",
+  "image": "docker.io/oktaavsm/predictive-autoscaler-dashboard:cleanup-20261012-2346@sha256:85edafed952c6e18833f3fc983fb1caf6dbbc974220463891faec4793f3bac2d",
+  "configmap": "mlops-dashboard-code-cleanup-20261012-2346",
+  "pod": "mlops-dashboard-545b7d4c4d-jfvlx",
+  "node": "worker-2",
+  "ready": true,
+  "restarts": 0,
+  "runtime_source_sha256": {
+    "src/dashboard/app.py": "0497e335a84ec03bafb8c2e8d99fbd3807ce47c47cbd3a40063b6b8c70309e1e",
+    "src/dashboard/adapter.py": "b9999a7ba7c6ab899130d498124fcdd9cda80323b2a137be2eeb0f340ebc4b40",
+    "src/dashboard/overview.py": "d7db8056da9d09246e3ba4debef18fd0ad2433da4bdccdd6cf7bcf7f8b2962dc",
+    "src/dashboard/assets/dashboard.css": "07ab1b2bf789b7b2fe70c9c814065808ceffd3b9f8c65637e25497c5148bdaa0",
+    ".streamlit/config.toml": "21cade3eb7a05bd9a0f5bda4fbdf7ef8ce361601ddd1489f6234a8c9b1d292ba",
+    "src/dashboard/assets/icons/pipeline.svg": "a656e2d6c6e344bb9d0cc23a07a808bc80c97004195e49d9026b7063a6390a52"
+  },
+  "source_commit_base": "f292ae0",
+  "source_state": "Cleanup source and release evidence are included in the accompanying commit; file hashes identify the tested code.",
+  "usage_telemetry": false,
+  "browser_readonly_checks": 35,
+  "health_samples": {
+    "scope": "Post-rollout sampling only. These timestamps do not cover the pod transition.",
+    "samples": 90,
+    "status_counts": {
+      "200": 89,
+      "ERROR": 1
+    },
+    "failed_requests": [
+      "2026-10-13T00:08:51.811006+00:00 ERROR"
+    ],
+    "first": "2026-10-12T23:49:36.015293+00:00 200",
+    "last": "2026-10-13T00:10:09.916688+00:00 200"
+  },
+  "rollout_status": "Fresh kubectl rollout status returned success. Original remote watch was closed locally after it remained open despite completed deployment."
+}

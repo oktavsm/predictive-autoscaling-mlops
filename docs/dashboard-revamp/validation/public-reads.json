@@ -1,0 +1,42 @@
+[
+  {
+    "url": "https://mlops.titipin.me/_stcore/health",
+    "status": 200,
+    "final_url": "https://mlops.titipin.me/_stcore/health"
+  },
+  {
+    "url": "https://model.titipin.me/openapi.json",
+    "status": 200,
+    "write_routes": {
+      "/predict": [
+        "post"
+      ],
+      "/workload/trigger": [
+        "post"
+      ],
+      "/monitoring/retrain/trigger": [
+        "post"
+      ]
+    }
+  },
+  {
+    "url": "https://mlflow.titipin.me",
+    "status": 200,
+    "final_url": "https://mlflow.titipin.me/"
+  },
+  {
+    "url": "https://grafana.titipin.me",
+    "status": 200,
+    "final_url": "https://grafana.titipin.me/"
+  },
+  {
+    "url": "https://minio.titipin.me",
+    "status": 200,
+    "final_url": "https://minio.titipin.me/"
+  },
+  {
+    "url": "https://api.titipin.me",
+    "status": 200,
+    "final_url": "https://api.titipin.me/"
+  }
+]

@@ -4,9 +4,11 @@ Implemented 12 October 2026 against the v1.1.0 kit in `docs/.agents/dashboard_re
 
 The Overview answers three questions: what was observed, what workload is forecast at +60s, and what replica recommendation was recorded. Its two main charts remain above the summary; model, cluster and action evidence occupy the support column. Charcoal/blue/teal, Geist, 10px panel corners and restrained spacing follow the supplied kit. Design dials: ENERGY 1 / RHYTHM 2 / MOTION 1.
 
+The 13 October operational cleanup is also deployed. It removes emoji/fabricated UI outcomes, fixes supported injector states and error feedback, and documents disabled capabilities. Validation: 53 Python tests, 189 operational plus 63 Overview mock-browser assertions, and 35 read-only production assertions. See [control inventory and limitations](FUNCTIONALITY.md), [cleanup release](deployment/cleanup-2026-10-13/RELEASE.md), and [audit 002](../../anti-slop/audit-002-2026-10-13.md).
+
 ## Changes
 
-- Sidebar workspace selection preserves all eight operational workspaces and renders only the selected workspace. Their action handlers remain explicit button actions.
+- Sidebar workspace selection preserves all eight operational workspaces and renders only the selected workspace. Their supported action handlers remain explicit button actions. The 13 October follow-up corrects profile states and disables unsupported lifecycle/retraining actions; see `FUNCTIONALITY.md`.
 - `src/dashboard/overview.py` renders owned Streamlit panel containers, native inspectors, CSV export, status states, and a responsive chart/support layout. Below 1120px panels stack; metrics use two columns on compact layouts.
 - `src/dashboard/adapter.py` reads only health, decisions, actions, audit and drift resources. It validates decision units and timestamps, sorts/deduplicates observations, shifts forecast targets by exactly 60s, and rejects invalid rates and replica counts.
 - The Overview uses runtime policy from health. Simulator controls are explicitly local previews and do not change Overview policy or the controller.
@@ -46,4 +48,4 @@ This is bounded browser and source validation, not a WCAG certification or evide
 
 Releases that change modules, assets or dependencies need a new dashboard image containing both Python modules, all assets and the theme configuration. The `app.py` ConfigMap mount must match that image; the old single-file hot-deploy cannot install new modules or assets. This release changed the image digest and a versioned ConfigMap reference together, retaining the old ConfigMap for rollback. See `docs/internal/AGENT_HANDOFF_OPERATIONS.md` for this boundary.
 
-The post-implementation audit is `anti-slop/audit-001-2026-10-12.md`. Existing operational views still contain hardcoded benchmark/retraining/fallback fields; the new Overview does not use them. Their provenance and business behavior need a separately scoped correction. No new history endpoint, node census, online-error calculation, framework migration or retry/visibility subsystem was added.
+The post-implementation audit is `anti-slop/audit-001-2026-10-12.md`. The 13 October follow-up removes UI-generated audit/prediction fallbacks, fixed benchmark scores and fabricated retraining success, and applies kit glyphs and theme-aware panels across operational views. Backend seeded history and drift/retraining orchestration remain limitations; the affected actions are disabled with reasons. See `FUNCTIONALITY.md` and `anti-slop/audit-002-2026-10-13.md` for control coverage and unresolved functions. No new history endpoint, node census, online-error calculation, framework migration or retry/visibility subsystem was added.

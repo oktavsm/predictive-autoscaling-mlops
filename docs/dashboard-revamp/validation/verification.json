@@ -1,0 +1,27 @@
+{
+  "checked_at": "2026-10-13T00:17:20.300648+00:00",
+  "python": {
+    "command": ".venv/bin/pytest tests/test_dashboard_adapter.py tests/test_dashboard_ui.py -q",
+    "passed": 53,
+    "duration_seconds": 68.56
+  },
+  "browser": {
+    "operational_mock_assertions": 189,
+    "overview_mock_assertions": 63,
+    "production_readonly_assertions": 35
+  },
+  "kit_svg_byte_matches": 24,
+  "image": {
+    "tag": "docker.io/oktaavsm/predictive-autoscaler-dashboard:cleanup-20261012-2346@sha256:85edafed952c6e18833f3fc983fb1caf6dbbc974220463891faec4793f3bac2d",
+    "isolated_memory_mib": 512,
+    "api_read_snapshot_resources": 8,
+    "workspaces_rendered": 9,
+    "automatic_post_spy_calls": 0
+  },
+  "lint": {
+    "ruff_check": "PASS",
+    "ruff_format_check_files": 85,
+    "git_diff_check": "PASS"
+  },
+  "excluded": "No production prediction, traffic switch, retraining, model reload or scaling mutation was submitted."
+}

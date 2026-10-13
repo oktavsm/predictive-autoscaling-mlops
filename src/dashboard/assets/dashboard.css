@@ -11,6 +11,7 @@ h1, h2, h3, h4, p { overflow-wrap: anywhere; }
 h1 { font-size: 1.875rem !important; font-weight: 650 !important; padding: 0 !important; margin: 0 !important; letter-spacing: -.7px; }
 h2, h3 { font-size: 1.0625rem !important; font-weight: 600 !important; padding: 0 !important; }
 [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p, .muted { color: var(--text-muted) !important; }
+[data-testid="stCaptionContainer"] { opacity: 1 !important; }
 .stApp :where(h1,h2,h3,h4,p,label), [data-testid="stMetric"] { font-family: var(--font-sans); }
 .stApp p { font-size: .875rem; }
 [data-testid="stCaptionContainer"] p { font-size: .75rem; }
@@ -42,6 +43,9 @@ h2, h3 { font-size: 1.0625rem !important; font-weight: 600 !important; padding: 
 [class*="st-key-panel-"] { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 19px; }
 [class*="st-key-panel-"] > [data-testid="stVerticalBlock"] { gap: 10px; }
 .panel-title { margin: 0; font-size: 1.0625rem; font-weight: 600; }
+.operation-title { display: flex; align-items: center; gap: 10px; margin: 0; }
+.operation-title img { width: 20px; height: 20px; flex-shrink: 0; }
+.st-key-operation-metrics [data-testid="stMetricValue"] > div { white-space: normal; }
 .panel-note { font-size: .8125rem; color: var(--text-muted); margin: 4px 0 0; line-height: 1.5; }
 .status { display: inline-flex; align-items: center; gap: 7px; border-radius: 6px; padding: 4px 8px; font-size: .75rem; background: var(--info-soft); color: var(--info); }
 .status-ready { color: var(--success); background: var(--success-soft); }
@@ -91,6 +95,12 @@ h2, h3 { font-size: 1.0625rem !important; font-weight: 600 !important; padding: 
 }
 @media (min-width: 900px) { [data-testid="stSidebar"] { width: 238px !important; min-width: 238px; max-width: 238px; } }
 @media (max-width: 640px) {
+  .st-key-operation-profiles [data-testid="stHorizontalBlock"],
+  .st-key-operation-presets [data-testid="stHorizontalBlock"],
+  .st-key-operation-metrics [data-testid="stHorizontalBlock"] { flex-direction: column !important; }
+  .st-key-operation-profiles [data-testid="stColumn"],
+  .st-key-operation-presets [data-testid="stColumn"],
+  .st-key-operation-metrics [data-testid="stColumn"] { width: 100% !important; flex: 1 1 100% !important; }
   [data-testid="stMainBlockContainer"] { padding: 58px 16px 24px !important; }
   [data-testid="stHeader"] { height: 48px; }
   [class*="st-key-panel-"] { padding: 14px; }

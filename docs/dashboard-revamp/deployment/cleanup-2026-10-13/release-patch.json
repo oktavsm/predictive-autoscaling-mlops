@@ -1,0 +1,22 @@
+{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "dashboard",
+            "image": "docker.io/oktaavsm/predictive-autoscaler-dashboard:cleanup-20261012-2346@sha256:85edafed952c6e18833f3fc983fb1caf6dbbc974220463891faec4793f3bac2d"
+          }
+        ],
+        "volumes": [
+          {
+            "name": "dashboard-code",
+            "configMap": {
+              "name": "mlops-dashboard-code-cleanup-20261012-2346"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

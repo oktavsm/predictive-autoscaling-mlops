@@ -1,0 +1,144 @@
+import json
+import math
+from datetime import datetime, timedelta, timezone
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import parse_qs, urlparse
+
+state = "ready"
+calls = []
+
+
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, *args):
+        pass
+
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+        calls.append({"method": "POST", "path": self.path, "body": body})
+        if state == "write_error":
+            self.send_response(503)
+            self.end_headers()
+            return
+        value = (
+            {"status": "ok", "override_state": body.get("state")}
+            if self.path == "/workload/trigger"
+            else {
+                "status": "SUCCESS",
+                "predicted_workload_rps_60s": 35,
+                "recommended_replicas": 4,
+                "inference_latency_ms": 1.7,
+            }
+        )
+        blob = json.dumps(value).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(blob)))
+        self.end_headers()
+        self.wfile.write(blob)
+
+    def do_GET(self):
+        global state
+        path = urlparse(self.path).path
+        if path == "/__state":
+            state = parse_qs(urlparse(self.path).query).get("value", ["ready"])[0]
+            calls.clear()
+            value = {"state": state}
+        elif path == "/__calls":
+            value = calls
+        else:
+            calls.append({"method": "GET", "path": path})
+            now = datetime.now(timezone.utc)
+            start = now - timedelta(minutes=14, seconds=45)
+            rows = [
+                {
+                    "timestamp": (start + timedelta(seconds=i * 15)).isoformat(),
+                    "input_rps": round(60 + i * 2 + math.sin(i / 4) * 35, 2),
+                    "predicted_rps_60s": round(70 + i * 2.5, 2),
+                    "current_replicas": 2 if i < 16 else (4 if i < 40 else 3),
+                    "desired_replicas": 4,
+                    "input_p95_ms": 23.9 + i * 0.2,
+                    "input_cpu": 0.2,
+                    "latency_ms": 12.3,
+                    "action": "SCALE_UP",
+                    "synthetic": True,
+                }
+                for i in range(60)
+            ][::-1]
+            data = {
+                "/health": {
+                    "status": "healthy",
+                    "model_ready": True,
+                    "model_version": "qa-v7",
+                    "model_name": "QA model",
+                    "model_alias": "champion",
+                    "model_algorithm": "QA fixture model",
+                    "target_rps_per_pod": 65,
+                    "replica_bounds": {"min": 1, "max": 8},
+                    "load_time_ms": 18.4,
+                },
+                "/scaling/decisions": rows,
+                "/telemetry/live-sample": rows[:5],
+                "/scaling/actions": [
+                    {
+                        "timestamp": (now - timedelta(minutes=2)).isoformat(),
+                        "action": "SCALE_DOWN",
+                        "from_replicas": 4,
+                        "to_replicas": 3,
+                        "status": "applied",
+                        "synthetic": True,
+                    }
+                ],
+                "/operations/audit": {
+                    "retraining": {
+                        "latest": {
+                            "version": "qa-v7",
+                            "algorithm": "QA fixture model",
+                            "val_mae": "0.4 req/s",
+                        }
+                    },
+                    "last_ingestion": {
+                        "records_count": 60,
+                        "window_minutes": 15,
+                        "status": "synthetic QA",
+                        "md5": "synthetic",
+                        "timestamp": now.isoformat(),
+                    },
+                },
+                "/monitoring/drift": {"psi_score": 0.08, "threshold": 0.2, "evaluated_cycles": 60},
+                "/workload/status": {
+                    "daemon_alive": True,
+                    "daemon_current_state": "STEADY_NORMAL",
+                    "daemon_vus": 6,
+                    "last_heartbeat_seconds_ago": 2,
+                    "daemon_remaining_s": 450,
+                    "override_state": None,
+                },
+                "/monitoring/autonomous-status": {"active": False, "stage": "IDLE", "timeline": []},
+            }
+            if state == "empty":
+                data["/scaling/decisions"] = []
+                data["/scaling/actions"] = []
+            if state == "stale":
+                for r in rows:
+                    r["timestamp"] = "2020-01-01T00:00:00Z"
+            if state == "invalid":
+                data["/scaling/decisions"] = [{"input_rps": None}]
+                data["/health"] = {"model_ready": False}
+            if state == "error" and path == "/scaling/decisions":
+                self.send_response(503)
+                self.end_headers()
+                return
+            if state == "partial" and path == "/health":
+                self.send_response(503)
+                self.end_headers()
+                return
+            value = data.get(path, {})
+        blob = json.dumps(value).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(blob)))
+        self.end_headers()
+        self.wfile.write(blob)
+
+
+HTTPServer(("127.0.0.1", 18766), Handler).serve_forever()
