@@ -1,0 +1,189 @@
+name: MLOps Automation Pipeline (Code as a Trigger)
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # Tahap 1: Automated Testing
+  # ============================================================================
+  automated-testing:
+    name: "Tahap 1: Automated Testing & Code Verification"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Project Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Code Hygiene & Style Gate (Ruff Lint)
+        run: ruff check .
+
+      - name: Run Automated Test Suite (Pytest)
+        run: |
+          pytest -v tests/test_dataset.py \
+                    tests/test_model_registry.py \
+                    tests/test_inference_api.py
+
+  # ============================================================================
+  # Tahap 2: Automated Training
+  # ============================================================================
+  automated-training:
+    name: "Tahap 2: Automated Training Pipeline"
+    needs: [automated-testing]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Project Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Pull or Prepare DVC Telemetry Dataset
+        run: |
+          mkdir -p data/processed
+          # Coba tarik data terbaru dari remote DVC jika kredensial tersedia,
+          # atau gunakan pipa prapemrosesan deterministik untuk continuous integration
+          python src/preprocess.py \
+            --input src/data/demo_metrics.csv \
+            --output data/processed/metrics_demo_processed.csv
+
+      - name: Execute Multi-Model Training (train.py)
+        env:
+          MLFLOW_TRACKING_URI: "sqlite:///mlflow.db"
+          MLFLOW_EXPERIMENT_NAME: "predictive-autoscaling-workload"
+        run: |
+          python src/models/train.py --all
+
+      - name: Upload Trained Model Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-pipeline-artifacts
+          path: |
+            mlflow.db
+            mlruns/
+            models/
+          retention-days: 2
+
+  # ============================================================================
+  # Tahap 3: Model Evaluation & Validation
+  # ============================================================================
+  model-evaluation-and-validation:
+    name: "Tahap 3: Model Evaluation & Threshold Validation"
+    needs: [automated-training]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Project Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Download Training Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: training-pipeline-artifacts
+          path: .
+
+      - name: Evaluate Model Metrics against SLO Thresholds (LK-01 Gate)
+        run: |
+          python src/models/evaluate_and_register.py --eval-only \
+            --max-mae 5.0 \
+            --max-rmse 15.0 \
+            --min-r2 0.70 \
+            --max-latency 100.0
+
+      - name: Upload Evaluation Gate Summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-evaluation-report
+          path: reports/model_evaluation_gate.json
+          retention-days: 2
+
+  # ============================================================================
+  # Tahap 4: Auto-Registry Update (Staging Promotion)
+  # ============================================================================
+  auto-registry-update:
+    name: "Tahap 4: Auto-Registry Update to Staging"
+    needs: [model-evaluation-and-validation]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Project Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Download Training Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: training-pipeline-artifacts
+          path: .
+
+      - name: Register Model Candidate to MLflow Staging Stage
+        env:
+          MLFLOW_TRACKING_URI: "sqlite:///mlflow.db"
+        run: |
+          python src/models/evaluate_and_register.py --register-staging \
+            --tracking-uri sqlite:///mlflow.db \
+            --model-name predictive-autoscaler
+
+      - name: Verify Inference Serving Readiness in Staging
+        env:
+          MLFLOW_TRACKING_URI: "sqlite:///mlflow.db"
+        run: |
+          python src/models/register_model.py --verify-only \
+            --tracking-uri sqlite:///mlflow.db
+
+      - name: Upload Registry Manifest & Deployment Metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: registry-deployment-manifest
+          path: |
+            models/champion_model_metadata.json
+            models/model_registry_manifest.yaml
+          retention-days: 7

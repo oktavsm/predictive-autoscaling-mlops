@@ -141,8 +141,17 @@ train: venv
 register: venv
 	@$(BIN)/python src/models/register_model.py
 
+sync-manifest: venv
+	@$(BIN)/python src/models/register_model.py --sync-manifest
+
 verify-model: venv
 	@$(BIN)/python src/models/register_model.py --verify-only
+
+eval-model: venv
+	@$(BIN)/python src/models/evaluate_and_register.py --eval-only
+
+register-staging: venv
+	@$(BIN)/python src/models/evaluate_and_register.py --register-staging
 
 mlflow-ui: venv
 	@echo ">>> Membuka MLflow Tracking UI pada http://127.0.0.1:5000..."

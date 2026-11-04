@@ -230,6 +230,53 @@ For complete technical architecture, MD5 Content-Addressable Storage (CAS), and 
 
 ---
 
+### Option 7: Model Registry, Lifecycle, and Active Serving Model (LK-07)
+
+Model versions and operational stages are managed through the **MLflow Model Registry** (`predictive-autoscaler`) with automated programmatic inference readiness validation.
+
+#### Active Model in Production:
+- **Registered Model Name:** `predictive-autoscaler`
+- **Active Serving Alias:** `@champion` (Stage: `Production`, **Version 5**)
+- **Architecture:** `LightGBM Regressor (Tuned)` (Hyperparameter-tuned Gradient Boosted Decision Trees: `learning_rate=0.03`, `num_leaves=15`, `n_estimators=200`, `max_depth=4`)
+- **Alternative Candidate:** `@challenger` (Stage: `Staging`, **Version 4**, `lightgbm-default`)
+
+#### Why This Model Version is Active:
+1. **Highest Predictive Accuracy:** Achieves the lowest validation error (**MAE = 2.2375 RPS**, RMSE = 10.97 RPS) with $R^2 = 0.8239$, accurately capturing non-linear workload surges with a 60-second forward horizon.
+2. **Sub-2ms Serving Latency:** Average inference response time is **~1.45 ms**, executing 60x faster than the 100 ms SLO budget and ensuring zero CPU bottleneck for the Kubernetes autoscaler controller.
+3. **Flapping Prevention:** The low error variance guarantees that pod capacity calculations ($\text{clamp}(\lceil \text{RPS}/10 \rceil, 1, 4)$) remain stable during fluctuating traffic windows.
+4. **End-to-End Data Lineage:** Bound directly to DVC telemetry dataset release `v2.0-data` (`data/processed.dvc`, hash: `2026feedece54b8c71b0a21c0933679e.dir`) stored in MinIO S3 (`storage.titipin.me/mlops-dvc`).
+
+#### Programmatic Verification:
+```bash
+# Execute automated inference serving simulation across 3 workload scenarios (Normal, Spike, Idle)
+python src/models/register_model.py --verify-only
+```
+Manifest and lineage metadata are documented in [`models/model_registry_manifest.yaml`](models/model_registry_manifest.yaml) and [`models/champion_model_metadata.json`](models/champion_model_metadata.json).
+
+---
+
+### Option 8: Automated End-to-End CI/CD Pipeline (Code as a Trigger — LK-08)
+
+The continuous integration and automated training pipeline operates on the **"Code as a Trigger"** principle, defined in [`.github/workflows/mlops-automation.yaml`](.github/workflows/mlops-automation.yaml). Every push or pull request to `main` and `feat/**` automatically triggers an end-to-end 4-stage workflow:
+
+#### Automated 4-Stage Pipeline Lifecycle:
+1. **Tahap 1 — Automated Testing:** Ruff linting and Pytest unit/integration test suite (135+ tests covering telemetry schemas, preprocessing logic, model registry integrity, and FastAPI inference serving).
+2. **Tahap 2 — Automated Retraining:** Executes `python src/models/train.py --all` using DVC-managed telemetry data to train multi-model variations.
+3. **Tahap 3 — Model Evaluation Gate:** Validates candidate metrics against LK-01 SLO thresholds (`val_mae <= 5.0 RPS`, `val_rmse <= 15.0`, `latency <= 100.0 ms`, `val_r2 >= 0.70`). Blocks the pipeline upon metric degradation, preventing silent failures.
+4. **Tahap 4 — Auto-Registry Update (Staging):** Automatically registers verified models to the MLflow Model Registry with operational stage **`Staging`** and aliases `@staging` / `@challenger`.
+
+#### Local Execution / Quick Verification:
+```bash
+# 1. Run automated model evaluation gate against LK-01 SLO thresholds
+make eval-model
+
+# 2. Register verified candidate model to Staging in MLflow Model Registry
+make register-staging
+```
+Comprehensive lab report and silent failure reflection: [`docs/coursework/LK-08_LAPORAN_PRAKTIKUM.md`](docs/coursework/LK-08_LAPORAN_PRAKTIKUM.md).
+
+---
+
 ## 📁 Repository Structure
 
 ```text

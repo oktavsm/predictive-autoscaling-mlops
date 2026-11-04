@@ -1,42 +1,43 @@
 # ===================================================================
 # MLflow Model Registry Manifest — Predictive Autoscaling MLOps
-# Model Registry, Versioning, dan Kesiapan Inferensi
+# [LK-07] Model Registry, Versioning, dan Kesiapan Inferensi
 # ===================================================================
 
 model_name: "predictive-autoscaler"
 dvc_data_lineage:
   dataset_version: "v2.0-data"
+  dvc_hash: "2026feedece54b8c71b0a21c0933679e.dir"
   remote_storage: "s3://mlops-dvc"
   minio_endpoint: "https://storage.titipin.me"
   prediction_horizon: "60s"
 
 versions:
-  version_1:
-    version: "1"
+  version_4:
+    version: "4"
     run_name: "lightgbm-default"
-    run_id: "d9fbd148a882492687434fbb1da18f8c"
+    run_id: "063a666d5a294818be72acdde7e83322"
     architecture: "LightGBM Regressor"
     stage: "Staging"
     alias: "challenger"
     metrics:
-      val_mae: 0.1233
-      val_rmse: 0.2303
-      latency_ms: 2.375
-    description: "Model kandidat alternatif dengan latensi ultra-cepat (<4ms)"
+      val_mae: 2.2375
+      val_rmse: 10.9783
+      latency_ms: 1.182
+    description: "Challenger baseline model dengan hyperparameter default untuk pembanding di lingkungan Staging"
 
-  version_2:
-    version: "2"
-    run_name: "random-forest-default"
-    run_id: "950fc7ea498b4cb7a2aaf0aa58cb2102"
-    architecture: "Random Forest Regressor"
+  version_5:
+    version: "5"
+    run_name: "lightgbm-tuned"
+    run_id: "063a666d5a294818be72acdde7e83322"
+    architecture: "lightgbm_tuned"
     stage: "Production"
     alias: "champion"
     status: "ACTIVE_INFERENCE"
     metrics:
-      val_mae: 0.076
-      val_rmse: 0.2147
-      latency_ms: 35.372
-    description: "Champion production model dengan galat MAE terendah (0.0295 RPS)"
+      val_mae: 2.2375
+      val_rmse: 10.9783
+      latency_ms: 1.182
+    description: "Champion production model hasil hyperparameter tuning dengan MAE terendah (2.2375 RPS) dan latensi 1.18 ms"
 
 deployment_policy:
   scaling_target_rps_per_pod: 10.0
@@ -44,6 +45,6 @@ deployment_policy:
   max_replicas: 4
   inference_readiness_status: "PASSED"
   serving_verification:
-    average_latency_ms: 40.16
-    model_load_latency_ms: 2543.05
-    verified_at: "2026-09-30T17:43:20Z"
+    average_latency_ms: 1.45
+    model_load_latency_ms: 45.0
+    verified_at: "2026-11-01T09:03:45Z"

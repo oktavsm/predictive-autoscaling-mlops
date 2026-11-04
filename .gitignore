@@ -22,9 +22,15 @@ docs/internal/*
 docs/coursework/
 docs/metopen/
 
-# Large binary artifacts
+# Large binary artifacts & model files
 docker/*-bin
 logs/
 *.zip
+*.joblib
+*.pkl
+models/*.joblib
+models/*.pkl
 
 
+
+/backups/
