@@ -41,24 +41,32 @@ def test_registry_manifest_exists():
 
     assert manifest["model_name"] == "predictive-autoscaler"
     assert "versions" in manifest
-    assert len(manifest["versions"]) >= 2, "Manifest must track at least challenger and champion versions"
+    assert len(manifest["versions"]) >= 2, (
+        "Manifest must track at least challenger and champion versions"
+    )
 
     # Must contain active champion / production model
     champion_entries = [
-        v for v in manifest["versions"].values()
+        v
+        for v in manifest["versions"].values()
         if v.get("alias") == "champion" and v.get("stage") == "Production"
     ]
-    assert len(champion_entries) >= 1, "Must contain at least one champion model in Production stage"
+    assert len(champion_entries) >= 1, (
+        "Must contain at least one champion model in Production stage"
+    )
     champ = champion_entries[0]
     assert "metrics" in champ
     assert "val_mae" in champ["metrics"]
 
     # Must contain challenger / staging model
     challenger_entries = [
-        v for v in manifest["versions"].values()
+        v
+        for v in manifest["versions"].values()
         if v.get("alias") == "challenger" and v.get("stage") == "Staging"
     ]
-    assert len(challenger_entries) >= 1, "Must contain at least one challenger model in Staging stage"
+    assert len(challenger_entries) >= 1, (
+        "Must contain at least one challenger model in Staging stage"
+    )
 
     # Deployment policy
     policy = manifest["deployment_policy"]

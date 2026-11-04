@@ -127,11 +127,13 @@ def evaluate_model_quality(
     log.info("Run ID          : %s", meta_data.get("champion_run_id", "unknown"))
     log.info("Model Type      : %s", meta_data.get("champion_model_type", "unknown"))
     log.info("-" * 70)
-    log.info("%-25s | %-12s | %-15s | %s", "Metrik Pengujian", "Nilai Terukur", "Ambang Batas", "Status")
+    log.info(
+        "%-25s | %-12s | %-15s | %s", "Metrik Pengujian", "Nilai Terukur", "Ambang Batas", "Status"
+    )
     log.info("-" * 70)
     for k, v in checks.items():
         status_str = "PASSED" if v["passed"] else "FAILED"
-        val_str = f"{v['value']:.4f}" if isinstance(v['value'], float) else str(v['value'])
+        val_str = f"{v['value']:.4f}" if isinstance(v["value"], float) else str(v["value"])
         log.info("%-25s | %-12s | %-15s | %s", v["name"], val_str, v["threshold"], status_str)
     log.info("-" * 70)
     log.info(
@@ -228,7 +230,9 @@ def register_candidate_to_staging(
     try:
         client.set_registered_model_alias(name=model_name, alias="staging", version=new_version)
         client.set_registered_model_alias(name=model_name, alias="challenger", version=new_version)
-        log.info("Alias '@staging' dan '@challenger' berhasil disematkan pada Versi %s.", new_version)
+        log.info(
+            "Alias '@staging' dan '@challenger' berhasil disematkan pada Versi %s.", new_version
+        )
     except Exception as e:
         log.warning("Penyematan alias registry: %s", e)
 

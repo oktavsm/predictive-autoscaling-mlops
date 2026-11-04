@@ -189,7 +189,10 @@ def verify_inference_readiness(
         from mlflow.tracking.artifact_utils import _download_artifact_from_uri
 
         local_path = _download_artifact_from_uri(model_uri)
-        if not (Path(local_path) / "MLmodel").exists() and (Path(local_path) / "model" / "MLmodel").exists():
+        if (
+            not (Path(local_path) / "MLmodel").exists()
+            and (Path(local_path) / "model" / "MLmodel").exists()
+        ):
             local_path = str(Path(local_path) / "model")
         loaded_model = mlflow.pyfunc.load_model(local_path)
         log.info("Model champion berhasil dimuat langsung dari MLflow Registry (%s)!", model_uri)
