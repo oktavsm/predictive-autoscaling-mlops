@@ -272,6 +272,12 @@ make eval-model
 
 # 2. Register verified candidate model to Staging in MLflow Model Registry
 make register-staging
+
+# 3. AWS K3s Cluster Power & Lifecycle Management
+make cluster-status     # Show live status of 3 EC2 instances & Cloudflare DNS
+make cluster-start      # Start EC2 cluster, sync Cloudflare DNS, configure SSH, & wait for K3s
+make cluster-stop       # Stop EC2 cluster safely ($0 compute idle cost)
+make cluster-backup     # Backup remote PostgreSQL, SQLite, and MinIO metadata
 ```
 Comprehensive lab report and silent failure reflection: [`docs/coursework/LK-08_LAPORAN_PRAKTIKUM.md`](docs/coursework/LK-08_LAPORAN_PRAKTIKUM.md).
 

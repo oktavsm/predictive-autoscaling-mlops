@@ -365,8 +365,10 @@ def render_overview(base_url, palette, interval):
                     try:
                         psi = number(drift["psi_score"])
                         cycles = number(drift["evaluated_cycles"])
+                        has_drift = drift.get("overall_drift_detected", False)
+                        drift_status_badge = "DRIFT DETECTED" if has_drift else "STABLE"
                         psi_text = (
-                            f"{psi:.3f} · {int(cycles)} cycles"
+                            f"{psi:.3f} ({drift_status_badge}) · {int(cycles)} cycles"
                             if cycles >= 3
                             else "Insufficient evidence (<3 cycles)"
                         )
@@ -376,6 +378,19 @@ def render_overview(base_url, palette, interval):
                     st.caption(
                         "PSI uses a demo/reference baseline. Health observation age is unknown."
                     )
+                    if isinstance(drift, dict) and drift.get("monitored_features"):
+                        with st.expander("Inspect feature drift breakdown (PSI)"):
+                            st.caption("Per-feature PSI against reference baseline (threshold: 0.20):")
+                            feature_items = [
+                                (
+                                    feat,
+                                    f"{f_info.get('psi', 0.0):.4f} · {'DRIFT' if f_info.get('has_drift') else 'STABLE'}",
+                                )
+                                for feat, f_info in drift.get("monitored_features", {}).items()
+                                if isinstance(f_info, dict)
+                            ]
+                            if feature_items:
+                                facts(feature_items)
                     with st.expander("Inspect model provenance"):
                         st.caption(
                             "Validation MAE is stored training metadata, not online error or proof of the serving model's quality. Health fetch time is not observation time."

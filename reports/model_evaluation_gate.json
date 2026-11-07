@@ -2,7 +2,7 @@
   "candidate_run_name": "slow-heavy-model",
   "candidate_run_id": "dummy_run_slow",
   "model_type": "deep_ensemble",
-  "evaluated_at": "2026-11-04T08:23:33Z",
+  "evaluated_at": "2026-11-07T09:00:29Z",
   "overall_status": "FAILED",
   "checks": {
     "val_mae": {

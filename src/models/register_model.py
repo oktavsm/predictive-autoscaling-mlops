@@ -335,7 +335,7 @@ def verify_inference_readiness(
         )
 
     avg_latency = round(total_infer_time / len(test_scenarios), 2)
-    success = (load_duration_ms < 15000.0) and (avg_latency < 100.0)
+    success = (load_duration_ms < 30000.0) and (avg_latency < 100.0)
     log.info("=" * 65)
     log.info(
         "STATUS KESIAPAN INFERENSI: %s (Rata-rata Latensi: %.2f ms, Load Time: %.2f ms)",

@@ -1,0 +1,89 @@
+{
+  "source": "Unchanged kit tokens used by generator summary",
+  "checks": [
+    {
+      "theme": "dark",
+      "foreground": "text",
+      "background": "surface",
+      "ratio": 15.71,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "text-secondary",
+      "background": "surface",
+      "ratio": 10.8,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "text-muted",
+      "background": "surface",
+      "ratio": 7.91,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "success",
+      "background": "success-soft",
+      "ratio": 8.21,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "warning",
+      "background": "warning-soft",
+      "ratio": 7.98,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "chart-actual",
+      "background": "surface",
+      "ratio": 7.22,
+      "minimum": 3
+    },
+    {
+      "theme": "light",
+      "foreground": "text",
+      "background": "surface",
+      "ratio": 17.27,
+      "minimum": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "text-secondary",
+      "background": "surface",
+      "ratio": 8.55,
+      "minimum": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "text-muted",
+      "background": "surface",
+      "ratio": 5.93,
+      "minimum": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "success",
+      "background": "success-soft",
+      "ratio": 6.1,
+      "minimum": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "warning",
+      "background": "warning-soft",
+      "ratio": 6.48,
+      "minimum": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "chart-actual",
+      "background": "surface",
+      "ratio": 6.33,
+      "minimum": 3
+    }
+  ]
+}

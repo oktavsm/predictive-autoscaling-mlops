@@ -340,6 +340,93 @@ if page == "sim":
             st.json({"inputs": result["inputs"], "response": result["response"]})
 
 
+def generator_status(live, profiles):
+    alive = live.get("daemon_alive") is True
+    state = str(live.get("daemon_current_state") or "")
+    names = {code: label for label, code, _ in profiles}
+    descriptions = {
+        "STEADY_NORMAL": "Baseline browsing traffic with a steady, moderate load.",
+        "BURST_BUSY": "Elevated rush-hour traffic to observe scaling under sustained demand.",
+        "FLASH_ANOMALY": "A short, heavy traffic spike to observe capacity and latency.",
+        "COOLING_DOWN": "Traffic easing after a surge to observe scale-down behavior.",
+        "IDLE_SILENT": "Minimal traffic during a quiet window; zero virtual users is possible.",
+        "DRIFT_ANOMALY": "Heavy payload traffic used by the drift and retraining lifecycle.",
+    }
+    values = {}
+    for key in ("daemon_vus", "daemon_remaining_s", "last_heartbeat_seconds_ago"):
+        try:
+            values[key] = number(live.get(key))
+        except (ValueError, TypeError, OverflowError):
+            values[key] = None
+    vus, remaining, age = values.values()
+    profile = names.get(state, "Unknown profile" if state else "No profile reported")
+    connection = (
+        "Connected"
+        if alive
+        else "Heartbeat stale"
+        if age is not None and age >= 20
+        else "Unavailable"
+    )
+    tone = "ready" if alive else "stale"
+    observed_label = "Running profile" if alive else "Last reported profile"
+    description = descriptions.get(state, "No recognized profile was reported by the generator.")
+    if not alive:
+        description = "Execution is unconfirmed until a fresh daemon heartbeat arrives."
+    metrics = (
+        (
+            "Virtual users" if alive else "Last reported virtual users",
+            f"{vus:g} VUs" if vus is not None else "Unknown",
+            "Concurrent users reported by k6, not requests per second.",
+        ),
+        (
+            "Profile remaining" if alive else "Last reported remaining",
+            f"{int(remaining) // 60:02d}:{int(remaining) % 60:02d}"
+            if remaining is not None
+            else "Unknown",
+            "Minutes:seconds at the last heartbeat; updates with refresh.",
+        ),
+        (
+            "Heartbeat age",
+            f"{age:g} s" if age is not None else "Unknown",
+            "Connected requires a heartbeat less than 20 seconds old.",
+        ),
+    )
+    pending = str(live.get("override_state") or "")
+    pending_name = names.get(pending, str(pending))
+    pending_text = (
+        f"Requested profile: {pending_name}. Awaiting daemon confirmation; this is not the observed profile."
+        if pending
+        else "No pending request reported."
+    )
+    with st.container(key="generator-status"):
+        heading("Generator status", "health", "Remote k6 generator · heartbeat-reported execution")
+        st.html(
+            '<section class="generator-summary" aria-label="Generator status summary">'
+            '<div class="generator-top"><article class="generator-card generator-profile">'
+            f'<p class="generator-label">{observed_label}</p><h3>{escape(profile)}</h3>'
+            f'<p class="generator-description">{escape(description)}</p>'
+            f'<p class="generator-code">{escape(str(state or "Not reported"))}</p></article>'
+            '<article class="generator-card generator-connection">'
+            '<p class="generator-label">Generator connection</p>'
+            f'<span class="status status-{tone}">{connection}</span>'
+            '<p class="generator-description">'
+            + (
+                "A fresh heartbeat confirms the reported profile."
+                if alive
+                else "Last-known values stay visible. Profile requests are disabled until connected."
+            )
+            + '</p></article></div><div class="generator-metrics">'
+            + "".join(
+                '<article class="generator-card"><dl>'
+                f'<dt class="generator-label">{label}</dt><dd>{value}</dd></dl>'
+                f'<p class="generator-description">{note}</p></article>'
+                for label, value, note in metrics
+            )
+            + f'</div><div class="generator-request{" pending" if pending else ""}" role="status">'
+            f"<p>{escape(pending_text)}</p></div></section>"
+        )
+
+
 def lifecycle(state):
     try:
         progress = min(100.0, number(state.get("progress_pct", 0))) / 100
@@ -414,34 +501,9 @@ def lifecycle(state):
 @st.fragment(run_every=interval)
 def operational_view():
     if page == "injector":
-        heading(
-            "Traffic profiles",
-            "pipeline",
-            "Control the remote k6 generator and follow the five-phase training lifecycle.",
-        )
-        live = read("/workload/status")
+        with st.spinner("Reading generator heartbeat…"):
+            live = read("/workload/status")
         alive = live.get("daemon_alive") is True
-        with st.container(key="panel-daemon"):
-            heading(
-                "Generator status",
-                "health",
-                "Observed profile and pending request are separate until the next heartbeat.",
-            )
-            facts(
-                [
-                    ("Connection", "Connected" if alive else "Offline or unavailable"),
-                    ("Observed profile", live.get("daemon_current_state", "Unknown")),
-                    ("Virtual users", live.get("daemon_vus", "Unknown")),
-                    ("Heartbeat age (s)", live.get("last_heartbeat_seconds_ago", "Unknown")),
-                    ("Window remaining (s)", live.get("daemon_remaining_s", "Unknown")),
-                    ("Pending request", live.get("override_state") or "None"),
-                ]
-            )
-        if not alive:
-            st.info(
-                "The daemon is offline. Requests become available after its next live heartbeat."
-            )
-        feedback = st.empty()
         profiles = (
             ("Steady normal", "STEADY_NORMAL", "4–8 VUs · 20–45 min"),
             ("Rush hour", "BURST_BUSY", "18–28 VUs · 10–20 min"),
@@ -450,6 +512,17 @@ def operational_view():
             ("Quiet night", "IDLE_SILENT", "0–1 VUs · 5–15 min"),
             ("Drift anomaly", "DRIFT_ANOMALY", "35–55 VUs · High payload & memory drift anomaly"),
         )
+        generator_status(live, profiles)
+        if not alive:
+            st.info(
+                "The daemon is offline. Requests become available after its next live heartbeat."
+            )
+        heading(
+            "Traffic profiles",
+            "pipeline",
+            "Choose a requested profile below. The running profile changes only after daemon confirmation.",
+        )
+        feedback = st.empty()
         with st.container(key="operation-profiles"):
             columns = st.columns(2)
             for i, (label, state, note) in enumerate(profiles):

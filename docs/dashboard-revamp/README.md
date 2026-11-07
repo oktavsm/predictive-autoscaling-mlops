@@ -2,6 +2,8 @@
 
 User guide: [Panduan Lengkap Dashboard](../DASHBOARD_GUIDE.md), the current inventory of all nine workspaces, sections, cards, charts, tables, inputs and buttons, including their purpose, side effects, authentication and data limits.
 
+Latest UI refinement: [Generator status audit and release](anti-slop/audit-006-2026-10-13.md). Workload Injector now puts the observed profile first, with separate connection and metric cards, explicit last-known/offline states and a distinct pending-request strip. The ConfigMap hot-deploy now also mounts `dashboard.css`, making six dashboard code/asset keys.
+
 Current operations release: [improvements A–E](OPERATIONS_HARDENING.md), covering actual pod usage, persistent history, authenticated write controls, inventory cache and terminal timing. Write controls now require **Operator access** unlock; readers can inspect all workspaces without a token.
 
 Latest cluster work: [dashboard/API audit and interactive Cluster Explorer](DASHBOARD_AUDIT_CLUSTER_EXPLORER.md). Includes observed node/pod/service detail, three selectable system flows, hover explanations, priorities with acceptance criteria, and the multi-file ConfigMap release procedure. Local validation uses `.venv`; container packaging belongs to cloud CI, with no local Docker build.

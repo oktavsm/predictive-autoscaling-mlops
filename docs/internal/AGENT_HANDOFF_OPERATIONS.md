@@ -77,7 +77,7 @@ Di lingkungan K3s produksi, berkas `app.py` pada pod `mlops-dashboard` di-mount 
 
 Kebijakan operasional terbaru dari pengguna (13 Oktober 2026): **jangan menyalakan Docker daemon, menjalankan docker build atau Compose lokal**. Validasi lokal lewat `.venv`; packaging container dijalankan GitHub Actions ketika push diotorisasi. Jangan push hanya untuk mencoba build tanpa instruksi pengguna.
 
-Revamp Overview memakai `adapter.py`, `overview.py`, tokens, font dan stylesheet yang sudah tersedia pada image aktif (Streamlit 1.65.0 / Altair 6.3.0). Cluster Explorer menambah `cluster.py`, `assets/cluster.js`, `assets/cluster.css`, dan `assets/cluster-catalog.json`. Hot-deploy rilis explorer memasang kelima file termasuk `app.py` dari ConfigMap `mlops-dashboard-code` melalui subPath individual, agar asset lain dalam image tetap tersedia. Mount baru memerlukan satu perubahan pod template; sesudah itu update kelima key dan rolling restart. Jangan hanya mengganti app.py bila import/asset berubah. Lihat `docs/dashboard-revamp/DASHBOARD_AUDIT_CLUSTER_EXPLORER.md` untuk audit, bukti dan rollback.
+Revamp Overview memakai `adapter.py`, `overview.py`, tokens dan font dari image aktif (Streamlit 1.65.0 / Altair 6.3.0). Cluster Explorer menambah `cluster.py`, `assets/cluster.js`, `assets/cluster.css`, dan `assets/cluster-catalog.json`. Refinement Generator status menambahkan mount `assets/dashboard.css`, sehingga hot-deploy sekarang memasang **enam file** termasuk `app.py` dari ConfigMap `mlops-dashboard-code` melalui subPath individual. Asset lain dalam image tetap tersedia. Mount baru memerlukan perubahan pod template; sesudah itu update keenam key dan rolling restart. Jangan hanya mengganti app.py bila import/asset berubah. Lihat `docs/DASHBOARD_GUIDE.md#111-generator-status` untuk anatomi status generator dan `docs/dashboard-revamp/DASHBOARD_AUDIT_CLUSTER_EXPLORER.md` untuk riwayat explorer.
 
 #### ⚡ Alur Hot-Deploy Dashboard (Rolling Update):
 Pantau endpoint publik sepanjang rollout. Rilis 13 Oktober mencatat satu sampel HTTP 502 ketika pod berganti; alur ini tidak menjamin tanpa gangguan atau durasi di bawah 30 detik.
@@ -88,7 +88,7 @@ Pantau endpoint publik sepanjang rollout. Rilis 13 Oktober mencatat satu sampel 
 # 2. Salin seluruh kode explorer lokal ke server Control Plane (cp)
 scp src/dashboard/app.py src/dashboard/cluster.py \
   src/dashboard/assets/cluster.js src/dashboard/assets/cluster.css \
-  src/dashboard/assets/cluster-catalog.json cp:/tmp/
+  src/dashboard/assets/cluster-catalog.json src/dashboard/assets/dashboard.css cp:/tmp/
 
 # 3. Update ConfigMap yang benar-benar dipakai deployment (nama dapat berversi)
 ssh cp 'set -eu
@@ -98,9 +98,11 @@ kubectl create configmap "$dashboard_map" -n mlops \
   --from-file=app.py=/tmp/app.py --from-file=cluster.py=/tmp/cluster.py \
   --from-file=cluster.js=/tmp/cluster.js --from-file=cluster.css=/tmp/cluster.css \
   --from-file=cluster-catalog.json=/tmp/cluster-catalog.json \
+  --from-file=dashboard.css=/tmp/dashboard.css \
   --dry-run=client -o yaml | kubectl apply -f -'
 
-# 4. Lakukan rolling restart deployment
+# 4. Pada adopsi pertama, terapkan mount keenam dari 05-dashboard-deployment.yaml.
+#    Update berikutnya cukup rolling restart deployment.
 ssh cp "kubectl rollout restart deployment/mlops-dashboard -n mlops"
 
 # 5. Verifikasi status pod dan periksa live endpoint
