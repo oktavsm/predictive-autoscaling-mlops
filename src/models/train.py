@@ -45,8 +45,10 @@ from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 os.environ["MLFLOW_DISABLE_AGENT_HINT"] = "1"
+import joblib
 import lightgbm as lgb
 import mlflow
+import mlflow.data
 import mlflow.lightgbm
 import mlflow.sklearn
 
@@ -292,6 +294,7 @@ def train_single_model(
     X_val: pd.DataFrame,
     y_val: pd.Series,
     artifact_dir: Path,
+    dataset_source: str = "data/processed (dvc: 2026feedece54b8c71b0a21c0933679e.dir)",
 ) -> Dict[str, Any]:
     """
     Melatih satu instans model dengan parameter spesifik dan mencatat ke MLflow.
@@ -379,6 +382,19 @@ def train_single_model(
         for m_key, m_val in metrics.items():
             mlflow.log_metric(m_key, m_val)
 
+        # Log dataset input for MLflow Dataset Tracking (populates Dataset column in UI)
+        try:
+            full_train_df = pd.concat([X_train, y_train], axis=1)
+            dataset = mlflow.data.from_pandas(
+                df=full_train_df,
+                source=dataset_source,
+                name="titipin-processed-workload",
+                targets=TARGET_COLUMN,
+            )
+            mlflow.log_input(dataset, context="training")
+        except Exception as e:
+            log.warning("Gagal mencatat dataset input ke MLflow: %s", e)
+
         # Generate & log plots
         plots = generate_and_log_plots(
             model_name=run_name,
@@ -391,7 +407,7 @@ def train_single_model(
         for plot_path in plots:
             mlflow.log_artifact(str(plot_path), artifact_path="evaluation_plots")
 
-        # Log model artifact with signature & example
+        # 1. Log model via MLflow flavor (creates formal MLflow Logged Model & registers signature)
         input_example = X_val.head(2)
         if model_type in ["lightgbm", "lightgbm_tuned"]:
             mlflow.lightgbm.log_model(
@@ -406,6 +422,11 @@ def train_single_model(
                 input_example=input_example,
                 serialization_format="cloudpickle",
             )
+
+        # 2. Log model binary directly into run artifacts so it is visible in the UI Artifacts tab & MinIO
+        model_file = MODELS_DIR / f"{run_name}_model.joblib"
+        joblib.dump(model, model_file)
+        mlflow.log_artifact(str(model_file), artifact_path="model")
 
         log.info("MLflow Run berhasil disimpan! Run ID: %s", run_id)
 

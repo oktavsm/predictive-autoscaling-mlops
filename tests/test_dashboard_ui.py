@@ -270,6 +270,83 @@ def test_disconnected_generator_disables_every_profile(operational):
     assert not writes["calls"]
 
 
+@pytest.mark.parametrize(
+    ("status", "expected", "unexpected"),
+    [
+        (
+            {
+                "daemon_alive": True,
+                "daemon_current_state": "STEADY_NORMAL",
+                "daemon_vus": 0,
+                "daemon_remaining_s": 0,
+                "last_heartbeat_seconds_ago": 0,
+                "override_state": "BURST_BUSY",
+            },
+            [
+                "Running profile",
+                "<h3>Steady normal</h3>",
+                "0 VUs",
+                "00:00",
+                "0 s",
+                "Requested profile: Rush hour",
+                "Awaiting daemon confirmation",
+            ],
+            ["<h3>Rush hour</h3>", "Last reported profile"],
+        ),
+        (
+            {
+                "daemon_alive": False,
+                "daemon_current_state": "FLASH_ANOMALY",
+                "daemon_vus": 63,
+                "daemon_remaining_s": 450,
+                "last_heartbeat_seconds_ago": 82,
+            },
+            [
+                "Last reported profile",
+                "<h3>Flash sale</h3>",
+                "Heartbeat stale",
+                "Last reported virtual users",
+                "Last reported remaining",
+                "07:30",
+                "Execution is unconfirmed",
+            ],
+            ["Running profile", "status-ready"],
+        ),
+        (
+            {},
+            ["No profile reported", "Unavailable", "Unknown", "No pending request reported"],
+            ["status-ready", "0 VUs", "00:00"],
+        ),
+        (
+            {
+                "daemon_alive": True,
+                "daemon_current_state": "<img src=x onerror=alert(1)>",
+                "daemon_vus": float("nan"),
+                "daemon_remaining_s": -1,
+                "last_heartbeat_seconds_ago": True,
+                "override_state": "<script>alert(1)</script>",
+            },
+            ["Unknown profile", "Unknown", "&lt;img", "&lt;script&gt;"],
+            ["<script>", "<img src=x", "nan VUs", "00:00"],
+        ),
+    ],
+)
+def test_generator_summary_preserves_observed_pending_and_unknown_states(
+    operational, status, expected, unexpected
+):
+    app, data, writes = operational
+    data["/workload/status"] = status
+    select_page(app, "Workload Injector")
+    summary = next(
+        item.proto.body for item in app.get("html") if "generator-summary" in item.proto.body
+    )
+    for text in expected:
+        assert text in summary
+    for text in unexpected:
+        assert text not in summary
+    assert not writes["calls"]
+
+
 def test_accepted_workload_response_and_manual_refresh_controls(operational):
     app, data, writes = operational
     select_page(app, "Workload Injector")

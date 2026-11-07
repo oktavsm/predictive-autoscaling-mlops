@@ -1,0 +1,21 @@
+{
+  "verified_at_utc": "2026-10-13T10:42:46.433360+00:00",
+  "method": "ConfigMap hot-deploy; same existing image; six individual subPath mounts",
+  "dashboard_http_status": 200,
+  "python_tests": 134,
+  "dependency_warnings": 2,
+  "dataset_tests_warnings_as_errors": 8,
+  "qa_checks": 69,
+  "live_checks": 56,
+  "control_regression_checks": 196,
+  "daemon_snapshot": {
+    "daemon_alive": true,
+    "daemon_current_state": "STEADY_NORMAL",
+    "daemon_vus": 6,
+    "daemon_remaining_s": 557,
+    "last_heartbeat_seconds_ago": 1.2,
+    "override_state": null
+  },
+  "no_production_workload_or_training_actions": true,
+  "local_docker_used": false
+}

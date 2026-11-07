@@ -1,4 +1,4 @@
-.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess auto-ingest auto-ingest-24h preview dvc-push dvc-pull dvc-status sync-data minio-console train mlflow-ui security-scan xai-audit demo-spike demo-live clean latex-build latex-run latex-watch latex-docker-build latex-docker-run latex-clean latex-clean-deps
+.PHONY: help venv install check lint test port-forward kill-pf workload-spike workload-sequence ingest preprocess auto-ingest auto-ingest-24h preview dvc-push dvc-pull dvc-status sync-data minio-console train mlflow-ui security-scan xai-audit demo-spike demo-live clean latex-build latex-run latex-watch latex-docker-build latex-docker-run latex-clean latex-clean-deps cluster-status cluster-start cluster-stop cluster-backup cluster-sync-dns cluster-ssh-cp cluster-ssh-w1 cluster-ssh-w2 cluster-nodes cluster-pods
 
 PYTHON ?= python3
 VENV ?= .venv
@@ -44,6 +44,18 @@ help:
 	@echo "  make workload-sequence  Run full multi-scenario sequence (~70m)"
 	@echo "  make demo-spike         Run live demo traffic spike with automated monitoring"
 	@echo "  make demo-live          Start step-by-step interactive live demo walkthrough"
+	@echo ""
+	@echo "AWS K3s Cluster Lifecycle & Operations:"
+	@echo "  make cluster-status     Show live AWS EC2 instances & Cloudflare DNS status"
+	@echo "  make cluster-start      Start AWS EC2 instances, sync DNS, SSH config, & wait for K3s"
+	@echo "  make cluster-stop       Stop AWS EC2 instances safely (zero idle compute billing)"
+	@echo "  make cluster-backup     Backup PostgreSQL, SQLite, and MinIO S3 metadata to backups/"
+	@echo "  make cluster-sync-dns   Sync Cloudflare DNS records to active Control Plane IP"
+	@echo "  make cluster-ssh-cp     SSH connect to Control Plane VM (via jump proxy)"
+	@echo "  make cluster-ssh-w1     SSH connect to Worker 1 VM (via jump proxy)"
+	@echo "  make cluster-ssh-w2     SSH connect to Worker 2 VM (via jump proxy)"
+	@echo "  make cluster-nodes      Show K3s cluster nodes and condition"
+	@echo "  make cluster-pods       Show all running pods across all namespaces"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean              Remove caches and temporary files"
@@ -141,8 +153,17 @@ train: venv
 register: venv
 	@$(BIN)/python src/models/register_model.py
 
+sync-manifest: venv
+	@$(BIN)/python src/models/register_model.py --sync-manifest
+
 verify-model: venv
 	@$(BIN)/python src/models/register_model.py --verify-only
+
+eval-model: venv
+	@$(BIN)/python src/models/evaluate_and_register.py --eval-only
+
+register-staging: venv
+	@$(BIN)/python src/models/evaluate_and_register.py --register-staging
 
 mlflow-ui: venv
 	@echo ">>> Membuka MLflow Tracking UI pada http://127.0.0.1:5000..."
@@ -217,6 +238,39 @@ demo-spike:
 demo-live:
 	@echo ">>> Starting Interactive Live Demonstration Guide..."
 	@bash scripts/demo_live.sh
+
+# =============================================================================
+# AWS K3s Cluster Power & Lifecycle Operations
+# =============================================================================
+cluster-status:
+	@bash scripts/manage_cluster.sh status
+
+cluster-start:
+	@bash scripts/manage_cluster.sh start
+
+cluster-stop:
+	@bash scripts/manage_cluster.sh stop
+
+cluster-backup:
+	@bash scripts/backup_cluster_data.sh
+
+cluster-sync-dns:
+	@bash scripts/cloudflare_dns_sync.sh
+
+cluster-ssh-cp:
+	@ssh cp
+
+cluster-ssh-w1:
+	@ssh w1
+
+cluster-ssh-w2:
+	@ssh w2
+
+cluster-nodes:
+	@ssh cp "kubectl get nodes -o wide"
+
+cluster-pods:
+	@ssh cp "kubectl get pods -A"
 
 clean:
 	rm -rf .pytest_cache .ruff_cache

@@ -1,0 +1,8 @@
+{
+  "src/dashboard/app.py": "037f02a9b45167d7270b798d7098cb79533688f8482ed57f452c5cfd7885869f",
+  "src/dashboard/assets/dashboard.css": "be804d976fcf2b20392ca4e516ba1b31f7bd141da03ef9350bf43a44fe46b5a7",
+  "src/dashboard/cluster.py": "353f0b53e5e8624f86a39bc28a1ceda04364b78c45428b37878679f966471936",
+  "src/dashboard/assets/cluster.js": "9f890fc19d806aa04ea074b8ed67fb6a2edbe1f25af5b967a40bb148c68cf783",
+  "src/dashboard/assets/cluster.css": "c22b39ce92c7502ae0e2e6f3eefdc9e05135a12fa7340be5733b5570095f1f93",
+  "src/dashboard/assets/cluster-catalog.json": "5d387220068ac38ec7effc4194eb10d4002bba9bf41bf4a3217b8e952bd3df78"
+}

@@ -10,7 +10,7 @@
 
 Before generating code, refactoring architecture, or proposing solutions, **the AI Agent MUST read and reference the existing technical documentation**. Do not guess architecture, invent new conventions, or write speculative code.
 
-### 📚 Documentation Reference Map
+### Documentation Reference Map
 
 | Domain / Topic | Primary Documentation File to Consult |
 |---|---|
@@ -95,3 +95,38 @@ Always consult [`docs/internal/LK_WORK_DIVISION_GUIDE.md`](docs/internal/LK_WORK
 
 * Every new feature, script, or pipeline stage MUST be documented in both the relevant `docs/` file and referenced in the main [`README.md`](README.md) Documentation Index.
 * Always use **clickable GitHub markdown links with `file://` scheme** when referring to files and line ranges in responses.
+
+---
+
+## 8. Dual-Documentation Protocol: Coursework Report vs. Technical Specifications
+
+Whenever the user requests coursework documentation, reports for submission, or Lembar Kerja (LK) completion, the AI Agent MUST produce **TWO SEPARATE DOCUMENTS**:
+
+### A. Laporan Mahasiswa untuk Dikumpulkan (Submission Report / Template LK)
+- **Target File:** `docs/coursework/LK-XX_LAPORAN_PRAKTIKUM.md` (strictly gitignored).
+- **Purpose:** Official academic coursework submission for lecturers and teaching assistants.
+- **Language & Tone:** Natural, clear, flowing Indonesian. Avoid convoluted or overly technical AI jargon. Explain concepts in a direct, human manner.
+- **Structure:**
+  - **Header:** Course, Student Name, Lecturer, Study Program, University, Year, GitHub Repo Link, Execution Log URL.
+  - **Bagian A:** Deskripsi Aktivitas & Konsep Inti (background, problem statement, relevance).
+  - **Bagian B:** Metode & Implementasi Alur Kerja (sequential steps 1..N explained in narrative paragraphs, accompanied by concise code snippets and explicit screenshot placeholders).
+  - **Bagian C:** Simulasi Perubahan Kode & Bukti Eksekusi (action logs summary, duration, run status).
+  - **Bagian D:** Refleksi Singkat (answering operational/theoretical reflection questions such as silent failure prevention).
+- **Format Constraints:**
+  - **Paragraph-First:** Prioritize explanatory paragraphs over long nested bullet lists. Use bullet points or tables only when strictly necessary (e.g., metric thresholds).
+  - **Length:** Maximum 3 to 4 pages of text content (excluding screenshots/images).
+  - **Visual Placeholders:** Explicit screenshot guidance formatted as:
+    `> **[TEMPAT SCREENSHOT N: Judul]**`
+    `> *Deskripsi: Penjelasan apa yang ditampilkan.*`
+
+### B. Dokumen Teknis Komprehensif (Internal Engineering & Implementation Specs)
+- **Target File:** `docs/internal/TECHNICAL_SPECS_LK-XX.md` (or `docs/coursework/LK-XX_KOMPREHENSIF_TEKNIS.md`).
+- **Purpose:** Full technical record for engineers, system auditors, and long-term project maintenance.
+- **Language & Tone:** In-depth, highly technical, exhaustive, and mathematically rigorous.
+- **Contents:**
+  - Complete DAG / system architecture diagrams (Mermaid / ASCII).
+  - Granular code implementation analysis (functions, decorators, algorithms, parameters).
+  - Mathematical formulas and theoretical justifications (e.g. failure propagation, autoscaling deficit formulas).
+  - Edge cases, troubleshooting history, dependency resolution, and runtime logs.
+  - No length constraints; cover every detail thoroughly.
+

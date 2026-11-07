@@ -67,8 +67,16 @@ spec:
               memory: 512Mi
           volumeMounts:
             - name: dashboard-code
+              mountPath: /app/src/dashboard/assets/dashboard.css
+              subPath: dashboard.css
+              readOnly: true
+            - name: dashboard-code
               mountPath: /app/src/dashboard/app.py
               subPath: app.py
+              readOnly: true
+            - name: dashboard-code
+              mountPath: /app/src/dashboard/overview.py
+              subPath: overview.py
               readOnly: true
             - name: dashboard-code
               mountPath: /app/src/dashboard/cluster.py

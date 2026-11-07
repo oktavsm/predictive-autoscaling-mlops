@@ -282,6 +282,30 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(503)
                 self.end_headers()
                 return
+            if state.startswith("generator_"):
+                variant = state.removeprefix("generator_")
+                generator = data["/workload/status"]
+                if variant in {
+                    "STEADY_NORMAL",
+                    "BURST_BUSY",
+                    "FLASH_ANOMALY",
+                    "COOLING_DOWN",
+                    "IDLE_SILENT",
+                    "DRIFT_ANOMALY",
+                }:
+                    generator["daemon_current_state"] = variant
+                elif variant == "pending":
+                    generator["override_state"] = "BURST_BUSY"
+                elif variant == "offline":
+                    generator.update(daemon_alive=False, last_heartbeat_seconds_ago=82)
+                elif variant == "empty":
+                    data["/workload/status"] = {}
+                elif variant == "zero":
+                    generator.update(daemon_vus=0, daemon_remaining_s=0)
+                elif variant == "error" and path == "/workload/status":
+                    self.send_response(503)
+                    self.end_headers()
+                    return
             if state == "empty":
                 data["/scaling/decisions"] = []
                 data["/scaling/actions"] = []

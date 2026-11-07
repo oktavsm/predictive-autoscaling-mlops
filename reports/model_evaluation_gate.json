@@ -1,0 +1,33 @@
+{
+  "candidate_run_name": "slow-heavy-model",
+  "candidate_run_id": "dummy_run_slow",
+  "model_type": "deep_ensemble",
+  "evaluated_at": "2026-11-07T09:00:29Z",
+  "overall_status": "FAILED",
+  "checks": {
+    "val_mae": {
+      "name": "Validation MAE (RPS)",
+      "value": 1.5,
+      "threshold": "<= 5.0",
+      "passed": true
+    },
+    "val_rmse": {
+      "name": "Validation RMSE",
+      "value": 5.0,
+      "threshold": "<= 15.0",
+      "passed": true
+    },
+    "val_r2": {
+      "name": "Validation R\u00b2 Score",
+      "value": 0.95,
+      "threshold": ">= 0.7",
+      "passed": true
+    },
+    "latency_ms": {
+      "name": "Inference Latency (ms)",
+      "value": 145.0,
+      "threshold": "<= 100.0 ms",
+      "passed": false
+    }
+  }
+}

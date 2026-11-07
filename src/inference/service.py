@@ -88,6 +88,23 @@ RECOMMENDED_REPLICAS_GAUGE = Gauge(
     "autoscaler_recommended_replicas",
     "Latest recommended pod replicas count",
 )
+DATA_DRIFT_OVERALL_PSI = Gauge(
+    "autoscaler_data_drift_overall_psi",
+    "Latest overall maximum Population Stability Index (PSI) score across monitored telemetry",
+)
+DATA_DRIFT_FEATURE_PSI = Gauge(
+    "autoscaler_data_drift_feature_psi",
+    "Population Stability Index (PSI) score per monitored telemetry feature",
+    ["feature"],
+)
+DATA_DRIFT_STATUS_GAUGE = Gauge(
+    "autoscaler_data_drift_status",
+    "Current telemetry drift status (0 = STABLE, 1 = DRIFT_DETECTED)",
+)
+CONTINUOUS_TRAINING_RUNS = Counter(
+    "autoscaler_continuous_training_runs_total",
+    "Total continuous training retraining jobs triggered",
+)
 
 # Global model container
 model_store: Dict[str, Any] = {
@@ -356,6 +373,10 @@ def reload_model_endpoint() -> Dict[str, Any]:
 @app.get("/metrics")
 def prometheus_metrics():
     """Prometheus exposition format for autoscaler telemetry."""
+    try:
+        evaluate_telemetry_drift()
+    except Exception:
+        pass
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
@@ -661,6 +682,14 @@ def evaluate_telemetry_drift() -> Dict[str, Any]:
         result["psi_score"] = max(row["psi"] for row in result["monitored_features"].values())
         result["overall_drift_detected"] = result["psi_score"] >= 0.2
         result["status"] = "DRIFT_DETECTED" if result["overall_drift_detected"] else "STABLE"
+
+        # Update Prometheus Drift Observability Gauges
+        DATA_DRIFT_OVERALL_PSI.set(float(result["psi_score"]))
+        DATA_DRIFT_STATUS_GAUGE.set(1.0 if result["overall_drift_detected"] else 0.0)
+        for feat_name, feat_info in result["monitored_features"].items():
+            if "psi" in feat_info and feat_info["psi"] is not None:
+                DATA_DRIFT_FEATURE_PSI.labels(feature=feat_name).set(float(feat_info["psi"]))
+
         return result
     except (OSError, ValueError, KeyError):
         result["status"] = "REFERENCE_UNAVAILABLE"
@@ -1247,6 +1276,7 @@ def _start_scenario(inject: bool) -> Dict[str, Any]:
         )
         if inject:
             _queue_workload("DRIFT_ANOMALY")
+        CONTINUOUS_TRAINING_RUNS.inc()
         _persist_lifecycle()
         threading.Thread(
             target=_run_autonomous_drift_sequence,

@@ -8,7 +8,7 @@ For the complete current inventory of all nine workspaces, sections, cards, char
 |---|---|
 | Overview | Live controller decisions, forecast horizon, workload, latency, replica recommendations and applied scaling events. Empty, stale and failed sources stay distinguishable. |
 | Scaling Simulator | Explicit `/predict` request with selected telemetry. Validates finite output; failures clear old results. Preview policy does not alter cluster policy. |
-| Workload Injector | All six daemon profiles enabled while heartbeat is fresh. ACK and observed execution stay separate. Explicit start/stop lifecycle routes; progress, timestamps, phase titles, owned job and verified completion metrics. |
+| Workload Injector | Prominent human-readable observed profile, separate connection/VUs/remaining/heartbeat cards, and a distinct pending-request strip. Offline values explicitly last-reported; missing values remain unknown. All six daemon profiles enabled while heartbeat is fresh. ACK and observed execution stay separate. Explicit start/stop lifecycle routes; progress, timestamps, phase titles, owned job and verified completion metrics. |
 | Drift & Retraining | Five-feature PSI against mounted reference CSV. Explicit retrain returns HTTP 202 acceptance. Status follows actual Kubernetes completion, shared holdout evaluation and loaded champion. |
 | Model Registry | Champion/challenger alias cards, actual run metrics, serving version, named datasets and verified MinIO CAS lineage. |
 | Telemetry Audit | Ingestion, registry history, controller decisions and executed scaling actions in formatted tables. |

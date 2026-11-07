@@ -4,6 +4,8 @@ Dokumentasi halaman, section, card, grafik, tabel, input, tombol, serta fungsi o
 
 **Tanggal penyusunan:** 13 Oktober 2026. **Acuan kode:** hasil merge PR #15, commit `de6a5ae`, dengan implementasi dashboard sampai `0305540`. **URL dashboard:** <https://mlops.titipin.me>.
 
+**Pembaruan 13 Oktober 2026:** bagian Workload Injector mengikuti refinement Generator status: profil manusiawi yang menonjol, lima card terpisah, pending request terpisah, dan label last-known saat offline. Lihat [audit dan bukti rilis](dashboard-revamp/anti-slop/audit-006-2026-10-13.md).
+
 Panduan ini menjelaskan perilaku yang sudah ada di kode. Tujuan penggunaan setiap komponen menjawab kapan komponen tersebut dipakai dalam observasi, demonstrasi, investigasi, atau pengoperasian sistem. Fitur yang belum tersedia disebutkan secara eksplisit. Penyusunan panduan tidak menjalankan workload, retraining, atau deployment baru.
 
 ## Daftar isi
@@ -509,20 +511,22 @@ Tarif cloud, kurs, emisi, dan resource allocation di sini bukan integrasi billin
 
 **Tujuan:** meminta profil trafik pada daemon k6 eksternal dan, bila dipilih, menjalankan lifecycle drift/training terkoordinasi. Ini halaman dengan aksi nyata pada workload dan pipeline produksi, sehingga tombol write memerlukan operator access.
 
-Section **Traffic profiles** menaungi status generator dan pilihan profil. Section **Autonomous retraining lifecycle** menampilkan kontrol launch/stop serta perkembangan operasi.
+Section **Generator status** berada paling atas agar profil yang diamati cepat terbaca. Section **Traffic profiles** menampilkan pilihan profil. Section **Autonomous retraining lifecycle** menampilkan kontrol launch/stop serta perkembangan operasi.
 
 ### 11.1 Generator status
 
-| Field pada card | Makna | Digunakan untuk |
-|---|---|---|
-| **Connection** | Connected jika daemon_alive; selain itu Offline or unavailable. | Memastikan generator memberi heartbeat cukup baru sebelum mengirim request. |
-| **Observed profile** | State terakhir yang benar-benar dilaporkan daemon. | Memverifikasi pergantian profil setelah request diterima. |
-| **Virtual users** | VUs yang dilaporkan daemon. | Melihat concurrency generator saat ini; VUs bukan RPS. |
-| **Heartbeat age (s)** | Usia heartbeat terakhir. | Menilai apakah status generator masih fresh. Backend menyatakan alive bila usia <20 detik. |
-| **Window remaining (s)** | Sisa window profil menurut heartbeat. | Memperkirakan kapan profil daemon akan berganti. Bukan countdown stage training. |
-| **Pending request** | Override yang belum dikonfirmasi heartbeat, atau None. | Membedakan permintaan diterima dari profil yang sudah berjalan. |
+Status generator terdiri dari lima card terpisah dan satu area request. Nama profil memakai label manusia seperti **Rush hour**, sementara state API seperti `BURST_BUSY` tetap terlihat sebagai detail. Pada desktop, card profil lebih lebar daripada koneksi; di layar kecil keduanya ditumpuk.
 
-Ketika heartbeat tidak fresh, semua tombol profil dan launch lifecycle disabled; UI menjelaskan bahwa request tersedia kembali setelah heartbeat hidup. Status profil lama tetap dapat tampil sebagai **Last reported profile (offline)**. Stop operasi yang masih aktif bergantung operator unlock dan tidak disyaratkan daemon online oleh UI.
+| Card/area | Makna | Digunakan untuk |
+|---|---|---|
+| **Running profile** | Nama profil terakhir dari heartbeat, penjelasan singkat, dan state API. Tampil paling besar ketika daemon alive. | Mengetahui profil yang dikonfirmasi generator, terpisah dari profil yang baru diminta. |
+| **Generator connection** | Connected jika daemon_alive; Heartbeat stale jika age ≥20s dan tidak alive; Unavailable bila bukti tidak cukup. | Memastikan koneksi dan memahami alasan nilai lain menjadi last-known. |
+| **Virtual users** | VUs yang dilaporkan daemon. | Melihat concurrency generator saat ini; VUs bukan RPS. |
+| **Profile remaining** | Sisa window dalam format menit:detik, misalnya 07:30. | Snapshot sisa waktu pada heartbeat terakhir; diperbarui saat refresh, bukan countdown lokal per detik atau durasi stage training. |
+| **Heartbeat age** | Usia heartbeat dalam detik. | Menilai freshness; backend menyatakan alive bila usia <20 detik. |
+| **Requested profile / No pending request reported** | Area terpisah untuk override, dengan penjelasan bahwa eksekusi belum dikonfirmasi. | Membedakan permintaan diterima dari profil yang diamati. Pending tidak mengganti headline Running profile. |
+
+Ketika heartbeat tidak fresh, headline berubah menjadi **Last reported profile**, VUs dan sisa waktu memakai label **Last reported virtual users**/**Last reported remaining**, dan penjelasan menyatakan execution unconfirmed. Semua tombol profil dan launch lifecycle disabled sampai heartbeat hidup. Stop operasi yang masih aktif bergantung operator unlock dan tidak disyaratkan daemon online oleh UI. Nilai hilang/invalid tampil Unknown; nol yang benar-benar dilaporkan tetap 0 VUs atau 00:00. Spinner Reading generator heartbeat menunjukkan pembacaan sedang berlangsung.
 
 ### 11.2 Enam card profil dan tombolnya
 

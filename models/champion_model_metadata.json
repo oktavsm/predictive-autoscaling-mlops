@@ -1,20 +1,22 @@
 {
-  "champion_run_name": "random-forest-default",
-  "champion_run_id": "950fc7ea498b4cb7a2aaf0aa58cb2102",
-  "champion_model_type": "random_forest",
+  "champion_run_name": "lightgbm-tuned",
+  "champion_run_id": "063a666d5a294818be72acdde7e83322",
+  "champion_model_type": "lightgbm_tuned",
   "horizon_seconds": 60,
   "parameters": {
-    "run_name": "random-forest-default",
-    "n_estimators": 100,
-    "max_depth": 6
+    "run_name": "lightgbm-tuned",
+    "learning_rate": 0.03,
+    "n_estimators": 200,
+    "max_depth": 4,
+    "num_leaves": 15
   },
   "metrics": {
-    "val_mae": 0.076,
-    "val_rmse": 0.2147,
-    "val_r2": -575.8186,
-    "val_mape": 75874.5489,
-    "train_mae": 0.6966,
-    "latency_ms": 35.372
+    "val_mae": 2.2375,
+    "val_rmse": 10.9783,
+    "val_r2": 0.8239,
+    "val_mape": 56453.5708,
+    "train_mae": 2.3201,
+    "latency_ms": 1.182
   },
   "features": [
     "request_rate",
@@ -33,5 +35,5 @@
     "hour",
     "minute"
   ],
-  "registered_at": "2026-09-30T17:43:08Z"
+  "registered_at": "2026-10-19T15:15:48Z"
 }
