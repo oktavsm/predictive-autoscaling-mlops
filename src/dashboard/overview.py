@@ -380,7 +380,9 @@ def render_overview(base_url, palette, interval):
                     )
                     if isinstance(drift, dict) and drift.get("monitored_features"):
                         with st.expander("Inspect feature drift breakdown (PSI)"):
-                            st.caption("Per-feature PSI against reference baseline (threshold: 0.20):")
+                            st.caption(
+                                "Per-feature PSI against reference baseline (threshold: 0.20):"
+                            )
                             feature_items = [
                                 (
                                     feat,
